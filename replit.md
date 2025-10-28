@@ -185,8 +185,11 @@ Preferred communication style: Simple, everyday language.
 
 ## Deployment Configuration
 
-### Prisma Binary Targets (Fixed)
-The Prisma schema has been configured with multiple binary targets to support different deployment environments:
+### ✅ All Prisma Deployment Fixes Applied
+
+The following fixes have been implemented to resolve the "Query Engine binary not found" deployment error:
+
+**1. Binary Targets Configured** ✓
 ```prisma
 generator client {
   provider      = "prisma-client-js"
@@ -194,17 +197,31 @@ generator client {
 }
 ```
 
-### Required Deployment Scripts
-To ensure Prisma Client is properly generated during deployment, you need to manually configure:
+**2. Custom Build Script Created** ✓
+A `build.sh` script has been created that ensures Prisma Client is generated before building.
 
-1. **Add to package.json scripts** (requires manual edit via Replit UI):
-   ```json
-   "postinstall": "prisma generate"
-   ```
+**3. Prisma Client Regenerated** ✓
+The Prisma Client has been regenerated with all required binaries.
 
-2. **Update build script** in package.json:
-   ```json
-   "build": "prisma generate && vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist"
-   ```
+### 🚀 How to Deploy Successfully
 
-**Note**: The Prisma Client has been regenerated with the correct binaries. If deployment still fails, manually run `npx prisma generate` before deploying.
+**Configure your deployment build command using the Publishing workspace:**
+
+1. Open the **Publishing** workspace tool (left sidebar or search bar)
+2. Find the **"Build command"** field
+3. Enter: `sh build.sh`
+4. Deploy your app
+
+The `build.sh` script will:
+- Generate Prisma Client with the correct binaries (`debian-openssl-1.1.x` and `debian-openssl-3.0.x`)
+- Build the frontend with Vite
+- Bundle the backend with esbuild
+
+**Alternative: Update package.json manually**
+
+If you prefer to update package.json instead of using the build script:
+1. Open `package.json` in the editor
+2. Add `"postinstall": "prisma generate"` to the scripts section
+3. Update the build script to: `"build": "prisma generate && vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist"`
+
+Either approach will work - the build.sh method is easier since it doesn't require editing package.json.

@@ -1,0 +1,207 @@
+Construye/ajusta una app full-stack muy simple (backend + frontend) para gestionar citas de almacén con duración variable y control de simultaneidad en base a recursos por turno:
+
+Operarios por turno (número de personas activas en cada tramo horario).
+
+Carretillas por turno (número disponible en ese tramo).
+
+(Opcional) Muelles activos por turno (0–3).
+
+La validación de una cita debe comprobar, minuto a minuto, que la suma de cargas no excede los recursos del turno vigente.
+
+0) Reglas de negocio
+
+Cada cita: start, end (ISO-8601), duración variable en minutos.
+
+La cita incluye:
+
+work_minutes_needed = minutos de trabajo totales requeridos a lo largo de su duración.
+
+forklifts_needed = nº de carretillas simultáneas requeridas durante todo el rango.
+
+Campos opcionales: provider_name, goods_type, units, lines, delivery_notes_count, externalRef?.
+
+Cálculo minuto a minuto:
+
+Para cada cita i: rate_i = work_minutes_needed_i / duration_minutes_i (min/min).
+
+En cada minuto m:
+
+Trabajo: Σ rate_i(m) ≤ operarios_en_turno(m) (1 operario = 1 min/min).
+
+Carretillas: Σ forklifts_needed_i(m) ≤ carretillas_en_turno(m).
+
+(Opcional) Muelles: citas_solapadas(m) ≤ muelles_activos(m).
+
+Turnos semanales: la capacidad se define con turnos (rangos) por semana y se repite/edita semanalmente.
+
+UI en Europe/Madrid; BD en UTC (convertir en backend).
+
+1) Tech stack (mantener simple)
+
+Backend: Node 20 + Express, Prisma (MySQL 8), Zod, JWT.
+
+Frontend: React + Vite, Tailwind, shadcn/ui, FullCalendar (eventos con duración variable).
+
+Docs: OpenAPI/Swagger en /docs.
+
+Servir /web/dist desde el backend en producción.
+
+2) Modelo de datos (Prisma)
+
+providers: { id, name(único), notes? }
+
+capacity_shifts (turnos):
+
+{ id, startUtc, endUtc, workers (int≥0), forklifts (int≥0), docks (int 0–3, opcional) }
+
+Índices: (startUtc, endUtc); validar endUtc > startUtc.
+
+Estos turnos se crean/actualizan por semana desde la UI.
+
+appointments:
+
+{ id, providerId?, providerName, startUtc, endUtc, workMinutesNeeded(int≥0), forkliftsNeeded(int≥0), goodsType?, units?, lines?, deliveryNotesCount?, externalRef? (único opcional) }
+
+Índices: (startUtc), (endUtc), (providerName).
+
+users: { id, email(único), passwordHash, role: 'admin'|'planner'|'basic_readonly' }
+
+Seeds: un admin (admin@example.com / ChangeMe123!), 2–3 proveedores demo, y una semana con un turno L–V 08:00–16:00 (workers=3, forklifts=2, docks=3).
+
+Si ya implementaste capacity_windows, migra a capacity_shifts o soporta ambos pero usa turnos como fuente de verdad.
+
+3) Lógica de validación (backend)
+
+Aceptar datetimes ISO-8601 con TZ; convertir a UTC.
+
+duration_minutes = ceil((endUtc - startUtc) / 60s).
+
+Para validar creación/edición/movimiento:
+
+Construir el timeline con paso de 1 minuto entre startUtc y endUtc - 1min.
+
+Para cada minuto m, obtener el turno vigente (si hay varios solapados, usar el más específico: el de menor duración; si ninguno, usar defaults de .env).
+
+Calcular:
+
+work_used(m) = Σ rate_i.
+
+forklifts_used(m) = Σ forkliftsNeeded_i.
+
+docks_used(m) = nº de citas activas (si se usa).
+
+Comprobar contra workers, forklifts, docks del turno en m.
+
+Si falla en algún minuto, responder 409 con: minuto (UTC y Europe/Madrid), work_used/workers, forklifts_used/forklifts (y docks_used/docks si aplica).
+
+4) API (mínimo)
+
+Auth: POST /api/auth/login (JWT).
+
+Salud: GET /api/health.
+
+Providers: CRUD simple.
+
+Turnos (capacity_shifts):
+
+GET /api/capacity-shifts?from=&to=
+
+POST /api/capacity-shifts { start, end, workers, forklifts, docks? }
+
+PUT /api/capacity-shifts/:id
+
+DELETE /api/capacity-shifts/:id
+
+Appointments:
+
+GET /api/appointments?from=&to=&providerId=
+
+POST /api/appointments (valida y crea)
+
+PUT /api/appointments/:id (valida y edita, incluido mover)
+
+DELETE /api/appointments/:id
+
+Integración (pensando en n8n; token Bearer aparte):
+
+POST /api/integration/appointments/upsert (idempotente por externalRef)
+
+GET /api/integration/appointments/by-external-ref/:externalRef
+
+Documentar todo con OpenAPI/Swagger.
+
+5) Interfaz
+5.1 Calendario
+
+Vista día/semana con FullCalendar.
+
+Las tarjetas de cita muestran: proveedor, intervalo, Work (min totales), Forklifts, y campos opcionales (mercancía, unidades, líneas, albaranes).
+
+Drag & drop para mover (planner/admin).
+
+5.2 Panel lateral de capacidad en tiempo real
+
+Tres cards que muestran para el instante seleccionado:
+
+Mano de obra: Σ rate / workers (mostrar como “equivalente de operarios”; ej.: 2.5 / 3.0).
+
+Carretillas: Σ forklifts / forklifts.
+
+Muelles: solapes / docks (si se usa).
+
+Cada card incluye tooltip:
+
+Mano de obra: “Equivalente de operarios usados vs disponibles (1 operario = 1 min/min)”.
+
+5.3 Gestión semanal de turnos
+
+Botón junto a “New Appointment”: “Edit Weekly Shifts”.
+
+Modal/Página “Weekly Shifts”:
+
+Selector de semana (navegable).
+
+Tabla de turnos con columnas: Start, End, Workers, Forklifts, Docks (opcional).
+
+Acciones: Add Row, Duplicate day, Apply to whole week, Save y Delete.
+
+Al guardar, crear/actualizar capacity_shifts de esa semana.
+
+Los usuarios basic_readonly no ven este botón.
+
+5.4 Roles
+
+basic_readonly: solo ve calendario + cards de capacidad; sin crear/editar/mover ni editar turnos.
+
+planner: gestiona citas y turnos.
+
+admin: todo + usuarios.
+
+6) Configuración
+
+.env.example:
+
+DATABASE_URL=mysql://USER:PASSWORD@HOST:PORT/DBNAME
+JWT_SECRET=change_me
+TZ=Europe/Madrid
+
+DEFAULT_WORKERS=3
+DEFAULT_FORKLIFTS=2
+DEFAULT_DOCKS=3
+
+
+Si un minuto no está cubierto por ningún turno, usar estos defaults.
+
+7) Criterios de aceptación
+
+Puedo definir turnos semanales (ej.: L–V 08:00–16:00 con 3 operarios y 2 carretillas) desde Edit Weekly Shifts, y ver al instante su efecto en los indicadores.
+
+Al crear/mover una cita, si en algún minuto se supera workers o forklifts del turno vigente, obtengo 409 con el minuto y contadores exactos.
+
+Los cards muestran valores coherentes con el minuto/selección en el calendario, p. ej. Mano de obra: 2.5 / 3.0.
+
+El rol basic_readonly solo ve calendario + capacidad en tiempo real (sin botones de crear ni editar).
+
+TZ correcta: la UI muestra horas Europe/Madrid; la BD guarda UTC.
+
+Endpoints documentados en /docs.

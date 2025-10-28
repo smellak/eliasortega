@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(BASIC_READONLY)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  PLANNER
+  BASIC_READONLY
+}
+
+model Provider {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  notes        String?
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  appointments Appointment[]
+
+  @@map("providers")
+}
+
+model CapacityShift {
+  id        String   @id @default(cuid())
+  startUtc  DateTime @map("start_utc")
+  endUtc    DateTime @map("end_utc")
+  workers   Int      @default(0)
+  forklifts Int      @default(0)
+  docks     Int?     @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([startUtc, endUtc])
+  @@map("capacity_shifts")
+}
+
+model Appointment {
+  id                  String    @id @default(cuid())
+  providerId          String?   @map("provider_id")
+  provider            Provider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  providerName        String    @map("provider_name")
+  startUtc            DateTime  @map("start_utc")
+  endUtc              DateTime  @map("end_utc")
+  workMinutesNeeded   Int       @map("work_minutes_needed")
+  forkliftsNeeded     Int       @map("forklifts_needed")
+  goodsType           String?   @map("goods_type")
+  units               Int?
+  lines               Int?
+  deliveryNotesCount  Int?      @map("delivery_notes_count")
+  externalRef         String?   @unique @map("external_ref")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@index([startUtc])
+  @@index([endUtc])
+  @@index([providerName])
+  @@map("appointments")
+}

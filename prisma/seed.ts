@@ -7,10 +7,10 @@ async function main() {
   console.log("Starting seed...");
 
   // Create admin user
-  const adminPassword = await bcrypt.hash("ChangeMe123!", 10);
+  const adminPassword = await bcrypt.hash("admin123", 10);
   const admin = await prisma.user.upsert({
     where: { email: "admin@example.com" },
-    update: {},
+    update: { passwordHash: adminPassword },
     create: {
       email: "admin@example.com",
       passwordHash: adminPassword,
@@ -23,7 +23,7 @@ async function main() {
   const plannerPassword = await bcrypt.hash("planner123", 10);
   const planner = await prisma.user.upsert({
     where: { email: "planner@example.com" },
-    update: {},
+    update: { passwordHash: plannerPassword },
     create: {
       email: "planner@example.com",
       passwordHash: plannerPassword,
@@ -36,7 +36,7 @@ async function main() {
   const viewerPassword = await bcrypt.hash("viewer123", 10);
   const viewer = await prisma.user.upsert({
     where: { email: "viewer@example.com" },
-    update: {},
+    update: { passwordHash: viewerPassword },
     create: {
       email: "viewer@example.com",
       passwordHash: viewerPassword,
@@ -64,7 +64,7 @@ async function main() {
   // Create capacity shifts for one week (Monday to Friday, 08:00-16:00 Europe/Madrid)
   // Convert to UTC (Europe/Madrid is UTC+1 in winter, UTC+2 in summer)
   // Using a recent date in October 2025 (UTC+2)
-  const shifts = [];
+  const shifts: any[] = [];
   const baseDate = new Date("2025-10-27"); // Monday
   
   for (let i = 0; i < 5; i++) {

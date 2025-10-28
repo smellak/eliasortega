@@ -2,7 +2,15 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { UserRole } from "../../shared/types";
 
-const JWT_SECRET = process.env.JWT_SECRET || "change_me_to_a_secure_random_string";
+// Require JWT_SECRET in environment - fail if not provided
+if (!process.env.JWT_SECRET) {
+  console.error("FATAL: JWT_SECRET environment variable is required but not set");
+  console.error("Please set a strong random secret in your .env file:");
+  console.error("JWT_SECRET=your-secure-random-string-here");
+  process.exit(1);
+}
+
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export interface AuthRequest extends Request {
   user?: {

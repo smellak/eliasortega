@@ -17,10 +17,14 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    console.log("Login attempt:", email);
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-    onLogin(email, password);
-    setIsLoading(false);
+    try {
+      await onLogin(email, password);
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Login failed. Please check your credentials.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

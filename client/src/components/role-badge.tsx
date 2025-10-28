@@ -1,15 +1,14 @@
 import { Badge } from "@/components/ui/badge";
-
-type Role = "admin" | "planner" | "basic_readonly";
+import type { UserRole } from "@shared/types";
 
 interface RoleBadgeProps {
-  role: Role;
+  role: UserRole;
 }
 
-const roleConfig: Record<Role, { label: string; variant: "default" | "secondary" | "outline" }> = {
-  admin: { label: "ADMIN", variant: "default" },
-  planner: { label: "PLANNER", variant: "secondary" },
-  basic_readonly: { label: "VIEW ONLY", variant: "outline" },
+const roleConfig: Record<UserRole, { label: string; variant: "default" | "secondary" | "outline" }> = {
+  ADMIN: { label: "ADMIN", variant: "default" },
+  PLANNER: { label: "PLANNER", variant: "secondary" },
+  BASIC_READONLY: { label: "VIEW ONLY", variant: "outline" },
 };
 
 export function RoleBadge({ role }: RoleBadgeProps) {

@@ -40,19 +40,24 @@ export interface Provider {
 }
 
 // Capacity Shift types
-export const createCapacityShiftSchema = z.object({
+const capacityShiftBaseSchema = z.object({
   start: z.string().datetime(),
   end: z.string().datetime(),
   workers: z.number().int().min(0),
   forklifts: z.number().int().min(0),
   docks: z.number().int().min(0).max(3).optional(),
-}).refine(data => new Date(data.end) > new Date(data.start), {
-  message: "End time must be after start time",
-  path: ["end"],
 });
+
+export const createCapacityShiftSchema = capacityShiftBaseSchema.refine(
+  data => new Date(data.end) > new Date(data.start), 
+  {
+    message: "End time must be after start time",
+    path: ["end"],
+  }
+);
 export type CreateCapacityShiftInput = z.infer<typeof createCapacityShiftSchema>;
 
-export const updateCapacityShiftSchema = createCapacityShiftSchema.partial();
+export const updateCapacityShiftSchema = capacityShiftBaseSchema.partial();
 export type UpdateCapacityShiftInput = z.infer<typeof updateCapacityShiftSchema>;
 
 export interface CapacityShift {
@@ -67,7 +72,7 @@ export interface CapacityShift {
 }
 
 // Appointment types
-export const createAppointmentSchema = z.object({
+const appointmentBaseSchema = z.object({
   providerId: z.string().optional(),
   providerName: z.string().min(1),
   start: z.string().datetime(),
@@ -79,13 +84,18 @@ export const createAppointmentSchema = z.object({
   lines: z.number().int().min(0).optional(),
   deliveryNotesCount: z.number().int().min(0).optional(),
   externalRef: z.string().optional(),
-}).refine(data => new Date(data.end) > new Date(data.start), {
-  message: "End time must be after start time",
-  path: ["end"],
 });
+
+export const createAppointmentSchema = appointmentBaseSchema.refine(
+  data => new Date(data.end) > new Date(data.start), 
+  {
+    message: "End time must be after start time",
+    path: ["end"],
+  }
+);
 export type CreateAppointmentInput = z.infer<typeof createAppointmentSchema>;
 
-export const updateAppointmentSchema = createAppointmentSchema.partial();
+export const updateAppointmentSchema = appointmentBaseSchema.partial();
 export type UpdateAppointmentInput = z.infer<typeof updateAppointmentSchema>;
 
 export interface Appointment {
@@ -119,7 +129,13 @@ export interface CapacityConflictError {
 }
 
 // Integration types
-export const upsertAppointmentSchema = createAppointmentSchema.extend({
+export const upsertAppointmentSchema = appointmentBaseSchema.extend({
   externalRef: z.string().min(1), // Required for upsert
-});
+}).refine(
+  data => new Date(data.end) > new Date(data.start), 
+  {
+    message: "End time must be after start time",
+    path: ["end"],
+  }
+);
 export type UpsertAppointmentInput = z.infer<typeof upsertAppointmentSchema>;

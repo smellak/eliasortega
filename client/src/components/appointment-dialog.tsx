@@ -35,10 +35,10 @@ export function AppointmentDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     providerId: appointment?.providerName || "",
-    startDate: appointment?.startUtc.split("T")[0] || "",
-    startTime: appointment?.startUtc.split("T")[1]?.substring(0, 5) || "",
-    endDate: appointment?.endUtc.split("T")[0] || "",
-    endTime: appointment?.endUtc.split("T")[1]?.substring(0, 5) || "",
+    startDate: appointment?.startUtc ? appointment.startUtc.split("T")[0] : "",
+    startTime: appointment?.startUtc ? appointment.startUtc.split("T")[1]?.substring(0, 5) : "",
+    endDate: appointment?.endUtc ? appointment.endUtc.split("T")[0] : "",
+    endTime: appointment?.endUtc ? appointment.endUtc.split("T")[1]?.substring(0, 5) : "",
     workMinutesNeeded: appointment?.workMinutesNeeded?.toString() || "60",
     forkliftsNeeded: appointment?.forkliftsNeeded?.toString() || "1",
     goodsType: appointment?.goodsType || "",

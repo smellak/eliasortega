@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -14,43 +14,61 @@ import CapacityPage from "@/pages/capacity-page";
 import ProvidersPage from "@/pages/providers-page";
 import UsersPage from "@/pages/users-page";
 import NotFound from "@/pages/not-found";
+import { authApi, getAuthToken } from "@/lib/api";
+import type { UserResponse } from "@shared/types";
 
-type UserRole = "admin" | "planner" | "basic_readonly";
+type UserRole = "ADMIN" | "PLANNER" | "BASIC_READONLY";
 
-interface User {
-  email: string;
-  role: UserRole;
-}
-
-function Router({ user }: { user: User }) {
+function Router({ user }: { user: UserResponse }) {
   return (
     <Switch>
       <Route path="/" component={() => <CalendarPage userRole={user.role} />} />
       <Route path="/appointments" component={() => <AppointmentsPage userRole={user.role} />} />
       <Route path="/capacity" component={() => <CapacityPage userRole={user.role} />} />
       <Route path="/providers" component={() => <ProvidersPage userRole={user.role} />} />
-      {user.role === "admin" && <Route path="/users" component={UsersPage} />}
+      {user.role === "ADMIN" && <Route path="/users" component={UsersPage} />}
       <Route component={NotFound} />
     </Switch>
   );
 }
 
 function App() {
-  // TODO: remove mock authentication
-  const [user, setUser] = useState<User | null>({ email: "planner@example.com", role: "planner" });
+  const [user, setUser] = useState<UserResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleLogin = (email: string, password: string) => {
-    console.log("Login:", email, password);
-    // TODO: Call authentication API
-    // For demo, set mock user based on email
-    if (email.includes("admin")) {
-      setUser({ email, role: "admin" });
-    } else if (email.includes("planner")) {
-      setUser({ email, role: "planner" });
-    } else {
-      setUser({ email, role: "basic_readonly" });
+  useEffect(() => {
+    // Check for stored user on mount
+    const storedUser = localStorage.getItem("currentUser");
+    const token = getAuthToken();
+    
+    if (storedUser && token) {
+      setUser(JSON.parse(storedUser));
+    }
+    setIsLoading(false);
+  }, []);
+
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      const response = await authApi.login({ email, password });
+      setUser(response.user);
+    } catch (error) {
+      console.error("Login failed:", error);
+      throw error;
     }
   };
+
+  const handleLogout = () => {
+    authApi.logout();
+    setUser(null);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -72,7 +90,7 @@ function App() {
       <TooltipProvider>
         <SidebarProvider style={sidebarStyle as React.CSSProperties}>
           <div className="flex h-screen w-full">
-            <AppSidebar userRole={user.role} userEmail={user.email} />
+            <AppSidebar userRole={user.role} userEmail={user.email} onLogout={handleLogout} />
             <div className="flex flex-col flex-1 overflow-hidden">
               <header className="flex items-center justify-between p-4 border-b border-border bg-background">
                 <SidebarTrigger data-testid="button-sidebar-toggle" />

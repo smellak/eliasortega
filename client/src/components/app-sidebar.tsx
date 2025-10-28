@@ -13,13 +13,15 @@ import {
 } from "@/components/ui/sidebar";
 import { RoleBadge } from "./role-badge";
 import { useLocation } from "wouter";
+import type { UserRole } from "@shared/types";
 
 interface AppSidebarProps {
-  userRole: "admin" | "planner" | "basic_readonly";
+  userRole: UserRole;
   userEmail: string;
+  onLogout?: () => void;
 }
 
-export function AppSidebar({ userRole, userEmail }: AppSidebarProps) {
+export function AppSidebar({ userRole, userEmail, onLogout }: AppSidebarProps) {
   const [location] = useLocation();
 
   const mainItems = [
@@ -28,9 +30,9 @@ export function AppSidebar({ userRole, userEmail }: AppSidebarProps) {
   ];
 
   const managementItems = [
-    { title: "Capacity", url: "/capacity", icon: Gauge, roles: ["admin", "planner"] },
-    { title: "Providers", url: "/providers", icon: Package, roles: ["admin", "planner"] },
-    { title: "Users", url: "/users", icon: Users, roles: ["admin"] },
+    { title: "Capacity", url: "/capacity", icon: Gauge, roles: ["ADMIN", "PLANNER"] },
+    { title: "Providers", url: "/providers", icon: Package, roles: ["ADMIN", "PLANNER"] },
+    { title: "Users", url: "/users", icon: Users, roles: ["ADMIN"] },
   ];
 
   const filteredManagementItems = managementItems.filter(
@@ -98,7 +100,7 @@ export function AppSidebar({ userRole, userEmail }: AppSidebarProps) {
           </div>
           <RoleBadge role={userRole} />
         </div>
-        <SidebarMenuButton onClick={() => console.log('Logout clicked')} data-testid="button-logout">
+        <SidebarMenuButton onClick={onLogout} data-testid="button-logout">
           <LogOut className="h-4 w-4" />
           <span>Logout</span>
         </SidebarMenuButton>

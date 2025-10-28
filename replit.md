@@ -182,3 +182,29 @@ Preferred communication style: Simple, everyday language.
 - `DEFAULT_FORKLIFTS`: Default forklift capacity (optional, defaults to 2)
 - `DEFAULT_DOCKS`: Default dock capacity (optional, defaults to 3)
 - `NODE_ENV`: Environment mode (development/production)
+
+## Deployment Configuration
+
+### Prisma Binary Targets (Fixed)
+The Prisma schema has been configured with multiple binary targets to support different deployment environments:
+```prisma
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
+}
+```
+
+### Required Deployment Scripts
+To ensure Prisma Client is properly generated during deployment, you need to manually configure:
+
+1. **Add to package.json scripts** (requires manual edit via Replit UI):
+   ```json
+   "postinstall": "prisma generate"
+   ```
+
+2. **Update build script** in package.json:
+   ```json
+   "build": "prisma generate && vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist"
+   ```
+
+**Note**: The Prisma Client has been regenerated with the correct binaries. If deployment still fails, manually run `npx prisma generate` before deploying.

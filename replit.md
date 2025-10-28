@@ -183,6 +183,33 @@ Preferred communication style: Simple, everyday language.
 - `DEFAULT_DOCKS`: Default dock capacity (optional, defaults to 3)
 - `NODE_ENV`: Environment mode (development/production)
 
+## Production Database Setup
+
+**IMPORTANTE**: La aplicación desplegada usa una base de datos de PRODUCCIÓN separada que NO tiene usuarios por defecto.
+
+### Crear usuarios en producción:
+
+Hay dos formas de hacerlo:
+
+**Opción 1: Desde Replit Database Tool (Más fácil)**
+1. Ve a "Database" en el panel izquierdo de Replit
+2. Selecciona la pestaña "Production"
+3. Ve a "SQL Runner"
+4. Ejecuta el archivo `seed-production.sql`
+
+**Opción 2: Desde Shell (Más seguro)**
+1. Ve a la pestaña "Secrets" en Replit
+2. Encuentra `DATABASE_URL` y cópiala
+3. Abre el Shell de Replit
+4. Ejecuta temporalmente: `export DATABASE_URL="[pega-la-url-de-produccion]"`
+5. Ejecuta: `node seed-production.js`
+6. Los usuarios se crearán con las contraseñas correctas
+
+**Credenciales después del seed:**
+- Admin: `admin@example.com` / `admin123`
+- Planner: `planner@example.com` / `planner123`
+- Viewer: `viewer@example.com` / `viewer123`
+
 ## Deployment Configuration
 
 ### ✅ All Prisma Deployment Fixes Applied

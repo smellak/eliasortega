@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./swagger";
+import routes from "./routes";
 
 const app = express();
 
@@ -9,6 +11,7 @@ declare module 'http' {
     rawBody: unknown
   }
 }
+
 app.use(express.json({
   verify: (req, _res, buf) => {
     req.rawBody = buf;
@@ -47,7 +50,14 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  const server = await registerRoutes(app);
+  // API routes
+  app.use(routes);
+
+  // Swagger documentation
+  app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: "Warehouse Appointments API Docs"
+  }));
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -60,10 +70,12 @@ app.use((req, res, next) => {
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
+  let server;
   if (app.get("env") === "development") {
-    await setupVite(app, server);
+    server = await setupVite(app);
   } else {
     serveStatic(app);
+    server = app;
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
@@ -71,11 +83,12 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
+  (server as any).listen({
     port,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`Server running on port ${port}`);
+    log(`API documentation available at http://localhost:${port}/docs`);
   });
 })();

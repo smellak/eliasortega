@@ -1,0 +1,290 @@
+Quiero una app full-stack muy simple (backend + frontend) para gestionar citas de almacén con duración variable (en minutos). La simultaneidad debe validarse en base a:
+
+minutos de trabajo disponibles por minuto (capacidad de “trabajo”);
+
+carretas disponibles (capacidad de “forklifts”) simultáneas.
+
+No usar LLM ni Google Calendar.
+
+0) Reglas de negocio (claras y simples)
+
+Cada cita tiene:
+
+start (ISO-8601), end (ISO-8601) → duración variable en minutos (end > start).
+
+work_minutes_needed → minutos de trabajo totales requeridos por esa cita en todo su rango (persona-minutos).
+
+Distribución: considerar consumo uniforme a lo largo de la cita.
+
+forklifts_needed → nº de carretas simultáneas necesarias durante todo el rango de la cita.
+
+Otros campos: provider_name, goods_type, units, lines, delivery_notes_count (todos opcionales salvo proveedor y horas).
+
+Capacidad del almacén se define por ventanas (rangos de tiempo):
+
+workers_available (entero ≥0): equivale a minutos de trabajo disponibles por minuto (p. ej., 3 operarios ⇒ 3 min por minuto).
+
+forklifts_available (entero ≥0).
+
+(Opcional) docks_active (0–3). Si está presente, también se valida nº de citas solapadas ≤ docks_active.
+
+Validación de admisión al crear/mover/editar una cita:
+
+Se discretiza el rango en pasos de 1 minuto (simple y suficiente para nuestras escalas).
+
+Para cada minuto m del intervalo de la cita:
+
+Trabajo:
+Calcular la tasa por minuto de cada cita activa: rate_i = work_minutes_needed_i / duration_minutes_i.
+La suma de tasas en m (Σ rate_i) debe ser ≤ workers_available(m).
+
+Carretas:
+La suma de forklifts_needed de citas activas en m (Σ forklifts_i) debe ser ≤ forklifts_available(m).
+
+(Opcional) Muelles: nº de citas activas en m ≤ docks_active(m).
+
+Si alguna condición falla en cualquier minuto, rechazar con error indicando el primer minuto y los contadores (usado/disponible).
+
+Si una ventana de capacidad no cubre parte del rango, usar valores por defecto configurables:
+
+workers_available_default = 3
+
+forklifts_available_default = 2
+
+docks_active_default = 3
+(Estos defaults deben poder cambiarse en .env o en un panel de ajustes simple).
+
+Zonas horarias: UI en Europe/Madrid, BD en UTC (convertir en backend).
+
+Roles:
+
+admin: todo (citas, capacidad, usuarios).
+
+planner: crear/editar/eliminar/mover citas; editar capacidad.
+
+basic_readonly: solo ver calendario y capacidad en tiempo real (nunca edita).
+
+1) Tech stack y estructura
+
+Backend: Node.js 20, Express, Prisma (MySQL 8), Zod (validación), JWT (auth simple).
+
+Frontend: React + Vite, Tailwind, shadcn/ui, FullCalendar (vista semanal/diaria con eventos de duración variable).
+
+Docs: OpenAPI/Swagger en /docs.
+
+Estructura:
+
+/server (Express, Prisma, tests mínimos)
+
+/web (React + Vite + Tailwind + shadcn/ui)
+
+/shared (tipos Zod compartidos)
+
+.env.example, README.md
+
+Servir /web/dist desde el backend en producción (un solo deploy en Replit).
+
+2) Modelo de datos (Prisma + migraciones + seed)
+
+providers
+
+id, name (único), notes?
+
+capacity_windows (capacidad por rango variable)
+
+id
+
+startUtc (datetime), endUtc (datetime)
+
+workersAvailable (int ≥0) // minutos de trabajo por minuto (nº de operarios)
+
+forkliftsAvailable (int ≥0)
+
+docksActive (int 0–3, opcional)
+
+Índices: (startUtc, endUtc); validar endUtc > startUtc.
+
+appointments
+
+id
+
+providerId?, providerName (requerido si no hay providerId)
+
+startUtc (datetime), endUtc (datetime) // duración variable
+
+workMinutesNeeded (int ≥0; default 0 si no llega)
+
+forkliftsNeeded (int ≥0; default 0)
+
+goodsType? (string), units? (int), lines? (int), deliveryNotesCount? (int)
+
+externalRef? (string, único opcional, para idempotencia)
+
+Índices: (startUtc), (endUtc), (providerName)
+
+users
+
+id, email (único), passwordHash, role (admin|planner|basic_readonly)
+
+Seeds:
+
+Usuario admin (admin@example.com / ChangeMe123!)
+
+2‐3 proveedores demo
+
+1 ventana de capacidad “hoy 08:00–20:00” con workersAvailable=3, forkliftsAvailable=2, docksActive=3.
+
+3) Lógica de validación (backend)
+
+Conversión TZ: aceptar ISO-8601 con TZ; convertir a UTC.
+
+Normalización: duration_minutes = max(1, round((endUtc - startUtc)/60s)).
+
+Tasa por minuto de la cita: rate = workMinutesNeeded / duration_minutes (float).
+
+Construir timeline por minuto entre startUtc y endUtc-1min:
+
+Para cada minuto m, obtener capacidad efectiva:
+
+Buscar capacity_windows que cubran m (si varias, tomar la de mayor prioridad = la más específica, i.e., menor duración; si no implementable, tomar la que empieza más reciente antes de m).
+
+Si ninguna cubre, usar defaults.
+
+Calcular:
+
+work_used(m) = Σ rate_i de citas activas en m (incluyendo la nueva si es creación/movimiento).
+
+forklifts_used(m) = Σ forklifts_i de citas activas en m.
+
+docks_used(m) = nº de citas activas en m (si docks se usa).
+
+Verificar:
+
+work_used(m) ≤ workers_available(m)
+
+forklifts_used(m) ≤ forklifts_available(m)
+
+(Opcional) docks_used(m) ≤ docks_active(m)
+
+Si falla, devolver 409 con detalle: minuto exacto (UTC e Europe/Madrid), contadores usado/disponible y cuál regla falló.
+
+4) API (todas bajo /api)
+
+Seguridad:
+
+JWT para UI.
+
+Token de integración (Bearer) para rutas /api/integration/* (pensando en n8n más adelante).
+
+Endpoints mínimos:
+
+GET /api/health → { status, timeUtc }
+
+Auth: POST /api/auth/login (devuelve JWT)
+
+Providers: CRUD simple
+
+Capacity windows:
+
+GET /api/capacity-windows?from=&to=
+
+POST /api/capacity-windows (crear)
+
+PUT /api/capacity-windows/:id
+
+DELETE /api/capacity-windows/:id
+
+Appointments:
+
+GET /api/appointments?from=&to=&providerId=
+
+POST /api/appointments → crear cita (valida capacidad minuto a minuto)
+
+PUT /api/appointments/:id → editar (revalida)
+
+DELETE /api/appointments/:id → eliminar
+
+Integración (opcional, para n8n):
+
+POST /api/integration/appointments/upsert (body con externalRef; crear/actualizar idempotente con validación)
+
+GET /api/integration/appointments/by-external-ref/:externalRef
+
+Documentar con OpenAPI (Zod → Swagger) y exponer /docs.
+
+5) Interfaz (React + Tailwind + shadcn/ui + FullCalendar)
+
+Roles:
+
+basic_readonly: solo vista calendario (día/semana) y panel de capacidad en tiempo real; sin botones de crear/editar/eliminar.
+
+planner: lo mismo + puede crear/editar/eliminar/mover citas y editar capacidad.
+
+admin: todo + gestión de usuarios.
+
+Calendario:
+
+Vista diaria y semanal con eventos de duración variable.
+
+Click y drag para crear/mover (solo planner/admin).
+
+Tarjeta de cita muestra: proveedor, rango hora, work_minutes_needed, forklifts_needed, goods_type, units/lines/delivery_notes_count.
+
+Capacidad en tiempo real (UI):
+
+Al seleccionar un intervalo o al posar el cursor sobre un evento, mostrar badges como:
+
+Trabajo: Σrate (min/min) / workers_available
+(ej.: 2.5 / 3 min/min)
+
+Carretas: Σforklifts / forklifts_available
+(ej.: 2 / 3)
+
+(Opcional) Muelles: solapes / docks_active
+
+Para la vista general, en la parte superior del calendario (o columna lateral), un widget por franja de 15 min que agregue los mismos contadores (opcional).
+Si es más simple, basta con mostrar los contadores “en el minuto actual” cuando el usuario selecciona una cita o hace hover.
+
+Pantalla “Capacidad”:
+
+Tabla con filas = ventanas (start, end) y columnas: workers_available, forklifts_available, docks_active (opcional).
+
+Botón “Duplicar hoy → resto de la semana”.
+
+UX/errores:
+
+Si al guardar no cabe, mostrar modal con mensaje claro:
+“No hay capacidad a las 10:37 — Trabajo 3.2/3; Carretas 3/2. Ajusta duración o hora, o edita la capacidad.”
+
+6) Configuración / Operación
+
+.env.example:
+
+DATABASE_URL=mysql://USER:PASSWORD@HOST:PORT/DBNAME
+JWT_SECRET=change_me
+TZ=Europe/Madrid
+
+DEFAULT_WORKERS_AVAILABLE=3
+DEFAULT_FORKLIFTS_AVAILABLE=2
+DEFAULT_DOCKS_ACTIVE=3
+
+
+Testing mínimo: casos de solape con tasas (ej.: dos citas 60 min/60 y 30 min/60 → rates 1.0 y 0.5; con 1 worker, la segunda debe fallar).
+
+Healthcheck: /api/health.
+
+Performance: la validación por minuto se hace sobre el rango de la cita (normalmente corto); es suficiente para producción en cargas normales.
+
+7) Criterios de aceptación
+
+Puedo crear una cita con duración variable (p. ej., 10:15–11:45) y valores de work_minutes_needed y forklifts_needed; si cabe minuto a minuto, se guarda; si no, 409 con detalle del primer minuto conflictivo.
+
+Al mover una cita, se revalida con las mismas reglas.
+
+Capacidad editable por ventanas; los cambios impactan inmediatamente la validación y los contadores visuales.
+
+El rol basic_readonly solo ve el calendario y los contadores de capacidad (sin acciones de edición).
+
+TZ correcta: UI en Europe/Madrid, BD en UTC.
+
+Documentación OpenAPI en /docs.

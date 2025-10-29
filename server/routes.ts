@@ -269,7 +269,9 @@ router.get("/api/appointments", authenticateToken, async (req: AuthRequest, res)
 
 router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
   try {
+    console.log("[DEBUG] Received appointment request body:", JSON.stringify(req.body, null, 2));
     const data = createAppointmentSchema.parse(req.body);
+    console.log("[DEBUG] Parsed successfully:", JSON.stringify(data, null, 2));
     
     // Validate capacity
     const conflict = await capacityValidator.validateAppointment({
@@ -302,6 +304,7 @@ router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNE
     res.status(201).json(appointment);
   } catch (error: any) {
     if (error.name === "ZodError") {
+      console.log("[DEBUG] Zod validation error:", JSON.stringify(error.errors, null, 2));
       return res.status(400).json({ error: "Invalid input", details: error.errors });
     }
     if (error.code === "P2002") {

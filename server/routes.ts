@@ -173,7 +173,9 @@ router.get("/api/capacity-shifts", authenticateToken, async (req: AuthRequest, r
 
 router.post("/api/capacity-shifts", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
   try {
+    console.log("[DEBUG] Received capacity-shift request body:", JSON.stringify(req.body, null, 2));
     const data = createCapacityShiftSchema.parse(req.body);
+    console.log("[DEBUG] Parsed successfully:", JSON.stringify(data, null, 2));
     
     const shift = await prisma.capacityShift.create({
       data: {
@@ -188,6 +190,7 @@ router.post("/api/capacity-shifts", authenticateToken, requireRole("ADMIN", "PLA
     res.status(201).json(shift);
   } catch (error: any) {
     if (error.name === "ZodError") {
+      console.log("[DEBUG] Zod validation error:", JSON.stringify(error.errors, null, 2));
       return res.status(400).json({ error: "Invalid input", details: error.errors });
     }
     console.error("Create capacity shift error:", error);

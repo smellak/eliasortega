@@ -38,14 +38,15 @@ export function CapacityWindowsTable({
   });
 
   const handleSave = () => {
-    // Format datetime-local values (YYYY-MM-DDTHH:mm) to ISO string with seconds (YYYY-MM-DDTHH:mm:ss)
-    // The backend expects ISO datetime strings which datetime-local doesn't provide timezone info
-    const startISO = formData.startUtc.includes(':00:00') ? formData.startUtc : `${formData.startUtc}:00`;
-    const endISO = formData.endUtc.includes(':00:00') ? formData.endUtc : `${formData.endUtc}:00`;
+    // Convert datetime-local values to proper ISO strings with timezone
+    // datetime-local gives us "YYYY-MM-DDTHH:mm" format
+    // We need to convert to ISO 8601 with timezone (e.g., "2025-10-29T09:00:00.000Z")
+    const startDate = new Date(`${formData.startUtc}:00`);
+    const endDate = new Date(`${formData.endUtc}:00`);
     
     const payload = {
-      start: startISO,
-      end: endISO,
+      start: startDate.toISOString(),
+      end: endDate.toISOString(),
       workers: formData.workers,
       forklifts: formData.forklifts,
       docks: formData.docks,
@@ -62,9 +63,13 @@ export function CapacityWindowsTable({
 
   const handleEdit = (window: CapacityShift) => {
     setEditingId(window.id);
+    // Convert ISO datetime strings back to datetime-local format (YYYY-MM-DDTHH:mm)
+    const startLocal = new Date(window.startUtc).toISOString().slice(0, 16);
+    const endLocal = new Date(window.endUtc).toISOString().slice(0, 16);
+    
     setFormData({
-      startUtc: window.startUtc,
-      endUtc: window.endUtc,
+      startUtc: startLocal,
+      endUtc: endLocal,
       workers: window.workers,
       forklifts: window.forklifts,
       docks: window.docks || 3,
@@ -152,8 +157,8 @@ export function CapacityWindowsTable({
                     type="number"
                     min="0"
                     max="3"
-                    value={formData.docks || 0}
-                    onChange={(e) => setFormData({ ...formData, docks: parseInt(e.target.value) })}
+                    value={formData.docks}
+                    onChange={(e) => setFormData({ ...formData, docks: parseInt(e.target.value, 10) || 0 })}
                     data-testid="input-new-docks"
                   />
                 </TableCell>
@@ -209,8 +214,8 @@ export function CapacityWindowsTable({
                         type="number"
                         min="0"
                         max="3"
-                        value={formData.docks || 0}
-                        onChange={(e) => setFormData({ ...formData, docks: parseInt(e.target.value) })}
+                        value={formData.docks}
+                        onChange={(e) => setFormData({ ...formData, docks: parseInt(e.target.value, 10) || 0 })}
                       />
                     </TableCell>
                     <TableCell className="text-right">

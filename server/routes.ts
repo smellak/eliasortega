@@ -423,7 +423,9 @@ router.get("/api/capacity/at-minute", authenticateToken, async (req: AuthRequest
 // Integration endpoints (for n8n, etc.)
 router.post("/api/integration/appointments/upsert", authenticateToken, async (req: AuthRequest, res) => {
   try {
+    console.log("[UPSERT] Received request body:", JSON.stringify(req.body, null, 2));
     const data = upsertAppointmentSchema.parse(req.body);
+    console.log("[UPSERT] Parsed successfully:", JSON.stringify(data, null, 2));
     
     // Check if appointment exists by externalRef
     const existing = await prisma.appointment.findUnique({
@@ -494,6 +496,7 @@ router.post("/api/integration/appointments/upsert", authenticateToken, async (re
     res.status(201).json({ action: "created", appointment });
   } catch (error: any) {
     if (error.name === "ZodError") {
+      console.log("[UPSERT] Zod validation error:", JSON.stringify(error.errors, null, 2));
       return res.status(400).json({ error: "Invalid input", details: error.errors });
     }
     console.error("Upsert appointment error:", error);

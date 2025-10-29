@@ -77,12 +77,12 @@ const appointmentBaseSchema = z.object({
   providerName: z.string().min(1),
   start: z.string().datetime(),
   end: z.string().datetime(),
-  workMinutesNeeded: z.number().int().min(0),
-  forkliftsNeeded: z.number().int().min(0),
+  workMinutesNeeded: z.coerce.number().int().min(0),
+  forkliftsNeeded: z.coerce.number().int().min(0),
   goodsType: z.string().optional(),
-  units: z.number().int().min(0).optional(),
-  lines: z.number().int().min(0).optional(),
-  deliveryNotesCount: z.number().int().min(0).optional(),
+  units: z.coerce.number().int().min(0).optional(),
+  lines: z.coerce.number().int().min(0).optional(),
+  deliveryNotesCount: z.coerce.number().int().min(0).optional(),
   externalRef: z.string().optional(),
 });
 

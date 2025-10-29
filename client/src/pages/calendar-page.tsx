@@ -81,7 +81,8 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
     mutationFn: (input: CreateAppointmentInput) => appointmentsApi.create(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/capacity/at-minute"] });
+      // Invalidate all capacity queries (exact: false matches any query starting with this key)
+      queryClient.invalidateQueries({ queryKey: ["/api/capacity/at-minute"], exact: false });
       setAppointmentDialogOpen(false);
       setSelectedEvent(null);
       toast({
@@ -119,7 +120,8 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
       appointmentsApi.update(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/capacity/at-minute"] });
+      // Invalidate all capacity queries (exact: false matches any query starting with this key)
+      queryClient.invalidateQueries({ queryKey: ["/api/capacity/at-minute"], exact: false });
       setAppointmentDialogOpen(false);
       setSelectedEvent(null);
       toast({

@@ -92,9 +92,13 @@ export function AppointmentDialog({
 
     console.log("Form data before save:", formData);
 
-    // Combine date and time into ISO strings for Europe/Madrid timezone
-    const startDateTime = `${formData.startDate}T${formData.startTime}:00`;
-    const endDateTime = `${formData.endDate}T${formData.endTime}:00`;
+    // Combine date and time into Date objects, then convert to ISO string with timezone
+    // This creates proper ISO 8601 format that Zod's .datetime() expects
+    const startDate = new Date(`${formData.startDate}T${formData.startTime}:00`);
+    const endDate = new Date(`${formData.endDate}T${formData.endTime}:00`);
+    
+    const startISO = startDate.toISOString();
+    const endISO = endDate.toISOString();
 
     // Find the provider name from the ID
     const selectedProvider = providers.find(p => p.id === formData.providerId);
@@ -104,8 +108,8 @@ export function AppointmentDialog({
     const payload: any = {
       providerId: formData.providerId,
       providerName: providerName,  // API requires this field
-      start: startDateTime,
-      end: endDateTime,
+      start: startISO,
+      end: endISO,
       workMinutesNeeded: parseInt(formData.workMinutesNeeded, 10) || 0,
       forkliftsNeeded: parseInt(formData.forkliftsNeeded, 10) || 0,
     };

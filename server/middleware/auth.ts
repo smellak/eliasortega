@@ -24,7 +24,16 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
+  // Debug logging for production troubleshooting
+  console.log("[AUTH] Headers received:", {
+    authorization: authHeader ? `${authHeader.substring(0, 20)}...` : "MISSING",
+    hasToken: !!token,
+    path: req.path,
+    method: req.method,
+  });
+
   if (!token) {
+    console.log("[AUTH] No token found in request");
     return res.status(401).json({ error: "Authentication required" });
   }
 
@@ -35,8 +44,14 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
       role: UserRole;
     };
     req.user = decoded;
+    console.log("[AUTH] Token verified successfully for user:", decoded.email);
     next();
-  } catch (error) {
+  } catch (error: any) {
+    console.log("[AUTH] Token verification failed:", {
+      name: error.name,
+      message: error.message,
+      tokenPreview: token.substring(0, 20) + "...",
+    });
     return res.status(403).json({ error: "Invalid or expired token" });
   }
 }

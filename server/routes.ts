@@ -48,6 +48,14 @@ router.post("/api/auth/login", async (req, res) => {
       role: user.role,
     });
 
+    // Debug logging for production troubleshooting
+    console.log("[LOGIN] Token generated successfully for user:", {
+      email: user.email,
+      role: user.role,
+      tokenPreview: token.substring(0, 20) + "...",
+      tokenLength: token.length,
+    });
+
     const response: AuthResponse = {
       token,
       user: {

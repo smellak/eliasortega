@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { CalendarView } from "@/components/calendar-view";
 import { CapacityIndicators } from "@/components/capacity-indicators";
@@ -11,6 +11,16 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Appointment, Provider, CreateAppointmentInput, UpdateAppointmentInput, CapacityConflictError, UserRole } from "@shared/types";
 
+interface CapacityAtMinute {
+  minute: string;
+  workUsed: number;
+  workAvailable: number;
+  forkliftsUsed: number;
+  forkliftsAvailable: number;
+  docksUsed: number;
+  docksAvailable: number;
+}
+
 interface CalendarPageProps {
   userRole: UserRole;
 }
@@ -21,8 +31,18 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
   const [conflictErrorOpen, setConflictErrorOpen] = useState(false);
   const [conflictError, setConflictError] = useState<CapacityConflictError | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [currentMinute, setCurrentMinute] = useState<string>(new Date().toISOString());
 
   const isReadOnly = userRole === "BASIC_READONLY";
+
+  // Update current minute every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentMinute(new Date().toISOString());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Fetch appointments
   const { data: appointments = [] } = useQuery<Appointment[]>({
@@ -36,11 +56,32 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
     queryFn: () => providersApi.list(),
   });
 
+  // Fetch real-time capacity at current minute
+  const { data: capacityData } = useQuery<CapacityAtMinute>({
+    queryKey: ["/api/capacity/at-minute", currentMinute],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/capacity/at-minute?minute=${encodeURIComponent(currentMinute)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch capacity");
+      }
+      return response.json();
+    },
+    refetchInterval: 60000, // Refetch every minute
+  });
+
   // Create appointment mutation
   const createMutation = useMutation({
     mutationFn: (input: CreateAppointmentInput) => appointmentsApi.create(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/capacity/at-minute"] });
       setAppointmentDialogOpen(false);
       setSelectedEvent(null);
       toast({
@@ -78,6 +119,7 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
       appointmentsApi.update(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/capacity/at-minute"] });
       setAppointmentDialogOpen(false);
       setSelectedEvent(null);
       toast({
@@ -165,14 +207,14 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
     }
   };
 
-  // Calculate real-time capacity indicators (simplified - would need API call for real data)
+  // Real-time capacity indicators from API
   const capacityIndicators = {
-    workUsed: 0,
-    workAvailable: 3.0,
-    forkliftsUsed: 0,
-    forkliftsAvailable: 3,
-    docksUsed: 0,
-    docksAvailable: 3,
+    workUsed: capacityData?.workUsed ?? 0,
+    workAvailable: capacityData?.workAvailable ?? 3.0,
+    forkliftsUsed: capacityData?.forkliftsUsed ?? 0,
+    forkliftsAvailable: capacityData?.forkliftsAvailable ?? 3,
+    docksUsed: capacityData?.docksUsed ?? 0,
+    docksAvailable: capacityData?.docksAvailable ?? 3,
   };
 
   return (

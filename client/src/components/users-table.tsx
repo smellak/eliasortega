@@ -96,9 +96,9 @@ export function UsersTable({ users, onAdd, onEdit, onDelete }: UsersTableProps) 
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="planner">Planner</SelectItem>
-                      <SelectItem value="basic_readonly">View Only</SelectItem>
+                      <SelectItem value="ADMIN">Admin</SelectItem>
+                      <SelectItem value="PLANNER">Planner</SelectItem>
+                      <SelectItem value="BASIC_READONLY">View Only</SelectItem>
                     </SelectContent>
                   </Select>
                 </TableCell>
@@ -144,9 +144,9 @@ export function UsersTable({ users, onAdd, onEdit, onDelete }: UsersTableProps) 
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="planner">Planner</SelectItem>
-                          <SelectItem value="basic_readonly">View Only</SelectItem>
+                          <SelectItem value="ADMIN">Admin</SelectItem>
+                          <SelectItem value="PLANNER">Planner</SelectItem>
+                          <SelectItem value="BASIC_READONLY">View Only</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>

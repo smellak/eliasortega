@@ -223,7 +223,7 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
       <ConflictErrorDialog
         open={conflictErrorOpen}
         onOpenChange={setConflictErrorOpen}
-        error={conflictError as any}
+        error={conflictError}
       />
     </div>
   );

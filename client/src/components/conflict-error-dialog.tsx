@@ -25,10 +25,15 @@ interface ConflictError {
 interface ConflictErrorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  error: ConflictError;
+  error: ConflictError | null;
 }
 
 export function ConflictErrorDialog({ open, onOpenChange, error }: ConflictErrorDialogProps) {
+  // Don't render if no error data
+  if (!error) {
+    return null;
+  }
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="max-w-2xl" data-testid="dialog-conflict-error">

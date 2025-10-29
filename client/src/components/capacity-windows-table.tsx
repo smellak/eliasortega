@@ -38,9 +38,14 @@ export function CapacityWindowsTable({
   });
 
   const handleSave = () => {
+    // Format datetime-local values (YYYY-MM-DDTHH:mm) to ISO string with seconds (YYYY-MM-DDTHH:mm:ss)
+    // The backend expects ISO datetime strings which datetime-local doesn't provide timezone info
+    const startISO = formData.startUtc.includes(':00:00') ? formData.startUtc : `${formData.startUtc}:00`;
+    const endISO = formData.endUtc.includes(':00:00') ? formData.endUtc : `${formData.endUtc}:00`;
+    
     const payload = {
-      start: formData.startUtc,
-      end: formData.endUtc,
+      start: startISO,
+      end: endISO,
       workers: formData.workers,
       forklifts: formData.forklifts,
       docks: formData.docks,

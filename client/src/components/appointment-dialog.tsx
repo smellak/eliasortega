@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ interface AppointmentDialogProps {
   onOpenChange: (open: boolean) => void;
   appointment?: {
     id: string;
+    providerId: string;
     providerName: string;
     startUtc: string;
     endUtc: string;
@@ -34,26 +35,103 @@ export function AppointmentDialog({
 }: AppointmentDialogProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
-    providerId: appointment?.providerName || "",
-    startDate: appointment?.startUtc ? appointment.startUtc.split("T")[0] : "",
-    startTime: appointment?.startUtc ? appointment.startUtc.split("T")[1]?.substring(0, 5) : "",
-    endDate: appointment?.endUtc ? appointment.endUtc.split("T")[0] : "",
-    endTime: appointment?.endUtc ? appointment.endUtc.split("T")[1]?.substring(0, 5) : "",
-    workMinutesNeeded: appointment?.workMinutesNeeded?.toString() || "60",
-    forkliftsNeeded: appointment?.forkliftsNeeded?.toString() || "1",
-    goodsType: appointment?.goodsType || "",
-    units: appointment?.units?.toString() || "",
-    lines: appointment?.lines?.toString() || "",
-    deliveryNotesCount: appointment?.deliveryNotesCount?.toString() || "",
+    providerId: "",
+    startDate: "",
+    startTime: "",
+    endDate: "",
+    endTime: "",
+    workMinutesNeeded: "60",
+    forkliftsNeeded: "1",
+    goodsType: "",
+    units: "",
+    lines: "",
+    deliveryNotesCount: "",
   });
+
+  // Reset form when dialog opens/closes or appointment changes
+  useEffect(() => {
+    if (open) {
+      if (appointment) {
+        // Editing existing appointment
+        setFormData({
+          providerId: appointment.providerId,
+          startDate: appointment.startUtc ? appointment.startUtc.split("T")[0] : "",
+          startTime: appointment.startUtc ? appointment.startUtc.split("T")[1]?.substring(0, 5) : "",
+          endDate: appointment.endUtc ? appointment.endUtc.split("T")[0] : "",
+          endTime: appointment.endUtc ? appointment.endUtc.split("T")[1]?.substring(0, 5) : "",
+          workMinutesNeeded: appointment.workMinutesNeeded?.toString() || "60",
+          forkliftsNeeded: appointment.forkliftsNeeded?.toString() || "1",
+          goodsType: appointment.goodsType || "",
+          units: appointment.units?.toString() || "",
+          lines: appointment.lines?.toString() || "",
+          deliveryNotesCount: appointment.deliveryNotesCount?.toString() || "",
+        });
+      } else {
+        // New appointment - reset to defaults
+        const now = new Date();
+        const today = now.toISOString().split("T")[0];
+        setFormData({
+          providerId: "",
+          startDate: today,
+          startTime: "09:00",
+          endDate: today,
+          endTime: "10:00",
+          workMinutesNeeded: "60",
+          forkliftsNeeded: "1",
+          goodsType: "",
+          units: "",
+          lines: "",
+          deliveryNotesCount: "",
+        });
+      }
+    }
+  }, [open, appointment]);
 
   const handleSave = async () => {
     setIsSaving(true);
-    console.log("Saving appointment:", formData);
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-    onSave(formData);
-    setIsSaving(false);
-    onOpenChange(false);
+
+    console.log("Form data before save:", formData);
+
+    // Combine date and time into ISO strings for Europe/Madrid timezone
+    const startDateTime = `${formData.startDate}T${formData.startTime}:00`;
+    const endDateTime = `${formData.endDate}T${formData.endTime}:00`;
+
+    // Find the provider name from the ID
+    const selectedProvider = providers.find(p => p.id === formData.providerId);
+    const providerName = selectedProvider?.name || "";
+
+    // Build the payload in the format the API expects
+    const payload: any = {
+      providerId: formData.providerId,
+      providerName: providerName,  // API requires this field
+      start: startDateTime,
+      end: endDateTime,
+      workMinutesNeeded: parseInt(formData.workMinutesNeeded, 10) || 0,
+      forkliftsNeeded: parseInt(formData.forkliftsNeeded, 10) || 0,
+    };
+
+    // Add optional fields only if they have values
+    if (formData.goodsType && formData.goodsType.trim()) {
+      payload.goodsType = formData.goodsType.trim();
+    }
+    if (formData.units && formData.units !== "") {
+      payload.units = parseInt(formData.units, 10);
+    }
+    if (formData.lines && formData.lines !== "") {
+      payload.lines = parseInt(formData.lines, 10);
+    }
+    if (formData.deliveryNotesCount && formData.deliveryNotesCount !== "") {
+      payload.deliveryNotesCount = parseInt(formData.deliveryNotesCount, 10);
+    }
+
+    console.log("Saving appointment with payload:", payload);
+    
+    try {
+      await onSave(payload);
+      setIsSaving(false);
+    } catch (error) {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -76,7 +154,7 @@ export function AppointmentDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {providers.map((provider) => (
-                    <SelectItem key={provider.id} value={provider.name}>
+                    <SelectItem key={provider.id} value={provider.id}>
                       {provider.name}
                     </SelectItem>
                   ))}

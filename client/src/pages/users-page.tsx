@@ -1,27 +1,126 @@
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { UsersTable } from "@/components/users-table";
+import { usersApi } from "@/lib/api";
+import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { UserResponse } from "@shared/types";
+import { Card } from "@/components/ui/card";
 
 export default function UsersPage() {
-  // TODO: remove mock data
-  const users = [
-    { id: '1', email: 'admin@example.com', role: 'admin' as const },
-    { id: '2', email: 'planner@example.com', role: 'planner' as const },
-    { id: '3', email: 'viewer@example.com', role: 'basic_readonly' as const },
-  ];
+  const { toast } = useToast();
+
+  // Fetch users
+  const { data: users = [], isLoading, error } = useQuery<UserResponse[]>({
+    queryKey: ["/api/users"],
+    queryFn: () => usersApi.list(),
+  });
+
+  // Create user mutation
+  const createMutation = useMutation({
+    mutationFn: (input: { email: string; password: string; role: "ADMIN" | "PLANNER" | "BASIC_READONLY" }) =>
+      usersApi.create(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Success",
+        description: "User created successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update user mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: { email?: string; role?: string } }) =>
+      usersApi.update(id, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Success",
+        description: "User updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete user mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => usersApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete user",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleAdd = (user: any) => {
-    console.log("Add user:", user);
-    // TODO: Call API
+    createMutation.mutate(user);
   };
 
   const handleEdit = (id: string, user: any) => {
-    console.log("Edit user:", id, user);
-    // TODO: Call API
+    updateMutation.mutate({ id, input: user });
   };
 
   const handleDelete = (id: string) => {
-    console.log("Delete user:", id);
-    // TODO: Call API
+    if (window.confirm("Are you sure you want to delete this user?")) {
+      deleteMutation.mutate(id);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-semibold">Users</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage user accounts and permissions
+          </p>
+        </div>
+        <Card className="p-12">
+          <div className="text-center text-muted-foreground">Loading users...</div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-semibold">Users</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage user accounts and permissions
+          </p>
+        </div>
+        <Card className="p-12">
+          <div className="text-center text-destructive">
+            Error loading users: {(error as Error).message}
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

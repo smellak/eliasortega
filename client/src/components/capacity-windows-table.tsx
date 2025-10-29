@@ -4,20 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Pencil, Trash2, Save, X } from "lucide-react";
 import { format } from "date-fns";
-
-interface CapacityWindow {
-  id: string;
-  startUtc: string;
-  endUtc: string;
-  workersAvailable: number;
-  forkliftsAvailable: number;
-  docksActive?: number;
-}
+import type { CapacityShift } from "@shared/types";
 
 interface CapacityWindowsTableProps {
-  windows: CapacityWindow[];
-  onAdd: (window: Omit<CapacityWindow, "id">) => void;
-  onEdit: (id: string, window: Omit<CapacityWindow, "id">) => void;
+  windows: CapacityShift[];
+  onAdd: (window: { start: string; end: string; workers: number; forklifts: number; docks?: number }) => void;
+  onEdit: (id: string, window: { start?: string; end?: string; workers?: number; forklifts?: number; docks?: number }) => void;
   onDelete: (id: string) => void;
   readOnly?: boolean;
 }
@@ -31,33 +23,46 @@ export function CapacityWindowsTable({
 }: CapacityWindowsTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
-  const [formData, setFormData] = useState<Omit<CapacityWindow, "id">>({
+  const [formData, setFormData] = useState<{
+    startUtc: string;
+    endUtc: string;
+    workers: number;
+    forklifts: number;
+    docks: number;
+  }>({
     startUtc: "",
     endUtc: "",
-    workersAvailable: 3,
-    forkliftsAvailable: 2,
-    docksActive: 3,
+    workers: 3,
+    forklifts: 2,
+    docks: 3,
   });
 
   const handleSave = () => {
+    const payload = {
+      start: formData.startUtc,
+      end: formData.endUtc,
+      workers: formData.workers,
+      forklifts: formData.forklifts,
+      docks: formData.docks,
+    };
     if (editingId) {
-      onEdit(editingId, formData);
+      onEdit(editingId, payload);
       setEditingId(null);
     } else {
-      onAdd(formData);
+      onAdd(payload);
       setIsAdding(false);
     }
     resetForm();
   };
 
-  const handleEdit = (window: CapacityWindow) => {
+  const handleEdit = (window: CapacityShift) => {
     setEditingId(window.id);
     setFormData({
       startUtc: window.startUtc,
       endUtc: window.endUtc,
-      workersAvailable: window.workersAvailable,
-      forkliftsAvailable: window.forkliftsAvailable,
-      docksActive: window.docksActive,
+      workers: window.workers,
+      forklifts: window.forklifts,
+      docks: window.docks || 3,
     });
   };
 
@@ -71,9 +76,9 @@ export function CapacityWindowsTable({
     setFormData({
       startUtc: "",
       endUtc: "",
-      workersAvailable: 3,
-      forkliftsAvailable: 2,
-      docksActive: 3,
+      workers: 3,
+      forklifts: 2,
+      docks: 3,
     });
   };
 
@@ -123,8 +128,8 @@ export function CapacityWindowsTable({
                   <Input
                     type="number"
                     min="0"
-                    value={formData.workersAvailable}
-                    onChange={(e) => setFormData({ ...formData, workersAvailable: parseInt(e.target.value) })}
+                    value={formData.workers}
+                    onChange={(e) => setFormData({ ...formData, workers: parseInt(e.target.value) })}
                     data-testid="input-new-workers"
                   />
                 </TableCell>
@@ -132,8 +137,8 @@ export function CapacityWindowsTable({
                   <Input
                     type="number"
                     min="0"
-                    value={formData.forkliftsAvailable}
-                    onChange={(e) => setFormData({ ...formData, forkliftsAvailable: parseInt(e.target.value) })}
+                    value={formData.forklifts}
+                    onChange={(e) => setFormData({ ...formData, forklifts: parseInt(e.target.value) })}
                     data-testid="input-new-forklifts"
                   />
                 </TableCell>
@@ -142,8 +147,8 @@ export function CapacityWindowsTable({
                     type="number"
                     min="0"
                     max="3"
-                    value={formData.docksActive || 0}
-                    onChange={(e) => setFormData({ ...formData, docksActive: parseInt(e.target.value) })}
+                    value={formData.docks || 0}
+                    onChange={(e) => setFormData({ ...formData, docks: parseInt(e.target.value) })}
                     data-testid="input-new-docks"
                   />
                 </TableCell>
@@ -182,16 +187,16 @@ export function CapacityWindowsTable({
                       <Input
                         type="number"
                         min="0"
-                        value={formData.workersAvailable}
-                        onChange={(e) => setFormData({ ...formData, workersAvailable: parseInt(e.target.value) })}
+                        value={formData.workers}
+                        onChange={(e) => setFormData({ ...formData, workers: parseInt(e.target.value) })}
                       />
                     </TableCell>
                     <TableCell>
                       <Input
                         type="number"
                         min="0"
-                        value={formData.forkliftsAvailable}
-                        onChange={(e) => setFormData({ ...formData, forkliftsAvailable: parseInt(e.target.value) })}
+                        value={formData.forklifts}
+                        onChange={(e) => setFormData({ ...formData, forklifts: parseInt(e.target.value) })}
                       />
                     </TableCell>
                     <TableCell>
@@ -199,8 +204,8 @@ export function CapacityWindowsTable({
                         type="number"
                         min="0"
                         max="3"
-                        value={formData.docksActive || 0}
-                        onChange={(e) => setFormData({ ...formData, docksActive: parseInt(e.target.value) })}
+                        value={formData.docks || 0}
+                        onChange={(e) => setFormData({ ...formData, docks: parseInt(e.target.value) })}
                       />
                     </TableCell>
                     <TableCell className="text-right">
@@ -223,13 +228,13 @@ export function CapacityWindowsTable({
                       {format(new Date(window.endUtc), "yyyy-MM-dd HH:mm")}
                     </TableCell>
                     <TableCell className="text-center font-mono font-semibold">
-                      {window.workersAvailable}
+                      {window.workers}
                     </TableCell>
                     <TableCell className="text-center font-mono font-semibold">
-                      {window.forkliftsAvailable}
+                      {window.forklifts}
                     </TableCell>
                     <TableCell className="text-center font-mono font-semibold">
-                      {window.docksActive || "-"}
+                      {window.docks ?? "-"}
                     </TableCell>
                     {!readOnly && (
                       <TableCell className="text-right">

@@ -1,0 +1,95 @@
+Problema en producción (https://citaschs.replit.app):
+
+Crear proveedor no persiste; tras refrescar no hay registros.
+
+Nada se registra (citas, turnos, etc.).
+
+La sección/endpoint de usuarios no es accesible desde la UI.
+
+Login funciona, pero todas las operaciones de escritura parecen inefectivas.
+
+Objetivo: Encontrar y corregir la causa en producción (no en dev) y dejar persistencia funcional.
+
+1) Verificaciones rápidas (producción)
+
+Logs del server: habilita logs por request (método, ruta, status, userId, error). Comprueba si el POST /api/providers llega y qué responde.
+
+Swagger en prod: prueba manualmente:
+
+POST /api/auth/login → token
+
+GET /api/providers → 200
+
+POST /api/providers {name:"Test UI"} con Bearer → debe dar 201
+
+Si falla, captura status + mensaje.
+
+Variables de entorno:
+
+DATABASE_URL (o DATABASE_URL_PROD) realmente apunta a la BD de producción.
+
+NODE_ENV=production
+
+JWT_SECRET presente.
+
+Prisma / Migrations:
+
+Ejecuta prisma migrate deploy contra esa BD.
+
+Verifica tablas y permisos (INSERT/UPDATE).
+
+Conexión BD: testea conexión real desde el server de prod (no desde dev). Si hay error, muéstralo en logs.
+
+2) Posibles causas y arreglos esperados
+
+Frontend sin token en fetch:
+
+Revisa el cliente (fetch/axios). Asegura Authorization: Bearer <token> en todas las mutaciones.
+
+API base incorrecta en producción:
+
+VITE_API_URL o base de fetch debe ser "/api" o la URL absoluta correcta.
+
+BD equivocada o read-only:
+
+DATABASE_URL apunta a dev o a una BD sin permisos → corregir env y re-deploy.
+
+Migrations no aplicadas:
+
+Falta appointments/providers/capacity_shifts/users → ejecutar migrate deploy.
+
+CORS/CSRF o ruta protegida mal configurada:
+
+Verificar middlewares; que POST /api/providers no quede bloqueado por auth mal leída.
+
+Errores silenciados en UI:
+
+Mostrar toasts de error reales y re-fetch tras POST.
+
+3) Qué entregar (criterios de aceptación)
+
+Desde Swagger prod:
+
+POST /api/providers → 201 y registro visible en GET /api/providers.
+
+POST /api/capacity-shifts → 201 y persiste.
+
+POST /api/appointments → 201 (o 409 si conflicto) y persiste.
+
+Desde la UI:
+
+“Add Provider” crea y la lista se actualiza sin refrescar.
+
+La sección de Usuarios es accesible según rol (ADMIN).
+
+Logs muestran cada request con status (200/201/4xx/5xx).
+
+4) Si necesitas scripts
+
+Ejecuta en prod (no dev):
+
+npx prisma migrate deploy
+
+(opcional) npx prisma db seed si aplica.
+
+Por favor, corrige en producción, no en dev, y deja anotado qué variable o endpoint estaba mal configurado. 🙏

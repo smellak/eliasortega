@@ -3,17 +3,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Pencil, Trash2, Save, X } from "lucide-react";
-
-interface Provider {
-  id: string;
-  name: string;
-  notes?: string;
-}
+import type { Provider } from "@shared/types";
 
 interface ProvidersTableProps {
   providers: Provider[];
-  onAdd: (provider: Omit<Provider, "id">) => void;
-  onEdit: (id: string, provider: Omit<Provider, "id">) => void;
+  onAdd: (provider: { name: string; notes?: string }) => void;
+  onEdit: (id: string, provider: { name?: string; notes?: string }) => void;
   onDelete: (id: string) => void;
   readOnly?: boolean;
 }
@@ -27,7 +22,7 @@ export function ProvidersTable({
 }: ProvidersTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
-  const [formData, setFormData] = useState<Omit<Provider, "id">>({
+  const [formData, setFormData] = useState<{ name: string; notes: string }>({
     name: "",
     notes: "",
   });
@@ -47,7 +42,7 @@ export function ProvidersTable({
     setEditingId(provider.id);
     setFormData({
       name: provider.name,
-      notes: provider.notes,
+      notes: provider.notes || "",
     });
   };
 

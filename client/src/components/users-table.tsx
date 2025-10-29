@@ -5,28 +5,21 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, Save, X } from "lucide-react";
 import { RoleBadge } from "./role-badge";
-
-type Role = "admin" | "planner" | "basic_readonly";
-
-interface User {
-  id: string;
-  email: string;
-  role: Role;
-}
+import type { UserResponse, UserRole } from "@shared/types";
 
 interface UsersTableProps {
-  users: User[];
-  onAdd: (user: Omit<User, "id"> & { password: string }) => void;
-  onEdit: (id: string, user: Omit<User, "id">) => void;
+  users: UserResponse[];
+  onAdd: (user: { email: string; password: string; role: UserRole }) => void;
+  onEdit: (id: string, user: { email?: string; role?: string }) => void;
   onDelete: (id: string) => void;
 }
 
 export function UsersTable({ users, onAdd, onEdit, onDelete }: UsersTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
-  const [formData, setFormData] = useState<Omit<User, "id"> & { password?: string }>({
+  const [formData, setFormData] = useState<{ email: string; role: UserRole; password?: string }>({
     email: "",
-    role: "basic_readonly",
+    role: "BASIC_READONLY",
     password: "",
   });
 
@@ -41,7 +34,7 @@ export function UsersTable({ users, onAdd, onEdit, onDelete }: UsersTableProps) 
     resetForm();
   };
 
-  const handleEdit = (user: User) => {
+  const handleEdit = (user: UserResponse) => {
     setEditingId(user.id);
     setFormData({
       email: user.email,
@@ -58,7 +51,7 @@ export function UsersTable({ users, onAdd, onEdit, onDelete }: UsersTableProps) 
   const resetForm = () => {
     setFormData({
       email: "",
-      role: "basic_readonly",
+      role: "BASIC_READONLY",
       password: "",
     });
   };
@@ -97,7 +90,7 @@ export function UsersTable({ users, onAdd, onEdit, onDelete }: UsersTableProps) 
                 <TableCell>
                   <Select
                     value={formData.role}
-                    onValueChange={(value: Role) => setFormData({ ...formData, role: value })}
+                    onValueChange={(value: UserRole) => setFormData({ ...formData, role: value })}
                   >
                     <SelectTrigger data-testid="select-new-user-role">
                       <SelectValue />
@@ -145,7 +138,7 @@ export function UsersTable({ users, onAdd, onEdit, onDelete }: UsersTableProps) 
                     <TableCell>
                       <Select
                         value={formData.role}
-                        onValueChange={(value: Role) => setFormData({ ...formData, role: value })}
+                        onValueChange={(value: UserRole) => setFormData({ ...formData, role: value })}
                       >
                         <SelectTrigger>
                           <SelectValue />

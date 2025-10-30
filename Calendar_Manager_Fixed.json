@@ -1,0 +1,401 @@
+{
+  "name": "Calendar_Manager_Fixed",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "query",
+              "type": "any"
+            },
+            {
+              "name": "sessionId",
+              "type": "any"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [-176, 0],
+      "id": "52ff2281-b4ca-44e2-b864-deb9defe42fe",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse robusto: acepta query (string) o objeto directo\nconst toNum = (v) => {\n  const n = Number(v);\n  return Number.isFinite(n) ? n : 0;\n};\n\nlet params = {};\n\n// 1) Si viene en $json.query como string JSON → parsea\nif (typeof $json.query === 'string' && $json.query.trim()) {\n  try {\n    const m = $json.query.match(/\\{[\\s\\S]*\\}/);\n    params = JSON.parse(m ? m[0] : $json.query);\n  } catch (e) {\n    return [{ json: { action: \"error\", message: \"Invalid JSON in query\", raw: $json.query } }];\n  }\n} else if (typeof $json === 'object' && $json !== null) {\n  params = { ...$json };\n} else {\n  return [{ json: { action: \"error\", message: \"No input provided\" } }];\n}\n\n// Normalización con defaults seguros\nconst out = {\n  action: (params.action || '').toString().trim(),\n  // availability\n  from: params.from || '',\n  to: params.to || '',\n  duration_minutes: toNum(params.duration_minutes),\n  // book\n  start: params.start || '',\n  end: params.end || '',\n  providerId: params.providerId || '',\n  providerName: params.providerName || '',\n  goodsType: params.goodsType || '',\n  units: toNum(params.units),\n  lines: toNum(params.lines),\n  deliveryNotesCount: toNum(params.deliveryNotesCount),\n  workMinutesNeeded: toNum(params.workMinutesNeeded),\n  forkliftsNeeded: toNum(params.forkliftsNeeded),\n  // Genera externalRef único AQUÍ para que sea el mismo en todos los retries\n  externalRef: params.externalRef || ('n8n-' + $now.toISODate() + '-' + Math.random().toString(36).slice(2,8)),\n  sessionId: $json.sessionId || ''\n};\n\nreturn [{ json: out }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [16, 0],
+      "id": "82f5da83-3e81-49ea-8840-26d9b8f38e5f",
+      "name": "Parse Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b5152faf-c833-4976-95ec-56f62e3ccb7c",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "availability",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [192, 0],
+      "id": "291b3572-0821-4ca2-92a0-251f521f70d8",
+      "name": "Check Action"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fromDate = new Date($json.from);\nconst toDate = new Date($json.to);\nconst durationMinutes = $json.duration_minutes;\n\nconst startHourUTC = 7;\nconst endHourUTC = 13;\n\nconst slots = [];\nlet currentDate = new Date(fromDate);\n\nwhile (currentDate <= toDate) {\n  const dayOfWeek = currentDate.getDay();\n  if (dayOfWeek >= 1 && dayOfWeek <= 5) {\n    for (let hour = startHourUTC; hour < endHourUTC; hour++) {\n      for (let minute = 0; minute < 60; minute += 30) {\n        const slotStart = new Date(currentDate);\n        slotStart.setUTCHours(hour, minute, 0, 0);\n        \n        const slotEnd = new Date(slotStart);\n        slotEnd.setUTCMinutes(slotEnd.getUTCMinutes() + durationMinutes);\n        \n        if (slotEnd.getUTCHours() <= endHourUTC) {\n          slots.push({\n            start: slotStart.toISOString(),\n            end: slotEnd.toISOString(),\n            startLocal: slotStart.toLocaleString('es-ES', { timeZone: 'Europe/Madrid' }),\n            endLocal: slotEnd.toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })\n          });\n        }\n      }\n    }\n  }\n  currentDate.setDate(currentDate.getDate() + 1);\n}\n\nreturn [{\n  json: {\n    action: \"availability\",\n    slotsFound: slots.length,\n    slots: slots,\n    message: `Encontrados ${slots.length} slots disponibles`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [352, -208],
+      "id": "24ce30cb-a201-4bca-92db-a9695161a3d2",
+      "name": "Search Slots"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://citaschs.replit.app/api/auth/login",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [304, 656],
+      "id": "d602257d-4d8d-491d-a976-6a2883568c25",
+      "name": "JWT Token"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Construye el body para el API con TODOS los campos requeridos\nconst parsed = $('Parse Input').item.json;\nconst token = $('JWT Token').item.json.token;\n\nreturn [{\n  json: {\n    // Datos del appointment\n    externalRef: parsed.externalRef,\n    providerId: parsed.providerId || undefined,\n    providerName: parsed.providerName,\n    start: parsed.start,\n    end: parsed.end,\n    workMinutesNeeded: parsed.workMinutesNeeded,\n    forkliftsNeeded: parsed.forkliftsNeeded,\n    goodsType: parsed.goodsType || undefined,\n    units: parsed.units || undefined,\n    lines: parsed.lines || undefined,\n    deliveryNotesCount: parsed.deliveryNotesCount || undefined,\n    // Token para el siguiente nodo\n    _token: token,\n    // Metadata\n    _attempt: 1\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [512, 656],
+      "id": "1be769af-7fbd-4b7d-90e1-27c50347bb8d",
+      "name": "Build Request Body"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://citaschs.replit.app/api/integration/appointments/upsert",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json._token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"externalRef\": \"{{ $json.externalRef }}\",\n  \"providerId\": \"{{ $json.providerId }}\",\n  \"providerName\": \"{{ $json.providerName }}\",\n  \"start\": \"{{ $json.start }}\",\n  \"end\": \"{{ $json.end }}\",\n  \"workMinutesNeeded\": {{ $json.workMinutesNeeded }},\n  \"forkliftsNeeded\": {{ $json.forkliftsNeeded }},\n  \"goodsType\": \"{{ $json.goodsType }}\",\n  \"units\": {{ $json.units }},\n  \"lines\": {{ $json.lines }},\n  \"deliveryNotesCount\": {{ $json.deliveryNotesCount }}\n}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [736, 656],
+      "id": "2cc63a6c-556e-491e-8b22-f5ba331a5bd6",
+      "name": "Upsert Appointment"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c06a7ac0-f868-46f8-9309-a70c92abb44d",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": "409",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [928, 656],
+      "id": "4ad6496e-3e24-4b39-86f7-1f66f6f926e2",
+      "name": "Check Conflict 1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Retry: suma 30 minutos manteniendo el MISMO externalRef\nconst parsed = $('Parse Input').item.json;\nconst token = $('JWT Token').item.json.token;\n\nconst originalStart = new Date(parsed.start);\nconst duration = parsed.workMinutesNeeded;\n\nconst newStart = new Date(originalStart);\nnewStart.setMinutes(newStart.getMinutes() + 30);\n\nconst newEnd = new Date(newStart);\nnewEnd.setMinutes(newEnd.getMinutes() + duration);\n\nreturn [{\n  json: {\n    externalRef: parsed.externalRef, // MISMO externalRef\n    providerId: parsed.providerId || undefined,\n    providerName: parsed.providerName,\n    start: newStart.toISOString(),\n    end: newEnd.toISOString(),\n    workMinutesNeeded: parsed.workMinutesNeeded,\n    forkliftsNeeded: parsed.forkliftsNeeded,\n    goodsType: parsed.goodsType || undefined,\n    units: parsed.units || undefined,\n    lines: parsed.lines || undefined,\n    deliveryNotesCount: parsed.deliveryNotesCount || undefined,\n    _token: token,\n    _attempt: 2\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1216, 400],
+      "id": "7f7d3eef-5c9b-43ee-8341-e516150bd64d",
+      "name": "Add 30 Minutes Retry 2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://citaschs.replit.app/api/integration/appointments/upsert",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json._token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"externalRef\": \"{{ $json.externalRef }}\",\n  \"providerId\": \"{{ $json.providerId }}\",\n  \"providerName\": \"{{ $json.providerName }}\",\n  \"start\": \"{{ $json.start }}\",\n  \"end\": \"{{ $json.end }}\",\n  \"workMinutesNeeded\": {{ $json.workMinutesNeeded }},\n  \"forkliftsNeeded\": {{ $json.forkliftsNeeded }},\n  \"goodsType\": \"{{ $json.goodsType }}\",\n  \"units\": {{ $json.units }},\n  \"lines\": {{ $json.lines }},\n  \"deliveryNotesCount\": {{ $json.deliveryNotesCount }}\n}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1616, 400],
+      "id": "b1137bce-fae7-4dec-b9bf-2f418acacc03",
+      "name": "Upsert Retry 2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "88f15d2a-6e1f-4cac-b1c5-ad8db08fb39c",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": "409",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1792, 400],
+      "id": "91efe46f-52f7-4b8d-bccf-10463bfc8b34",
+      "name": "Check Conflict 2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Retry 3: suma otros 30 minutos (60 total)\nconst parsed = $('Parse Input').item.json;\nconst token = $('JWT Token').item.json.token;\n\nconst originalStart = new Date(parsed.start);\nconst duration = parsed.workMinutesNeeded;\n\nconst newStart = new Date(originalStart);\nnewStart.setMinutes(newStart.getMinutes() + 60); // +60 total\n\nconst newEnd = new Date(newStart);\nnewEnd.setMinutes(newEnd.getMinutes() + duration);\n\nreturn [{\n  json: {\n    externalRef: parsed.externalRef, // MISMO externalRef\n    providerId: parsed.providerId || undefined,\n    providerName: parsed.providerName,\n    start: newStart.toISOString(),\n    end: newEnd.toISOString(),\n    workMinutesNeeded: parsed.workMinutesNeeded,\n    forkliftsNeeded: parsed.forkliftsNeeded,\n    goodsType: parsed.goodsType || undefined,\n    units: parsed.units || undefined,\n    lines: parsed.lines || undefined,\n    deliveryNotesCount: parsed.deliveryNotesCount || undefined,\n    _token: token,\n    _attempt: 3\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1920, 224],
+      "id": "6a16852e-fd57-44a0-b48c-14823fbddbec",
+      "name": "Add 30 Minutes Retry 3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://citaschs.replit.app/api/integration/appointments/upsert",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json._token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"externalRef\": \"{{ $json.externalRef }}\",\n  \"providerId\": \"{{ $json.providerId }}\",\n  \"providerName\": \"{{ $json.providerName }}\",\n  \"start\": \"{{ $json.start }}\",\n  \"end\": \"{{ $json.end }}\",\n  \"workMinutesNeeded\": {{ $json.workMinutesNeeded }},\n  \"forkliftsNeeded\": {{ $json.forkliftsNeeded }},\n  \"goodsType\": \"{{ $json.goodsType }}\",\n  \"units\": {{ $json.units }},\n  \"lines\": {{ $json.lines }},\n  \"deliveryNotesCount\": {{ $json.deliveryNotesCount }}\n}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2320, 224],
+      "id": "5c646c6a-cb3f-48cc-93c4-6a09e901133e",
+      "name": "Upsert Retry 3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cb1c19ad-ee63-4760-a653-86fca4550e35",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": "409",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [2496, 224],
+      "id": "88f56486-0e53-4bbb-8fff-1ee83bde4d12",
+      "name": "Check Conflict 3"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    success: false,\n    message: \"No se encontró disponibilidad tras 3 intentos. Por favor, elige otro día u horario.\"\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2656, -64],
+      "id": "f9aecb01-1dea-472e-a506-12bb70b3c8ae",
+      "name": "Error Message"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body;\nconst appt = body.appointment || {};\nconst start = new Date(appt.startUtc || appt.start);\nconst end = new Date(appt.endUtc || appt.end);\nconst provider = appt.providerName;\n\nreturn [{\n  json: {\n    success: true,\n    message: `✅ Cita confirmada para ${provider}\\n\\n` +\n             `📅 Fecha: ${start.toLocaleDateString('es-ES', { timeZone: 'Europe/Madrid', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\\n` +\n             `⏰ Hora: ${start.toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' })}`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2656, 368],
+      "id": "ca18baa9-582b-42a1-a472-11dbac011f0c",
+      "name": "Success Message"
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [[{"node": "Parse Input", "type": "main", "index": 0}]]
+    },
+    "Parse Input": {
+      "main": [[{"node": "Check Action", "type": "main", "index": 0}]]
+    },
+    "Check Action": {
+      "main": [
+        [{"node": "Search Slots", "type": "main", "index": 0}],
+        [{"node": "JWT Token", "type": "main", "index": 0}]
+      ]
+    },
+    "JWT Token": {
+      "main": [[{"node": "Build Request Body", "type": "main", "index": 0}]]
+    },
+    "Build Request Body": {
+      "main": [[{"node": "Upsert Appointment", "type": "main", "index": 0}]]
+    },
+    "Upsert Appointment": {
+      "main": [[{"node": "Check Conflict 1", "type": "main", "index": 0}]]
+    },
+    "Check Conflict 1": {
+      "main": [
+        [{"node": "Add 30 Minutes Retry 2", "type": "main", "index": 0}],
+        [{"node": "Success Message", "type": "main", "index": 0}]
+      ]
+    },
+    "Add 30 Minutes Retry 2": {
+      "main": [[{"node": "Upsert Retry 2", "type": "main", "index": 0}]]
+    },
+    "Upsert Retry 2": {
+      "main": [[{"node": "Check Conflict 2", "type": "main", "index": 0}]]
+    },
+    "Check Conflict 2": {
+      "main": [
+        [{"node": "Add 30 Minutes Retry 3", "type": "main", "index": 0}],
+        [{"node": "Success Message", "type": "main", "index": 0}]
+      ]
+    },
+    "Add 30 Minutes Retry 3": {
+      "main": [[{"node": "Upsert Retry 3", "type": "main", "index": 0}]]
+    },
+    "Upsert Retry 3": {
+      "main": [[{"node": "Check Conflict 3", "type": "main", "index": 0}]]
+    },
+    "Check Conflict 3": {
+      "main": [
+        [{"node": "Error Message", "type": "main", "index": 0}],
+        [{"node": "Success Message", "type": "main", "index": 0}]
+      ]
+    }
+  }
+}

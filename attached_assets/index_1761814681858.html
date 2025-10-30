@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>n8n Chat – Embed</title>
+
+    <!-- 1) Core n8n Chat styles from CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
+
+    <!-- 2) Brand overrides (feel free to tweak).  
+         Soufiane asked for rounded, cute, Apple-like lines.  -->
+    <style>
+      :root {
+        /* Palette – soft & friendly */
+        --chat--color--primary: #6e8efb;                 /* toggle + accents */
+        --chat--color--primary-shade-50: #5f80ef;
+        --chat--color--primary--shade-100: #4f70e2;
+        --chat--color--secondary: #60e6c5;               /* user bubble bg */
+        --chat--color-secondary-shade-50: #4fd7b5;
+        --chat--color-white: #ffffff;
+        --chat--color-light: #f6f7fb;                    /* page bg tint */
+        --chat--color-light-shade-50: #e9ecf7;
+        --chat--color-light-shade-100: #cfd6ee;
+        --chat--color-medium: #d8dbe6;
+        --chat--color-dark: #11131f;                     /* text */
+        --chat--color-disabled: #9aa3b2;
+        --chat--color-typing: #404040;
+
+        /* Rounded, airy */
+        --chat--spacing: 1rem;
+        --chat--border-radius: 1rem;                      /* extra rounded */
+        --chat--transition-duration: 0.2s;
+
+        /* Window size (only used in window mode) */
+        --chat--window--width: 420px;
+        --chat--window--height: 640px;
+
+        /* Header */
+        --chat--header-height: auto;
+        --chat--header--padding: calc(var(--chat--spacing) * 1.25);
+        --chat--header--background: linear-gradient(180deg, #fdfdff 0%, #f6f7fb 100%);
+        --chat--header--color: var(--chat--color-dark);
+        --chat--heading--font-size: 1.25rem;
+        --chat--subtitle--font-size: 0.95rem;
+        --chat--subtitle--line-height: 1.6;
+
+        /* Messages */
+        --chat--message--font-size: 1rem;
+        --chat--message--padding: calc(var(--chat--spacing) * 0.9);
+        --chat--message--border-radius: 1rem;
+        --chat--message-line-height: 1.7;
+        --chat--message--bot--background: var(--chat--color-white);
+        --chat--message--bot--color: var(--chat--color-dark);
+        --chat--message--bot--border: 1px solid var(--chat--color-light-shade-100);
+        --chat--message--user--background: var(--chat--color--secondary);
+        --chat--message--user--color: #053b2f;
+        --chat--message--user--border: none;
+        --chat--message--pre--background: rgba(0,0,0,0.04);
+
+        /* Input */
+        --chat--textarea--height: 54px;
+
+        /* Toggle (floating button) */
+        --chat--toggle--background: var(--chat--color--primary);
+        --chat--toggle--hover--background: var(--chat--color--primary-shade-50);
+        --chat--toggle--active--background: var(--chat--color--primary--shade-100);
+        --chat--toggle--color: var(--chat--color-white);
+        --chat--toggle--size: 64px;
+      }
+
+      /* Page baseline styles */
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: var(--chat--color-light);
+        color: var(--chat--color-dark);
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      }
+
+      /* Fullscreen mode needs the container to fill the page */
+      html.full, body.full, #n8n-chat.full { width: 100%; height: 100%; }
+
+      /* Optional: a top bar you can brand */
+      .brandbar {
+        display: flex; align-items: center; gap: 0.75rem;
+        padding: 0.9rem 1rem; position: sticky; top: 0;
+        backdrop-filter: saturate(1.1) blur(6px);
+        background: rgba(255,255,255,0.75);
+        border-bottom: 1px solid var(--chat--color-light-shade-50);
+        z-index: 1;
+      }
+      .brandbar b { letter-spacing: 0.2px; }
+
+      /* Host container for the chat widget */
+      #n8n-chat { position: relative; min-height: 0; }
+
+      /* Helper: center content when in fullscreen */
+      .fullscreen-note { text-align:center; padding: 0.75rem; color:#5b6477; font-size: 0.9rem; }
+    </style>
+  </head>
+  <body>
+    <div class="brandbar">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M12 3.75c-4.556 0-8.25 3.694-8.25 8.25S7.444 20.25 12 20.25 20.25 16.556 20.25 12 16.556 3.75 12 3.75Zm0 14.25a6 6 0 1 1 0-12 6 6 0 0 1 0 12Z" fill="currentColor"/>
+      </svg>
+      <b>AI Chat (n8n)</b>
+      <span style="opacity:.7">· embebido</span>
+    </div>
+
+    <!-- Host element for the chat widget -->
+    <div id="n8n-chat"></div>
+    <div class="fullscreen-note" id="fsNote" hidden>Modo pantalla completa</div>
+
+    <!-- 3) n8n Chat – CDN module.  We initialize with options below. -->
+    <script type="module">
+      import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
+
+      /**
+       * ==========================
+       *  QUICK CONFIG SECTION
+       * ==========================
+       * 1) REPLACE WEBHOOK_URL with your production webhook endpoint from the n8n Chat Trigger node.
+       *    Example: https://yourname.app.n8n.cloud/webhook/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+       *
+       *    TIP (Replit): you can store the URL in a small JS snippet. If you fork this project,
+       *    just paste your URL here directly and redeploy. This is a static site; no secrets at runtime.
+       */
+      const WEBHOOK_URL = 'https://n8n-latest-rkxp.onrender.com/webhook/84c0469b-dd1f-4572-851b-609c0ef2782d/chat'; // <-- 🔁 REPLACE ME
+
+      /**
+       * 2) Optional flags you might want to tweak.
+       */
+      const ENABLE_STREAMING = true;          // requires Chat Trigger "Streaming response" enabled
+      const LOAD_PREVIOUS_SESSION = true;     // reload previous messages via sessionId
+      const MODE = new URLSearchParams(location.search).get('mode') || 'window'; // 'window' | 'fullscreen'
+      const ALLOW_UPLOADS = false;            // set true if your workflow accepts files
+      const ALLOWED_MIME = 'image/*,application/pdf';
+
+      // Basic validation
+      if (!WEBHOOK_URL || WEBHOOK_URL.includes('YOUR_PRODUCTION_WEBHOOK_URL')) {
+        console.warn('[n8n-embed] Debes configurar WEBHOOK_URL en index.html');
+      }
+
+      // Fullscreen container sizing
+      if (MODE === 'fullscreen') {
+        document.documentElement.classList.add('full');
+        document.body.classList.add('full');
+        document.getElementById('n8n-chat').classList.add('full');
+        document.getElementById('fsNote').hidden = false;
+      }
+
+      // Spanish UI strings (library supports an "en" key; we provide Spanish text under that key)
+      const i18nEsAsEn = {
+        title: '¡Hola! 👋',
+        subtitle: 'Inicia una conversación. Estoy aquí para ayudarte 24/7.',
+        footer: '',
+        getStarted: 'Nueva conversación',
+        inputPlaceholder: 'Escribe tu pregunta…'
+      };
+
+      // Initial messages shown in the chat window
+      const initialMessages = [
+        '¡Hola! 👋',
+        'Soy tu asistente conectado a n8n. ¿En qué puedo ayudarte hoy?'
+      ];
+
+      // Initialize the chat widget
+      createChat({
+        webhookUrl: WEBHOOK_URL,
+        webhookConfig: { method: 'POST', headers: {} },
+        target: '#n8n-chat',
+        mode: MODE,                                 // 'window' | 'fullscreen'
+        chatInputKey: 'chatInput',
+        chatSessionKey: 'sessionId',
+        loadPreviousSession: LOAD_PREVIOUS_SESSION,
+        metadata: {},
+        showWelcomeScreen: true,
+        defaultLanguage: 'en',                      // per docs, only 'en' is supported – we inject ES strings below
+        initialMessages,
+        i18n: { en: i18nEsAsEn },
+        allowFileUploads: ALLOW_UPLOADS,
+        allowedFilesMimeTypes: ALLOW_UPLOADS ? ALLOWED_MIME : '',
+        enableStreaming: ENABLE_STREAMING,
+      });
+    </script>
+
+    <!-- 4) Friendly check list for operators (purely visual, remove if you want) -->
+    <script>
+      /* Tiny runtime checklist in the console to avoid common gotchas */
+      console.log('%cn8n Chat – Lista rápida de verificación', 'font-weight:600');
+      console.log('1) Workflow activo con Chat Trigger ✅');
+      console.log('2) CORS: agrega ESTE dominio a Allowed Origins ✅');
+      console.log('3) URL de Webhook de PRODUCCIÓN configurada aquí ✅');
+      console.log('4) Streaming activado (si lo habilitaste aquí) ✅');
+      console.log('5) Si usas modo fullscreen: el contenedor llena la página ✅');
+    </script>
+  </body>
+</html>

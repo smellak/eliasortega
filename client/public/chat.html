@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Centro Hogar Sanchez - Chat de Citas</title>
+
+    <!-- n8n Chat styles from CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
+
+    <style>
+      :root {
+        /* Palette - Centro Hogar Sanchez colors */
+        --chat--color--primary: #0066cc;
+        --chat--color--primary-shade-50: #0052a3;
+        --chat--color--primary--shade-100: #003d7a;
+        --chat--color--secondary: #60e6c5;
+        --chat--color-secondary-shade-50: #4fd7b5;
+        --chat--color-white: #ffffff;
+        --chat--color-light: #f6f7fb;
+        --chat--color-light-shade-50: #e9ecf7;
+        --chat--color-light-shade-100: #cfd6ee;
+        --chat--color-medium: #d8dbe6;
+        --chat--color-dark: #11131f;
+        --chat--color-disabled: #9aa3b2;
+        --chat--color-typing: #404040;
+
+        --chat--spacing: 1rem;
+        --chat--border-radius: 1rem;
+        --chat--transition-duration: 0.2s;
+
+        --chat--window--width: 420px;
+        --chat--window--height: 640px;
+
+        --chat--header-height: auto;
+        --chat--header--padding: calc(var(--chat--spacing) * 1.25);
+        --chat--header--background: linear-gradient(180deg, #fdfdff 0%, #f6f7fb 100%);
+        --chat--header--color: var(--chat--color-dark);
+        --chat--heading--font-size: 1.25rem;
+        --chat--subtitle--font-size: 0.95rem;
+        --chat--subtitle--line-height: 1.6;
+
+        --chat--message--font-size: 1rem;
+        --chat--message--padding: calc(var(--chat--spacing) * 0.9);
+        --chat--message--border-radius: 1rem;
+        --chat--message-line-height: 1.7;
+        --chat--message--bot--background: var(--chat--color-white);
+        --chat--message--bot--color: var(--chat--color-dark);
+        --chat--message--bot--border: 1px solid var(--chat--color-light-shade-100);
+        --chat--message--user--background: var(--chat--color--secondary);
+        --chat--message--user--color: #053b2f;
+        --chat--message--user--border: none;
+        --chat--message--pre--background: rgba(0,0,0,0.04);
+
+        --chat--textarea--height: 54px;
+
+        --chat--toggle--background: var(--chat--color--primary);
+        --chat--toggle--hover--background: var(--chat--color--primary-shade-50);
+        --chat--toggle--active--background: var(--chat--color--primary--shade-100);
+        --chat--toggle--color: var(--chat--color-white);
+        --chat--toggle--size: 64px;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html, body {
+        height: 100%;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      }
+
+      .container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+        height: 100vh;
+      }
+
+      .left-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+      }
+
+      .header {
+        text-align: center;
+        padding: 2rem;
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .logo {
+        max-width: 300px;
+        height: auto;
+        margin-bottom: 1rem;
+      }
+
+      .header h1 {
+        color: #0066cc;
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .header p {
+        color: #666;
+        font-size: 1rem;
+      }
+
+      .video-container {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .video-container h2 {
+        padding: 1.5rem;
+        color: #0066cc;
+        font-size: 1.25rem;
+        border-bottom: 1px solid #e9ecf7;
+      }
+
+      .video-wrapper {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        background: #000;
+      }
+
+      .video-wrapper video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+
+      .chat-panel {
+        display: flex;
+        flex-direction: column;
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .chat-header {
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+        color: white;
+        text-align: center;
+      }
+
+      .chat-header h2 {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .chat-header p {
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
+
+      #n8n-chat {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      @media (max-width: 1024px) {
+        .container {
+          grid-template-columns: 1fr;
+          height: auto;
+        }
+
+        .video-container {
+          min-height: 400px;
+        }
+
+        .chat-panel {
+          min-height: 600px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="left-panel">
+        <div class="header">
+          <img src="/logo-sanchez.png" alt="Centro Hogar Sanchez" class="logo" />
+          <h1>Sistema de Reservas de Citas</h1>
+          <p>Programa tu entrega con nuestro asistente virtual</p>
+        </div>
+
+        <div class="video-container">
+          <h2>Instrucciones de uso</h2>
+          <div class="video-wrapper">
+            <video controls>
+              <source src="https://drive.google.com/uc?export=download&id=1HwEF5x6Ypb-ZcyGPEG9fpf3xqu1mOp9s" type="video/mp4">
+              Tu navegador no soporta el elemento de video.
+            </video>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-panel">
+        <div class="chat-header">
+          <h2>Chat de Reservas</h2>
+          <p>Habla con nuestro asistente para programar tu cita</p>
+        </div>
+        <div id="n8n-chat"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
+
+      const WEBHOOK_URL = 'https://n8n-latest-rkxp.onrender.com/webhook/84c0469b-dd1f-4572-851b-609c0ef2782d/chat';
+
+      const i18nEsAsEn = {
+        title: '¡Hola!',
+        subtitle: 'Inicia una conversación para reservar tu cita de entrega.',
+        footer: '',
+        getStarted: 'Nueva conversación',
+        inputPlaceholder: 'Escribe tu mensaje...'
+      };
+
+      const initialMessages = [
+        '¡Hola! Soy tu asistente de Centro Hogar Sanchez.',
+        '¿En qué puedo ayudarte hoy? Puedo ayudarte a programar una cita de entrega.'
+      ];
+
+      createChat({
+        webhookUrl: WEBHOOK_URL,
+        webhookConfig: { method: 'POST', headers: {} },
+        target: '#n8n-chat',
+        mode: 'fullscreen',
+        chatInputKey: 'chatInput',
+        chatSessionKey: 'sessionId',
+        loadPreviousSession: true,
+        metadata: {},
+        showWelcomeScreen: true,
+        defaultLanguage: 'en',
+        initialMessages,
+        i18n: { en: i18nEsAsEn },
+        allowFileUploads: false,
+        enableStreaming: true,
+      });
+    </script>
+  </body>
+</html>

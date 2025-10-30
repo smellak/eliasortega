@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import path from "path";
 import {
   loginSchema,
   createProviderSchema,
@@ -18,6 +19,17 @@ import { capacityValidator } from "./services/capacity-validator";
 
 const prisma = new PrismaClient();
 const router = Router();
+
+// Public routes - NO authentication required
+// Serve chat page
+router.get("/chat", (req, res) => {
+  res.sendFile(path.join(process.cwd(), "client/public/chat.html"));
+});
+
+// Serve logo
+router.get("/logo-sanchez.png", (req, res) => {
+  res.sendFile(path.join(process.cwd(), "client/public/logo-sanchez.png"));
+});
 
 // Health check
 router.get("/api/health", (req, res) => {

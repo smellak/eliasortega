@@ -14,6 +14,8 @@ The frontend is built with React 18, utilizing Vite for tooling. The UI is devel
 ### Backend Architecture
 The backend runs on Node.js 20 with Express.js. Prisma Client provides type-safe database access, targeting PostgreSQL. Authentication is JWT-based with bcrypt for password hashing and role-based access control (RBAC) enforced via middleware. API documentation is provided via Swagger/OpenAPI 3.0 at `/docs`. Zod schemas ensure request/response validation across client and server. Timezone handling converts UTC database timestamps to `Europe/Madrid` for display. A core Capacity Validation Service discretizes time into minute-by-minute intervals to validate resource consumption against available capacity, returning detailed conflict information.
 
+**Public Routes**: The system includes a public chat interface at `/chat` that does not require authentication, allowing delivery providers to interact with an n8n-powered AI assistant to book appointments without accessing the management platform.
+
 ### Data Models
 -   **Users**: Email-based authentication with `ADMIN`, `PLANNER`, and `BASIC_READONLY` roles.
 -   **Providers**: Delivery service providers.
@@ -26,6 +28,7 @@ The backend runs on Node.js 20 with Express.js. Prisma Client provides type-safe
 -   **Shift Overlap Resolution**: Prioritizes the most specific (shortest duration) capacity shift when multiple overlap, allowing for flexible capacity adjustments.
 -   **Shared Type Definitions**: Zod schemas in `shared/types.ts` provide a single source of truth for type consistency and validation across the stack.
 -   **Default Capacity Values**: Environment variables (`DEFAULT_WORKERS`, `DEFAULT_FORKLIFTS`, `DEFAULT_DOCKS`) provide fallback capacity if no specific shifts are defined.
+-   **Public vs Protected Routes**: Management platform requires JWT authentication, while the `/chat` endpoint is publicly accessible for customer-facing appointment booking via AI assistant.
 
 ## External Dependencies
 
@@ -53,6 +56,9 @@ The backend runs on Node.js 20 with Express.js. Prisma Client provides type-safe
 -   swagger-jsdoc
 -   swagger-ui-express
 
+**Integration Services**:
+-   n8n webhook integration for AI-powered chat assistant (embedded at `/chat`)
+
 **Required Environment Variables**:
 -   `DATABASE_URL`
 -   `JWT_SECRET`
@@ -60,3 +66,14 @@ The backend runs on Node.js 20 with Express.js. Prisma Client provides type-safe
 -   `DEFAULT_FORKLIFTS` (optional)
 -   `DEFAULT_DOCKS` (optional)
 -   `NODE_ENV`
+
+## Public Endpoints
+
+### Chat Interface (`/chat`)
+A customer-facing public page that embeds the n8n AI chat assistant for appointment booking. This page:
+- Does not require authentication
+- Displays the Centro Hogar Sanchez branding (logo)
+- Includes video instructions for users
+- Connects to n8n webhook for conversational appointment scheduling
+- Located at: `client/public/chat.html`
+- Accessible via custom domain: `https://citaschs.com/chat`

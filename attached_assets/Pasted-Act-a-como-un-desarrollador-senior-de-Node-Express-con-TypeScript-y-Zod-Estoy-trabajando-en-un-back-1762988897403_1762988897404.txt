@@ -1,0 +1,221 @@
+Actúa como un desarrollador senior de Node/Express con TypeScript y Zod.
+Estoy trabajando en un backend que ya expone el endpoint:
+
+POST /api/integration/appointments/upsert
+
+Quiero añadir otro endpoint en el mismo proyecto para que lo use n8n como subagente de calendario.
+
+Objetivo
+
+Crear un endpoint:
+
+POST /api/integration/calendar/parse
+
+que reciba una “query” de calendario (desde n8n) y devuelva SIEMPRE un JSON normalizado con este shape:
+
+type NormalizedCalendarQuery = {
+  action: "availability" | "book";
+  from: string;
+  to: string;
+  duration_minutes: number;
+  start: string;
+  end: string;
+  providerName: string;
+  goodsType: string;
+  units: number;
+  lines: number;
+  deliveryNotesCount: number;
+  workMinutesNeeded: number;
+  forkliftsNeeded: number;
+};
+
+Reglas de entrada
+
+El body del request puede venir de dos formas:
+
+Con una propiedad query:
+
+query puede ser:
+
+un string con JSON dentro
+
+o un objeto ya parseado
+
+Ejemplos válidos:
+
+{
+  "query": "{\"action\":\"availability\",\"from\":\"2025-11-17\",\"to\":\"2025-11-17\",\"duration_minutes\":45}"
+}
+
+
+o:
+
+{
+  "query": {
+    "action": "book",
+    "start": "2025-12-09T09:15:00Z",
+    "end": "2025-12-09T10:20:00Z",
+    "providerName": "Distrigal",
+    "goodsType": "Colchonería",
+    "units": 10,
+    "lines": 10,
+    "deliveryNotesCount": 10,
+    "workMinutesNeeded": 65,
+    "forkliftsNeeded": 1
+  }
+}
+
+
+O directamente el objeto sin query:
+
+{
+  "action": "availability",
+  "from": "2025-11-17",
+  "to": "2025-11-17",
+  "duration_minutes": 45
+}
+
+Validación y normalización (usar Zod)
+
+Define un esquema Zod de entrada tipo:
+
+const RawQuerySchema = z.object({
+  action: z.string(),
+  from: z.string().optional(),
+  to: z.string().optional(),
+  duration_minutes: z.coerce.number().int().min(0).optional(),
+  start: z.string().optional(),
+  end: z.string().optional(),
+  providerName: z.string().optional(),
+  goodsType: z.string().optional(),
+  units: z.coerce.number().int().min(0).optional(),
+  lines: z.coerce.number().int().min(0).optional(),
+  deliveryNotesCount: z.coerce.number().int().min(0).optional(),
+  workMinutesNeeded: z.coerce.number().int().min(0).optional(),
+  forkliftsNeeded: z.coerce.number().int().min(0).optional(),
+});
+
+
+Lógica de parseo:
+
+Si req.body tiene query:
+
+Si query es string → JSON.parse(query)
+
+Si query es objeto → úsalo tal cual
+
+Si no hay query → interpreta req.body como el objeto de entrada.
+
+Aplica RawQuerySchema.parse(raw) y luego normaliza a NormalizedCalendarQuery:
+
+action:
+
+si es "availability" (case-insensitive) → "availability"
+
+en cualquier otro caso → "book"
+
+Para cada campo:
+
+strings: si falta → ""
+
+números: si faltan → 0
+
+Ejemplo de función de normalización:
+
+function normalize(raw: z.infer<typeof RawQuerySchema>): NormalizedCalendarQuery {
+  const action = raw.action.toLowerCase() === "availability" ? "availability" : "book";
+
+  return {
+    action,
+    from: raw.from ?? "",
+    to: raw.to ?? "",
+    duration_minutes: raw.duration_minutes ?? 0,
+    start: raw.start ?? "",
+    end: raw.end ?? "",
+    providerName: raw.providerName ?? "",
+    goodsType: raw.goodsType ?? "",
+    units: raw.units ?? 0,
+    lines: raw.lines ?? 0,
+    deliveryNotesCount: raw.deliveryNotesCount ?? 0,
+    workMinutesNeeded: raw.workMinutesNeeded ?? 0,
+    forkliftsNeeded: raw.forkliftsNeeded ?? 0,
+  };
+}
+
+Forma de respuesta del endpoint
+
+En caso de éxito:
+
+{
+  "success": true,
+  "data": {
+    "action": "availability",
+    "from": "2025-11-17",
+    "to": "2025-11-17",
+    "duration_minutes": 45,
+    "start": "",
+    "end": "",
+    "providerName": "",
+    "goodsType": "",
+    "units": 0,
+    "lines": 0,
+    "deliveryNotesCount": 0,
+    "workMinutesNeeded": 0,
+    "forkliftsNeeded": 0
+  }
+}
+
+
+En caso de error de validación Zod:
+
+{
+  "success": false,
+  "error": "Invalid calendar query",
+  "details": [ /* issues de Zod */ ]
+}
+
+
+En otros errores (parseo JSON, etc.):
+
+{
+  "success": false,
+  "error": "Invalid JSON or unknown error",
+  "details": "mensaje de error"
+}
+
+Integración en el servidor existente
+
+Crea un fichero de router (por ejemplo src/calendarParse.ts) con:
+
+definición del Zod schema
+
+función normalize
+
+calendarParseRouter.post("/parse", handler)
+
+En el entrypoint principal del servidor (donde se monta Express y ya se usa el router del upsert de appointments), importa y monta:
+
+import { calendarParseRouter } from "./calendarParse";
+
+app.use("/api/integration/calendar", calendarParseRouter);
+
+
+Asegúrate de que:
+
+express.json() está configurado antes de las rutas
+
+el endpoint acepta Content-Type: application/json
+
+Qué espero de ti
+
+Que crees el router completo (calendarParseRouter) con el código bien organizado.
+
+Que lo integres en el servidor existente.
+
+Que me muestres el código final de:
+
+el router calendarParseRouter
+
+el diff necesario en el archivo principal donde se montan las rutas.
+
+No inventes nada sobre n8n; solo necesita que este endpoint exista y devuelva exactamente el JSON descrito arriba.

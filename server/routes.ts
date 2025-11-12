@@ -11,8 +11,10 @@ import {
   createAppointmentSchema,
   updateAppointmentSchema,
   upsertAppointmentSchema,
+  rawCalendarQuerySchema,
   AuthResponse,
   UserResponse,
+  NormalizedCalendarQuery,
 } from "../shared/types";
 import { authenticateToken, requireRole, generateToken, AuthRequest } from "./middleware/auth";
 import { capacityValidator } from "./services/capacity-validator";
@@ -513,6 +515,77 @@ router.post("/api/integration/appointments/upsert", authenticateToken, async (re
     }
     console.error("Upsert appointment error:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Calendar parse endpoint (for n8n calendar subagent) - PUBLIC, no auth required
+router.post("/api/integration/calendar/parse", async (req, res) => {
+  try {
+    // Parse the incoming body - handle both query wrapper and direct object
+    let rawQuery: any;
+
+    if (req.body.query !== undefined) {
+      // Case 1: { query: "..." } or { query: {...} }
+      if (typeof req.body.query === "string") {
+        // String JSON - parse it
+        try {
+          rawQuery = JSON.parse(req.body.query);
+        } catch (e) {
+          return res.status(400).json({
+            success: false,
+            error: "Invalid JSON in query string",
+            details: e instanceof Error ? e.message : "Unknown error"
+          });
+        }
+      } else {
+        // Already an object
+        rawQuery = req.body.query;
+      }
+    } else {
+      // Case 2: Direct object without query wrapper
+      rawQuery = req.body;
+    }
+
+    // Validate with Zod
+    const parsed = rawCalendarQuerySchema.parse(rawQuery);
+
+    // Normalize the data
+    const action = parsed.action.toLowerCase() === "availability" ? "availability" : "book";
+
+    const normalized: NormalizedCalendarQuery = {
+      action,
+      from: parsed.from ?? "",
+      to: parsed.to ?? "",
+      duration_minutes: parsed.duration_minutes ?? 0,
+      start: parsed.start ?? "",
+      end: parsed.end ?? "",
+      providerName: parsed.providerName ?? "",
+      goodsType: parsed.goodsType ?? "",
+      units: parsed.units ?? 0,
+      lines: parsed.lines ?? 0,
+      deliveryNotesCount: parsed.deliveryNotesCount ?? 0,
+      workMinutesNeeded: parsed.workMinutesNeeded ?? 0,
+      forkliftsNeeded: parsed.forkliftsNeeded ?? 0,
+    };
+
+    res.json({
+      success: true,
+      data: normalized
+    });
+  } catch (error: any) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid calendar query",
+        details: error.errors
+      });
+    }
+    
+    res.status(400).json({
+      success: false,
+      error: "Invalid JSON or unknown error",
+      details: error.message || "Unknown error"
+    });
   }
 });
 

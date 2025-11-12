@@ -139,3 +139,37 @@ export const upsertAppointmentSchema = appointmentBaseSchema.extend({
   }
 );
 export type UpsertAppointmentInput = z.infer<typeof upsertAppointmentSchema>;
+
+// Calendar parse types (for n8n integration)
+export const rawCalendarQuerySchema = z.object({
+  action: z.string(),
+  from: z.string().optional(),
+  to: z.string().optional(),
+  duration_minutes: z.coerce.number().int().min(0).optional(),
+  start: z.string().optional(),
+  end: z.string().optional(),
+  providerName: z.string().optional(),
+  goodsType: z.string().optional(),
+  units: z.coerce.number().int().min(0).optional(),
+  lines: z.coerce.number().int().min(0).optional(),
+  deliveryNotesCount: z.coerce.number().int().min(0).optional(),
+  workMinutesNeeded: z.coerce.number().int().min(0).optional(),
+  forkliftsNeeded: z.coerce.number().int().min(0).optional(),
+});
+export type RawCalendarQuery = z.infer<typeof rawCalendarQuerySchema>;
+
+export interface NormalizedCalendarQuery {
+  action: "availability" | "book";
+  from: string;
+  to: string;
+  duration_minutes: number;
+  start: string;
+  end: string;
+  providerName: string;
+  goodsType: string;
+  units: number;
+  lines: number;
+  deliveryNotesCount: number;
+  workMinutesNeeded: number;
+  forkliftsNeeded: number;
+}

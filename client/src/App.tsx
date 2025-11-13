@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -13,6 +13,7 @@ import AppointmentsPage from "@/pages/appointments-page";
 import CapacityPage from "@/pages/capacity-page";
 import ProvidersPage from "@/pages/providers-page";
 import UsersPage from "@/pages/users-page";
+import ChatPublic from "@/pages/chat-public";
 import NotFound from "@/pages/not-found";
 import { authApi, getAuthToken } from "@/lib/api";
 import type { UserResponse } from "@shared/types";
@@ -33,11 +34,16 @@ function Router({ user }: { user: UserResponse }) {
 }
 
 function App() {
+  const [location] = useLocation();
   const [user, setUser] = useState<UserResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored user on mount
+    if (location === "/chat") {
+      setIsLoading(false);
+      return;
+    }
+
     const storedUser = localStorage.getItem("currentUser");
     const token = getAuthToken();
     
@@ -45,7 +51,7 @@ function App() {
       setUser(JSON.parse(storedUser));
     }
     setIsLoading(false);
-  }, []);
+  }, [location]);
 
   const handleLogin = async (email: string, password: string) => {
     try {
@@ -61,6 +67,17 @@ function App() {
     authApi.logout();
     setUser(null);
   };
+
+  if (location === "/chat") {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <ChatPublic />
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
 
   if (isLoading) {
     return (

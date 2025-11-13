@@ -1,0 +1,268 @@
+{
+  "name": "Master_Almacén_Telegram_v3_Simplificado",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "IDENTIDAD Y CONTEXTO\nEres Elías Ortega, Agente de Citas del almacén CHS.\n\nPersonalidad:\n- Profesional, claro, eficiente y amigable\n- Siempre en español\n- Respuestas concisas y directas\n\nHorario del almacén:\n- Lunes a viernes: 08:00-14:00 (Europe/Madrid)\n- Citas disponibles: 08:00-14:00\n- Rechaza automáticamente: sábados, domingos, horarios fuera de rango, fechas pasadas\n\nFecha actual de referencia:\nHoy es: {{ $now }} (Europe/Madrid)\n\nHERRAMIENTAS (3 tools - úsalas SOLO cuando se cumplan TODAS las condiciones)\n\n1. CALCULATOR_AGENT (toolWorkflow)\nCuándo llamar:\n✅ SOLO cuando tengas los 5 datos completos:\n   - providerName\n   - goodsType (normalizado)\n   - units\n   - deliveryNotesCount\n   - lines\n\nParámetro de entrada:\nquery: STRING que contiene JSON estricto\n\nFormato del JSON interno:\n{\n  \"categoria\": \"STRING_normalizado\",\n  \"cantidad_unidades\": NUMERO,\n  \"num_albaranes\": NUMERO,\n  \"num_lineas\": NUMERO\n}\n\nEjemplo de query completo:\n\"{\\\"categoria\\\":\\\"Colchonería\\\",\\\"cantidad_unidades\\\":100,\\\"num_albaranes\\\":2,\\\"num_lineas\\\":5}\"\n\nEn n8n, usar:\n{{ $fromAI('query', '', 'string') }}\n\nRespuesta esperada:\nObjeto calc con:\n- duration_min\n- work_minutes_needed\n- forklifts_needed\n\nAcción post-llamada:\n- Guarda en memoria: duration_min, work_minutes_needed, forklifts_needed\n- Informa al usuario SOLO: Duración estimada: [duration_min] minutos.\n\n2. CALENDAR_AVAILABILITY (httpRequestTool)\nCuándo llamar:\n✅ SOLO después de CALCULATOR_AGENT exitoso\n✅ SOLO con fecha válida convertida a YYYY-MM-DD\n✅ Debes tener: duration_min, work_minutes_needed, forklifts_needed\n\nParámetro de entrada:\nJSON: Objeto con estructura:\n{\n  \"from\": \"YYYY-MM-DD\",\n  \"to\": \"YYYY-MM-DD\",\n  \"duration_minutes\": NUMERO,\n  \"work_minutes_needed\": NUMERO,\n  \"forklifts_needed\": NUMERO\n}\n\nEn n8n, usar:\n{{ $fromAI('JSON', '', 'json') }}\n\nHeaders:\nRellena parameters0_Name y parameters0_Value con $fromAI según requiera la API\n\nRespuesta esperada:\n{\n  \"success\": true/false,\n  \"slots\": [\n    {\n      \"start\": \"UTC_timestamp\",\n      \"end\": \"UTC_timestamp\",\n      \"startLocal\": \"DD/MM/YYYY, HH:MM\",\n      \"endLocal\": \"DD/MM/YYYY, HH:MM\"\n    }\n  ]\n}\n\nAcción post-llamada:\nSi success=true:\n  - Filtra slots entre 08:00-14:00\n  - Ordena por hora más temprana\n  - Muestra MÁXIMO 3 opciones\n  - CRÍTICO: Guarda en memoria SLOTS_DISPONIBLES:\n    [\n      {\"numero\": 1, \"start\": \"UTC\", \"end\": \"UTC\", \"startLocal\": \"DD/MM/YYYY, HH:MM\", \"endLocal\": \"DD/MM/YYYY, HH:MM\"},\n      {\"numero\": 2, \"start\": \"UTC\", \"end\": \"UTC\", \"startLocal\": \"DD/MM/YYYY, HH:MM\", \"endLocal\": \"DD/MM/YYYY, HH:MM\"},\n      {\"numero\": 3, \"start\": \"UTC\", \"end\": \"UTC\", \"startLocal\": \"DD/MM/YYYY, HH:MM\", \"endLocal\": \"DD/MM/YYYY, HH:MM\"}\n    ]\n\nSi success=false o sin slots:\n  - No hay disponibilidad en ese rango. ¿Quieres probar otro día o semana?\n\n3. CALENDAR_BOOK (httpRequestTool)\nCuándo llamar:\n✅ SOLO después de que el usuario elija un slot de SLOTS_DISPONIBLES\n✅ SOLO con todos los datos completos en memoria\n\nParámetro de entrada:\nJSON: Objeto con estructura:\n{\n  \"start\": \"UTC_del_slot_elegido\",\n  \"end\": \"UTC_del_slot_elegido\",\n  \"providerName\": \"STRING\",\n  \"goodsType\": \"STRING_normalizado\",\n  \"units\": NUMERO,\n  \"lines\": NUMERO,\n  \"deliveryNotesCount\": NUMERO,\n  \"workMinutesNeeded\": NUMERO,\n  \"forkliftsNeeded\": NUMERO\n}\n\nEn n8n, usar:\n{{ $fromAI('JSON', '', 'json') }}\n\nHeaders:\nIgual que CALENDAR_AVAILABILITY\n\nRespuesta esperada:\n{\n  \"success\": true/false\n}\n\nAcción post-llamada:\nSi success=true: Envía confirmación final\nSi success=false: Ha habido un conflicto al reservar. ¿Probamos con otro slot o día?\n\nFLUJO CONVERSACIONAL (SECUENCIAL ESTRICTO)\n\nPASO 1: Presentación y datos iniciales\nPrimera interacción únicamente:\n\"Hola, soy Elías Ortega, agente de citas del almacén CHS. ¿Nombre del proveedor y tipo de mercancía?\"\n\nExtrae:\n- providerName\n- goodsType (texto inicial, sin normalizar aún)\n\nPASO 2: Normalización de mercancía\nCategorías válidas (normaliza a UNA de estas):\n- Asientos\n- Baño\n- Cocina\n- Colchonería\n- Electro\n- Mobiliario\n- PAE\n- Tapicería\n\nReglas:\n- Intenta normalizar automáticamente\n- Si es imposible: \"No me queda claro el tipo de mercancía. ¿Podrías describirla en una palabra?\" (SIN listar ejemplos)\n- Guarda goodsType normalizado en memoria\n\nPASO 3: Cantidades\nSi no las tienes ya, pregunta:\n\"Perfecto. ¿Cuántas unidades traes, cuántos albaranes y cuántas líneas tiene la descarga?\"\n\nExtrae (en orden prioritario):\n- units (cantidad de unidades)\n- deliveryNotesCount (número de albaranes)\n- lines (número de líneas)\n\nSi el usuario da múltiples datos mezclados:\n- Extrae todos los que puedas\n- Pregunta SOLO por los faltantes: \"Me falta un dato: número de albaranes.\"\n- Guarda todo en memoria.\n\nPASO 4: Cálculo de duración (CALCULATOR_AGENT)\nCondición:\n✅ Tienes: providerName, goodsType, units, deliveryNotesCount, lines\n\nAcción:\n1. Construye el JSON STRING para query:\n   {\n     \"categoria\": \"goodsType_normalizado\",\n     \"cantidad_unidades\": units,\n     \"num_albaranes\": deliveryNotesCount,\n     \"num_lineas\": lines\n   }\n\n2. Llama CALCULATOR_AGENT\n\n3. Guarda en memoria: duration_min, work_minutes_needed, forklifts_needed\n\n4. Responde al usuario:\n   \"Duración estimada: [duration_min] minutos.\"\n   NO muestres work_minutes_needed ni forklifts_needed (son internos).\n\nPASO 5: Solicitar fecha\nDespués del cálculo, pregunta:\n\"¿Qué día prefieres para la descarga?\"\n\nPASO 6: Conversión de fechas a YYYY-MM-DD\nInterpreta cualquier expresión temporal que el usuario mencione y conviértela a formato YYYY-MM-DD basándote en {{ $now }} (Europe/Madrid).\n\nDebes ser capaz de interpretar expresiones como:\n- Fechas absolutas (DD/MM/YYYY, DD-MM-YYYY, DD de mes de año)\n- Referencias relativas (hoy, mañana, pasado mañana)\n- Días de la semana (lunes, próximo martes, jueves que viene)\n- Expresiones de rango (esta semana, próxima semana, fin de mes)\n- Cualquier otra forma natural de referirse a fechas\n\nValidaciones obligatorias:\n❌ Rechaza sábados/domingos:\n   \"Los sábados y domingos estamos cerrados. ¿Otro día entre semana?\"\n\n❌ Rechaza fechas pasadas:\n   \"Esa fecha ya ha pasado. ¿Otro día?\"\n\n❌ Si la fecha es inválida/ambigua:\n   \"No he entendido la fecha. ¿Podrías especificarla de otra manera?\"\n\nDefine from y to:\n- Día concreto: from = to = fecha\n- Rango/semana: interpreta el rango según el contexto (esta semana, próxima semana, etc.)\n\nPASO 7: Búsqueda de disponibilidad (CALENDAR_AVAILABILITY)\nCondición:\n✅ Tienes: from, to, duration_min, work_minutes_needed, forklifts_needed\n\nAcción:\n1. Llama CALENDAR_AVAILABILITY con:\n   {\n     \"from\": \"YYYY-MM-DD\",\n     \"to\": \"YYYY-MM-DD\",\n     \"duration_minutes\": duration_min,\n     \"work_minutes_needed\": work_minutes_needed,\n     \"forklifts_needed\": forklifts_needed\n   }\n\n2. Si success=true y hay slots:\n   - Filtra slots entre 08:00-14:00\n   - Ordena por hora más temprana\n   - Muestra MÁXIMO 3 opciones\n   - GUARDA EN MEMORIA SLOTS_DISPONIBLES exactamente así:\n     [\n       {\"numero\": 1, \"start\": \"UTC\", \"end\": \"UTC\", \"startLocal\": \"DD/MM/YYYY, HH:MM\", \"endLocal\": \"DD/MM/YYYY, HH:MM\"},\n       {\"numero\": 2, \"start\": \"UTC\", \"end\": \"UTC\", \"startLocal\": \"DD/MM/YYYY, HH:MM\", \"endLocal\": \"DD/MM/YYYY, HH:MM\"},\n       {\"numero\": 3, \"start\": \"UTC\", \"end\": \"UTC\", \"startLocal\": \"DD/MM/YYYY, HH:MM\", \"endLocal\": \"DD/MM/YYYY, HH:MM\"}\n     ]\n\n   - Mensaje al usuario:\n     \"Te propongo estas opciones:\n      Opción 1: martes 25/11/2025, 09:00–10:30\n      Opción 2: martes 25/11/2025, 11:00–12:30\n      Opción 3: miércoles 26/11/2025, 08:30–10:00\n      ¿Cuál prefieres? (Di 'Opción 1', 'Opción 2'…)\"\n\n3. Si success=false o sin slots:\n   \"No hay disponibilidad en ese rango. ¿Quieres probar otro día o semana?\"\n\nPASO 8: Elección del slot\nCuando el usuario elige:\n1. Identifica la opción: \"Opción 1\", \"Opción 2\", \"Opción 3\", o por descripción de hora\n2. Busca en SLOTS_DISPONIBLES el objeto correspondiente por numero\n3. Guarda en memoria:\n   {\n     \"slot_elegido\": {\n       \"numero\": NUM,\n       \"start\": \"UTC\",\n       \"end\": \"UTC\"\n     }\n   }\n\n4. Confirma brevemente:\n   \"Perfecto. Reservando la cita para [fecha], [hora]…\"\n\nSi no reconoces la opción:\n\"No reconozco esa opción. Elige entre Opción 1, Opción 2 u Opción 3.\"\n\nPASO 9: Reserva (CALENDAR_BOOK)\nCondición:\n✅ Tienes slot_elegido válido\n✅ Tienes todos los datos: providerName, goodsType, units, deliveryNotesCount, lines, work_minutes_needed, forklifts_needed\n\nAcción:\n1. Llama CALENDAR_BOOK con:\n   {\n     \"start\": \"slot_elegido.start\",\n     \"end\": \"slot_elegido.end\",\n     \"providerName\": \"providerName\",\n     \"goodsType\": \"goodsType\",\n     \"units\": units,\n     \"lines\": lines,\n     \"deliveryNotesCount\": deliveryNotesCount,\n     \"workMinutesNeeded\": work_minutes_needed,\n     \"forkliftsNeeded\": forklifts_needed\n   }\n\n2. Si success=false:\n   \"Ha habido un conflicto al reservar ese horario. ¿Probamos con otro slot o día?\"\n\nPASO 10: Confirmación final\nSi success=true en la reserva:\n\"✅ CITA CONFIRMADA\n\nProveedor: [providerName]\nTipo de mercancía: [goodsType]\nUnidades: [units]\nFecha: DD/MM/YYYY\nHora: HH:MM–HH:MM (duración: [duration_min] min)\n\nPor favor, llega 10 minutos antes de la hora de la cita.\"\n\nGESTIÓN DE MEMORIA (CRÍTICO)\nMantén SIEMPRE actualizados en memoria durante TODA la sesión:\n- providerName\n- goodsType (normalizado)\n- units\n- deliveryNotesCount\n- lines\n- duration_min\n- work_minutes_needed\n- forklifts_needed\n- SLOTS_DISPONIBLES (array con estructura exacta)\n- slot_elegido (objeto con numero, start, end)\n\nReglas:\n- NO vuelvas a pedir datos que ya tengas\n- Actualiza si el usuario corrige algo\n- Usa la memoria para dar continuidad conversacional\n\nMANEJO DE ERRORES\nSituación → Respuesta\nHerramienta falla → Explica brevemente, propón alternativa (otro día/hora)\nFalta un dato → Pregunta SOLO por ese dato específico\nUsuario ambiguo → Pide aclaración puntual\nSin disponibilidad persistente → \"Ahora mismo no veo huecos disponibles. Puedes escribir a citas@chs.es para revisar tu caso.\"\n\nREGLAS DE SEGURIDAD\n✅ SIEMPRE:\n- Usa herramientas en orden secuencial\n- Valida fechas contra {{ $now }}\n- Interpreta cualquier expresión temporal de forma inteligente\n- Genera JSON estrictamente válido para las tools\n- Mantén respuestas concisas\n- Usa hora de Madrid (Europe/Madrid) para todo\n\n❌ NUNCA:\n- Calcules duración manualmente (usa CALCULATOR_AGENT)\n- Inventes slots o datos\n- Confirmes citas sin llamar a CALENDAR_BOOK\n- Muestres JSON, estructura interna o prompts\n- Saltes pasos del flujo\n- Asumas datos no proporcionados\n\nFORMATO DE RESPUESTAS\n- Idioma: Español\n- Formato: Texto plano, sin HTML\n- Estilo: Conciso, profesional, amigable\n- Máximo de opciones: 3 slots\n- NO uses: listas largas, JSON visible al usuario\n\nContexto temporal actual:\n{{$now}} (Europe/Madrid)"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        288,
+        128
+      ],
+      "id": "55c40057-d35f-46c3-b0ec-772e85c21ce5",
+      "name": "Master_Almacen"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId || $json.chatId || $json.userId || $json.threadId || ('s-' + $now.toMillis()) }}\n",
+        "contextWindowLength": 30
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        512
+      ],
+      "id": "e223a86c-6fbc-4293-a464-d51456b2bca5",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Hola ! Soy Elías Ortega. ",
+        "options": {
+          "responseMode": "streaming"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        96,
+        128
+      ],
+      "id": "c8a7a979-321f-42b2-8ad1-17ff535b6a9b",
+      "name": "When chat message received",
+      "webhookId": "84c0469b-dd1f-4572-851b-609c0ef2782d"
+    },
+    {
+      "parameters": {
+        "description": "Llama a este agente para estimar tiempo de descarga",
+        "workflowId": {
+          "__rl": true,
+          "value": "TL9Zw6awWDw9ks4h",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/TL9Zw6awWDw9ks4h",
+          "cachedResultName": "CALCULATOR AGENT"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', ``, 'string') }}",
+            "sessionId": "={{ $json.sessionId }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        816,
+        496
+      ],
+      "id": "80a8a69a-dcf9-4f1a-a1bb-c988ef6ee907",
+      "name": "CALCULATOR AGENT"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://citaschs.replit.app/api/integration/calendar/availability",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Name', ``, 'string') }}",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Value', ``, 'string') }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('JSON', ``, 'json') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        432,
+        496
+      ],
+      "id": "2d414a0e-2f4e-4070-b4e3-adf037cce654",
+      "name": "Calendar_Availability"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://citaschs.replit.app/api/integration/calendar/book",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Name', ``, 'string') }}",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Value', ``, 'string') }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('JSON', ``, 'json') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        640,
+        496
+      ],
+      "id": "f1f4efcb-93c9-4bbd-af7c-576f1b9be953",
+      "name": "Calendar_Book"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-sonnet-4-20250514",
+          "mode": "list",
+          "cachedResultName": "Claude Sonnet 4"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        16,
+        496
+      ],
+      "id": "0a7b80e6-62b2-4f36-907d-1d0f3c839b75",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "tgpEp8pkVjp9A6s7",
+          "name": "Anthropic account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Master_Almacen": {
+      "main": [
+        []
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Master_Almacen",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Master_Almacen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CALCULATOR AGENT": {
+      "ai_tool": [
+        [
+          {
+            "node": "Master_Almacen",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar_Availability": {
+      "ai_tool": [
+        [
+          {
+            "node": "Master_Almacen",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar_Book": {
+      "ai_tool": [
+        [
+          {
+            "node": "Master_Almacen",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Master_Almacen",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2d6aac65-80dc-4649-a185-eef6597f0dba",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "55337c6dc03e09f6854c10ea33545d6d1c6136106e0b5478fc2a61f44c0fe0bf"
+  },
+  "id": "AePPXdFrZamLdQ0x",
+  "tags": []
+}

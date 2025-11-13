@@ -126,20 +126,19 @@ Clasifica goodsType en una de estas categorías:
    - Base: 0.5 min/unidad, 0.5 carretillas, 1 operario
 
 ### Fórmulas de cálculo
-```
-work_minutes_base = units × tiempo_por_unidad_según_categoría
+
+work_minutes_base = units * tiempo_por_unidad_según_categoría
 forklifts_base = valor_base_categoría
 workers_base = valor_base_categoría
 
-# Ajustes por complejidad
+Ajustes por complejidad:
 complejidad_lineas = max(1, lines / 10)  # cada 10 líneas aumenta complejidad
-work_minutes_needed = work_minutes_base × complejidad_lineas
-forklifts_needed = ceil(forklifts_base × complejidad_lineas)
-workers_needed = ceil(workers_base × complejidad_lineas)
+work_minutes_needed = work_minutes_base * complejidad_lineas
+forklifts_needed = ceil(forklifts_base * complejidad_lineas)
+workers_needed = ceil(workers_base * complejidad_lineas)
 
-# Tiempo total de ocupación (mínimo 15 min, máximo 180 min)
+Tiempo total de ocupación (mínimo 15 min, máximo 180 min):
 duration_min = clamp(work_minutes_needed, 15, 180)
-```
 
 ## 📊 Ejemplos
 

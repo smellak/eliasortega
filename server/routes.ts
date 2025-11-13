@@ -127,16 +127,22 @@ router.get("/api/health", (req, res) => {
 
 // Chat API - Public endpoint with SSE streaming
 router.post("/api/chat/message", async (req, res) => {
+  console.log("[CHAT API] Received request:", { sessionId: req.body.sessionId, hasMessage: !!req.body.message });
+  
   try {
     const { sessionId, message } = req.body;
     
     if (!sessionId || !message) {
+      console.log("[CHAT API] Missing required fields");
       return res.status(400).json({ error: "sessionId and message are required" });
     }
 
     const baseUrl = `${req.protocol}://${req.get('host')}`;
+    console.log("[CHAT API] Base URL:", baseUrl);
     
+    console.log("[CHAT API] Importing AgentOrchestrator...");
     const { AgentOrchestrator } = await import("./agent/orchestrator");
+    console.log("[CHAT API] Creating orchestrator instance...");
     const orchestrator = new AgentOrchestrator(sessionId, baseUrl);
 
     res.setHeader("Content-Type", "text/event-stream");
@@ -144,21 +150,31 @@ router.post("/api/chat/message", async (req, res) => {
     res.setHeader("Connection", "keep-alive");
     res.flushHeaders();
 
+    console.log("[CHAT API] Starting chat stream...");
+    let chunkCount = 0;
     for await (const chunk of orchestrator.chat(message)) {
+      chunkCount++;
+      console.log(`[CHAT API] Chunk ${chunkCount}:`, chunk.type);
       const data = JSON.stringify(chunk);
       res.write(`data: ${data}\n\n`);
     }
 
+    console.log(`[CHAT API] Chat completed. Total chunks: ${chunkCount}`);
     res.write("data: [DONE]\n\n");
     res.end();
-  } catch (error) {
-    console.error("Chat API error:", error);
+  } catch (error: any) {
+    console.error("[CHAT API] Error details:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    });
+    
     if (!res.headersSent) {
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: "Internal server error", details: error.message });
     } else {
       const errorChunk = JSON.stringify({
         type: "error",
-        content: "Error interno del servidor",
+        content: `Error: ${error.message}`,
       });
       res.write(`data: ${errorChunk}\n\n`);
       res.end();

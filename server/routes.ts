@@ -125,6 +125,47 @@ router.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// Chat API - Public endpoint with SSE streaming
+router.post("/api/chat/message", async (req, res) => {
+  try {
+    const { sessionId, message } = req.body;
+    
+    if (!sessionId || !message) {
+      return res.status(400).json({ error: "sessionId and message are required" });
+    }
+
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    const { AgentOrchestrator } = await import("./agent/orchestrator");
+    const orchestrator = new AgentOrchestrator(sessionId, baseUrl);
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    for await (const chunk of orchestrator.chat(message)) {
+      const data = JSON.stringify(chunk);
+      res.write(`data: ${data}\n\n`);
+    }
+
+    res.write("data: [DONE]\n\n");
+    res.end();
+  } catch (error) {
+    console.error("Chat API error:", error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Internal server error" });
+    } else {
+      const errorChunk = JSON.stringify({
+        type: "error",
+        content: "Error interno del servidor",
+      });
+      res.write(`data: ${errorChunk}\n\n`);
+      res.end();
+    }
+  }
+});
+
 // Authentication
 router.post("/api/auth/login", async (req, res) => {
   try {

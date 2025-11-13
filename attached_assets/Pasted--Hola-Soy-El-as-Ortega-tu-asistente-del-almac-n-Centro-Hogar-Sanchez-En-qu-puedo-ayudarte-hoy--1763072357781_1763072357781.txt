@@ -1,0 +1,60 @@
+¡Hola! Soy Elías Ortega, tu asistente del almacén Centro Hogar Sanchez. ¿En qué puedo ayudarte hoy? Puedo ayudarte a programar una cita de entrega.
+
+23:17
+
+hola
+
+23:17
+
+¡Hola! Buen día, soy Elías Ortega, del departamento de citas de Centro Hogar Sánchez.
+
+Estoy aquí para ayudarte a programar tu entrega al almacén. Para poder gestionar tu cita, necesito algunos datos:
+
+1. **¿Para qué empresa trabajas?** (nombre del proveedor/transportista)
+2. **¿Qué tipo de mercancía traes?** (por ejemplo: Muebles, Electrodomésticos, Textil, Paletizado, etc.)
+3. **¿Cuántas unidades o bultos** vas a descargar?
+4. **¿Cuántas líneas o referencias diferentes** traes?
+5. **¿Qué día prefieres para la entrega?** (mañana, esta semana, alguna fecha en concreto...)
+
+Recuerda que nuestro horario de recepción es de **lunes a viernes de 08:00 a 14:00**.
+
+¿Empezamos? 😊
+
+23:17
+
+Para Distrigal, traigo muebles, son 80 unidades, 15 lineas y necesito cita para la semana proxima
+
+23:18
+
+Perfecto, gracias por la información. Déjame calcular los recursos necesarios para tu entrega:
+
+- **Empresa:** Distrigal
+- **Mercancía:** Muebles
+- **Unidades:** 80
+- **Líneas:** 15
+- **Período:** Semana próxima
+
+Voy a estimar el tiempo y recursos necesarios...Perfecto, he calculado los recursos para tu entrega:
+
+📊 **Estimación de recursos:**
+- **Categoría:** Voluminoso pesado (Muebles)
+- **Tiempo estimado de descarga:** 3 horas (180 minutos)
+- **Minutos de trabajo:** 360 minutos
+- **Carretillas necesarias:** 3
+- **Operarios necesarios:** 3
+
+Ahora voy a buscar disponibilidad para la **semana próxima** (del lunes 17 al viernes 21 de noviembre). Como la cita necesita 3 horas, buscaré franjas que terminen antes de las 14:00.Vaya, no encuentro disponibilidad en la semana del 17 al 21 de noviembre para una cita de 3 horas con los recursos necesarios. 
+
+Déjame buscar en la **siguiente semana** (24-28 de noviembre):Tampoco hay disponibilidad esa semana. Déjame ampliar la búsqueda a **diciembre** para encontrarte las primeras opciones disponibles:Entiendo la situación. Parece que la capacidad del almacén está muy comprometida para entregas de este tamaño (3 horas con 3 carretillas).
+
+**Te propongo dos opciones:**
+
+1. **Dividir la entrega:** ¿Sería posible hacer la entrega en 2 envíos más pequeños? Por ejemplo:
+   - 1ª entrega: 40 unidades / 8 líneas
+   - 2ª entrega: 40 unidades / 7 líneas
+   
+   Esto reduciría el tiempo y recursos por cita, aumentando las posibilidades de encontrar hueco.
+
+2. **Buscar en enero 2026:** Puedo buscar disponibilidad más adelante si tienes flexibilidad en las fechas.
+
+¿Qué prefieres? ¿O tienes alguna fecha específica en mente que quieras que revise?

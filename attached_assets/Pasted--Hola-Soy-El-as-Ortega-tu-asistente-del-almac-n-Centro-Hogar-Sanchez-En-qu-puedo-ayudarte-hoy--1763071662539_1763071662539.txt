@@ -1,0 +1,80 @@
+¡Hola! Soy Elías Ortega, tu asistente del almacén Centro Hogar Sanchez. ¿En qué puedo ayudarte hoy? Puedo ayudarte a programar una cita de entrega.
+
+23:05
+
+hola
+
+23:05
+
+¡Hola! Bienvenido/a a **Centro Hogar Sánchez**. Soy **Elías Ortega**, agente de citas del almacén.
+
+Estoy aquí para ayudarte a programar tu entrega. Para ello, necesito algunos datos:
+
+1. **¿Para qué empresa trabajas?** (nombre del proveedor)
+2. **¿Qué tipo de mercancía traes?** (por ejemplo: Muebles, Electrodomésticos, Textil, Paletizado, etc.)
+3. **¿Cuántas unidades o bultos** vas a entregar?
+4. **¿Cuántas líneas o referencias** diferentes son?
+5. **¿Qué fecha prefieres para la entrega?** (por ejemplo: mañana, próximo lunes, esta semana...)
+
+Recuerda que nuestro horario de recepción es de **lunes a viernes de 08:00 a 14:00h**.
+
+¿Empezamos? 😊
+
+23:05
+
+trabajo para Jancor, traigo muebles, 100 unidades
+
+23:06
+
+Perfecto, gracias por la información. Ya tengo:
+
+✅ **Empresa:** Jancor  
+✅ **Mercancía:** Muebles  
+✅ **Unidades:** 100  
+
+Ahora necesito saber:
+
+- **¿Cuántas líneas o referencias diferentes** son esas 100 unidades? (por ejemplo: ¿son 5 referencias distintas, 10, 20...?)
+- **¿Qué fecha prefieres** para la entrega? (mañana viernes, la semana que viene, algún día en particular...)
+
+23:06
+
+15 lineas, hay disponibilidad mañana?
+
+23:06
+
+Perfecto, ya tengo todos los datos:
+
+✅ **Empresa:** Jancor  
+✅ **Mercancía:** Muebles  
+✅ **Unidades:** 100  
+✅ **Líneas:** 15  
+✅ **Fecha solicitada:** Mañana viernes 14 de noviembre
+
+Déjame calcular los recursos necesarios y buscar disponibilidad para mañana...Entendido. Para tu entrega necesitaremos:
+
+📊 **Recursos estimados:**
+- ⏱️ **Duración:** 180 minutos (3 horas)
+- 👷 **Operarios:** 3
+- 🚜 **Carretillas:** 3
+- 🔧 **Tiempo de trabajo:** 450 minutos
+
+Ahora busco disponibilidad para **mañana viernes 14 de noviembre**...Lo siento, **no hay disponibilidad mañana viernes 14 de noviembre** para una entrega de 3 horas con los recursos necesarios.
+
+¿Te gustaría que busque disponibilidad para **la semana que viene** (del lunes 17 al viernes 21 de noviembre)? O si prefieres, puedo buscar en un rango de fechas específico.
+
+¿Qué prefieres?
+
+23:06
+
+valle, para la semana que viene
+
+23:07
+
+Perfecto, busco disponibilidad para **la semana que viene (17-21 de noviembre)**...Vaya, no hay disponibilidad en la semana del 17-21 de noviembre con la duración necesaria (3 horas).
+
+Déjame buscar en **semanas posteriores**. ¿Te sirve que busque disponibilidad para la **semana del 24-28 de noviembre**? O si lo prefieres, puedo buscar en un rango más amplio para encontrar el primer hueco disponible.
+
+¿Qué prefieres?
+
+23:07

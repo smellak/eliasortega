@@ -129,6 +129,9 @@ export async function executeToolCall(
   toolInput: Record<string, any>,
   baseUrl: string
 ): Promise<string> {
+  console.log(`[TOOL EXECUTION] Tool: ${toolName}`);
+  console.log(`[TOOL EXECUTION] Input:`, JSON.stringify(toolInput, null, 2));
+  
   try {
     switch (toolName) {
       case "calculator":
@@ -139,9 +142,11 @@ export async function executeToolCall(
           lines: toolInput.lines,
         };
         const calcResult = await runCalculator(calcInput);
+        console.log(`[TOOL EXECUTION] Calculator result:`, JSON.stringify(calcResult, null, 2));
         return JSON.stringify(calcResult, null, 2);
 
       case "calendar_availability":
+        console.log(`[TOOL EXECUTION] Calling calendar availability API at: ${baseUrl}/api/integration/calendar/availability`);
         const availabilityResponse = await fetch(
           `${baseUrl}/api/integration/calendar/availability`,
           {
@@ -150,14 +155,18 @@ export async function executeToolCall(
             body: JSON.stringify(toolInput),
           }
         );
+        console.log(`[TOOL EXECUTION] Availability API response status: ${availabilityResponse.status}`);
         if (!availabilityResponse.ok) {
           const errorText = await availabilityResponse.text();
-          throw new Error(`Calendar API error: ${errorText}`);
+          console.error(`[TOOL EXECUTION] Availability API error:`, errorText);
+          throw new Error(`Calendar API error (${availabilityResponse.status}): ${errorText}`);
         }
         const availabilityData = await availabilityResponse.json();
+        console.log(`[TOOL EXECUTION] Availability API result:`, JSON.stringify(availabilityData, null, 2));
         return JSON.stringify(availabilityData, null, 2);
 
       case "calendar_book":
+        console.log(`[TOOL EXECUTION] Calling calendar book API at: ${baseUrl}/api/integration/calendar/book`);
         const bookResponse = await fetch(
           `${baseUrl}/api/integration/calendar/book`,
           {
@@ -166,11 +175,14 @@ export async function executeToolCall(
             body: JSON.stringify(toolInput),
           }
         );
+        console.log(`[TOOL EXECUTION] Book API response status: ${bookResponse.status}`);
         if (!bookResponse.ok) {
           const errorText = await bookResponse.text();
-          throw new Error(`Booking API error: ${errorText}`);
+          console.error(`[TOOL EXECUTION] Book API error:`, errorText);
+          throw new Error(`Booking API error (${bookResponse.status}): ${errorText}`);
         }
         const bookData = await bookResponse.json();
+        console.log(`[TOOL EXECUTION] Book API result:`, JSON.stringify(bookData, null, 2));
         return JSON.stringify(bookData, null, 2);
 
       default:
@@ -178,6 +190,7 @@ export async function executeToolCall(
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`[TOOL EXECUTION] Error in ${toolName}:`, errorMessage);
     return JSON.stringify({ error: errorMessage });
   }
 }

@@ -132,7 +132,8 @@ router.post("/api/chat/message", async (req, res) => {
       return res.status(400).json({ error: "sessionId and message are required" });
     }
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    // Always use localhost for internal API calls to avoid routing issues
+    const baseUrl = "http://localhost:5000";
     console.log("[CHAT API] Base URL:", baseUrl);
     
     console.log("[CHAT API] Importing AgentOrchestrator...");

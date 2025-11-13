@@ -110,12 +110,7 @@ async function upsertAppointmentInternal(data: {
 const router = Router();
 
 // Public routes - NO authentication required
-// Serve chat page
-router.get("/chat", (req, res) => {
-  res.sendFile(path.join(process.cwd(), "client/public/chat.html"));
-});
-
-// Serve logo
+// Serve logo (keep for legacy n8n chat.html if needed)
 router.get("/logo-sanchez.png", (req, res) => {
   res.sendFile(path.join(process.cwd(), "client/public/logo-sanchez.png"));
 });

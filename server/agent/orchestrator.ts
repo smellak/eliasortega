@@ -27,10 +27,23 @@ export class AgentOrchestrator {
 
       const history = await this.memory.getHistory();
       
-      const anthropicMessages: Anthropic.MessageParam[] = history.map((msg) => ({
-        role: msg.role === "user" ? "user" : "assistant",
-        content: msg.content,
-      }));
+      // Limit history to prevent token overflow
+      // Keep only the most recent messages (last 10 exchanges = 20 messages)
+      const recentHistory = history.slice(0, 20);
+      
+      const anthropicMessages: Anthropic.MessageParam[] = recentHistory.map((msg) => {
+        let content = msg.content;
+        
+        // Truncate very long content (e.g., large tool results) to prevent prompt bloat
+        if (content.length > 2000) {
+          content = content.substring(0, 1900) + "... [truncado por tamaño]";
+        }
+        
+        return {
+          role: msg.role === "user" ? "user" : "assistant",
+          content: content,
+        };
+      });
 
       let fullAssistantResponse = "";
       let shouldContinue = true;
@@ -77,6 +90,11 @@ export class AgentOrchestrator {
         }
 
         const finalMessage = await stream.finalMessage();
+
+        // Check if Claude finished its turn (no more tool use needed)
+        if (finalMessage.stop_reason === "end_turn" || finalMessage.stop_reason === "max_tokens") {
+          shouldContinue = false;
+        }
 
         for (const block of finalMessage.content) {
           if (block.type === "text") {

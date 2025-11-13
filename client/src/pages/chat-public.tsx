@@ -138,11 +138,14 @@ export default function ChatPublic() {
       }
     } catch (error) {
       console.error("Chat error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      console.error("Chat error details:", { errorMessage, errorName: (error as Error)?.name });
+      
       if ((error as Error).name !== "AbortError") {
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === assistantMessageId
-              ? { ...msg, content: "Lo siento, ha ocurrido un error. Por favor, inténtalo de nuevo." }
+              ? { ...msg, content: `Error: ${errorMessage}` }
               : msg
           )
         );

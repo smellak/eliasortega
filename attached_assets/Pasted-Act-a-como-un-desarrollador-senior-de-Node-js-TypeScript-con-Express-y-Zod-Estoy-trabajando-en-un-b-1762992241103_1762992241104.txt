@@ -1,0 +1,270 @@
+Actúa como un desarrollador senior de Node.js/TypeScript con Express y Zod.
+Estoy trabajando en un backend en Replit que ya tiene:
+
+POST /api/integration/appointments/upsert
+
+POST /api/integration/calendar/parse (con rawCalendarQuerySchema y NormalizedCalendarQuery en shared/types.ts)
+
+Quiero sacar lógica de n8n y traerla aquí, creando dos endpoints de alto nivel que se encarguen de todo lo relacionado con el calendario:
+
+POST /api/integration/calendar/availability
+
+POST /api/integration/calendar/book
+
+1. Objetivo general
+
+Tener una API limpia para que n8n (o cualquier otro cliente) pueda:
+
+Pedir disponibilidad (slots) con una duración deseada.
+
+Confirmar una reserva en uno de esos slots.
+
+Toda la lógica de:
+
+parseo de parámetros,
+
+cálculo de slots,
+
+reintentos,
+
+llamada a appointments/upsert,
+
+debe vivir en el backend, no en n8n.
+
+2. Tipos y parseo existentes (reusar)
+
+Ya tengo definidos en shared/types.ts:
+
+rawCalendarQuerySchema
+
+RawCalendarQuery
+
+NormalizedCalendarQuery
+
+Y el endpoint:
+
+POST /api/integration/calendar/parse
+
+que devuelve:
+
+{
+  success: true;
+  data: NormalizedCalendarQuery;
+}
+// o
+{
+  success: false;
+  error: string;
+  details?: any;
+}
+
+
+Quiero que reutilices estos tipos y funciones de normalización, no que vuelvas a inventar schemas nuevos.
+
+3. Endpoint 1: POST /api/integration/calendar/availability
+3.1. Request
+
+Body esperado (mínimo):
+
+{
+  "from": "2025-12-15",
+  "to": "2025-12-15",
+  "duration_minutes": 45
+}
+
+
+o bien cualquier cosa que pueda parsear/normalizarse a NormalizedCalendarQuery usando rawCalendarQuerySchema y la lógica de parse que ya tenemos.
+
+3.2. Comportamiento
+
+Parsear el body usando la misma lógica que /api/integration/calendar/parse:
+
+reutilizar el schema existente y la normalización a NormalizedCalendarQuery.
+
+action aquí debería acabar siendo "availability", pero no hace falta exigirlo; puede ignorarse o normalizarse.
+
+Generar slots de disponibilidad en base a:
+
+rango from/to (fechas YYYY-MM-DD),
+
+duration_minutes (ej: 45),
+
+horario operativo: 08:00–14:00 Europe/Madrid,
+
+solo días laborables (lunes–viernes),
+
+aplicar la misma lógica que ya se estaba usando en el workflow de n8n Calendar_Manager para Search Slots (si tienes que reimplementar, haz algo equivalente y razonable).
+
+Limitar la respuesta a máximo 3 slots (los 3 primeros libres u ordenados por hora).
+
+Cada slot debe incluir:
+
+type CalendarSlot = {
+  start: string;       // ISO UTC, ej: "2025-12-15T08:00:00Z"
+  end: string;         // ISO UTC
+  startLocal: string;  // fecha/hora en zona Europe/Madrid, ej: "15/12/2025, 09:00"
+  endLocal: string;    // idem
+};
+
+
+Usa una librería como luxon (si ya está en el proyecto) o Date + Intl para hacer la conversión a hora local.
+
+3.3. Respuesta
+
+En caso de éxito:
+
+{
+  "success": true,
+  "slotsFound": 3,
+  "slots": [
+    {
+      "start": "2025-12-15T08:00:00Z",
+      "end": "2025-12-15T08:45:00Z",
+      "startLocal": "15/12/2025, 09:00",
+      "endLocal": "15/12/2025, 09:45"
+    }
+  ]
+}
+
+
+Si no hay ningún hueco:
+
+{
+  "success": false,
+  "error": "No availability",
+  "details": "No slots found for the given range and duration."
+}
+
+
+Si falla la validación de entrada (Zod):
+
+{
+  "success": false,
+  "error": "Invalid calendar query",
+  "details": [ /* issues de Zod */ ]
+}
+
+4. Endpoint 2: POST /api/integration/calendar/book
+4.1. Request
+
+Body esperado:
+
+{
+  "start": "2025-12-15T08:00:00Z",
+  "end": "2025-12-15T08:45:00Z",
+  "providerName": "Jancor",
+  "goodsType": "Colchonería",
+  "units": 100,
+  "lines": 10,
+  "deliveryNotesCount": 10,
+  "workMinutesNeeded": 45,
+  "forkliftsNeeded": 1
+}
+
+
+Pero también quiero que admita inputs compatibles con NormalizedCalendarQuery, es decir:
+
+strings numéricas a convertir ("100" → 100),
+
+algún campo opcional ausente (por defecto 0 o "").
+
+Usa otra vez rawCalendarQuerySchema y/o NormalizedCalendarQuery para validar y normalizar.
+
+4.2. Comportamiento
+
+Parsear y normalizar la entrada a un objeto que contenga todos los campos necesarios (start, end, providerName, etc.).
+
+Generar un externalRef determinista o al menos único, por ejemplo:
+
+const externalRef = `n8n-${providerName}-${start}-${units}-${lines}`;
+
+
+Llamar internamente a la lógica de appointments/upsert:
+
+IMPORTANTE: llama a la función interna/servicio que ya usa el endpoint /api/integration/appointments/upsert, no hagas otra petición HTTP desde el mismo servidor si se puede evitar.
+
+Si en el código actual el upsert sólo está implementado como ruta Express, factoriza la lógica en una función reutilizable y llama a ella desde este nuevo endpoint.
+
+Implementar lógica de reintentos como en n8n:
+
+Primer intento: reservar con start/end tal cual.
+
+Si la API de upsert devuelve conflicto (status 409 o error de tipo "Conflict"), sumar 30 minutos a start y end y reintentar.
+
+Hacer hasta 3 intentos como máximo.
+
+Si los 3 intentos fallan por conflicto, devolver un error claro.
+
+Convertir start/end a hora local (Europe/Madrid) para la respuesta:
+
+{
+  startLocal: "15/12/2025, 09:00",
+  endLocal: "15/12/2025, 09:45"
+}
+
+4.3. Respuesta
+
+En caso de éxito:
+
+{
+  "success": true,
+  "confirmationHtml": "<b>Cita confirmada</b><br>Proveedor: Jancor<br>Tipo: Colchonería<br>Fecha: 15/12/2025<br>Hora: 09:00–09:45 (duración: 45 min)<br>Muelles/Carretillas: validado ✅",
+  "providerName": "Jancor",
+  "goodsType": "Colchonería",
+  "startLocal": "15/12/2025, 09:00",
+  "endLocal": "15/12/2025, 09:45",
+  "workMinutesNeeded": 45,
+  "forkliftsNeeded": 1,
+  "externalRef": "n8n-Jancor-2025-12-15T08:00:00Z-100-10",
+  "id": "<id devuelto por el upsert>"
+}
+
+
+Si fallan todos los intentos por conflicto:
+
+{
+  "success": false,
+  "error": "No availability",
+  "details": "All attempts resulted in time conflicts"
+}
+
+
+Si falla la validación de entrada:
+
+{
+  "success": false,
+  "error": "Invalid calendar booking request",
+  "details": [ /* issues de Zod */ ]
+}
+
+5. Integración en el router principal
+
+Implementa estos endpoints en server/routes.ts (o donde estén las demás rutas).
+
+Reutiliza rawCalendarQuerySchema y NormalizedCalendarQuery desde shared/types.ts.
+
+Reutiliza la lógica de negocio del upsert (no dupliques código).
+
+Asegúrate de que Express usa express.json() antes de estas rutas.
+
+Qué espero que me devuelvas
+
+Código completo de los dos endpoints:
+
+POST /api/integration/calendar/availability
+
+POST /api/integration/calendar/book
+
+Cualquier refactor necesario (por ejemplo una función upsertAppointmentInternal(...)) para reutilizar la lógica del endpoint actual de upsert.
+
+Solo código TypeScript/Express/Zod, sin explicaciones de más.
+
+No inventes nada sobre n8n: sólo asume que el cliente enviará requests HTTP con JSON y espera las respuestas en los formatos descritos.
+
+Con este prompt la IA de Replit debería generarte justo los dos endpoints que necesitas, reutilizando tus types y tu lógica de upsert, y a partir de ahí en n8n solo tendrás que hacer:
+
+un HTTP al /calendar/availability
+
+un HTTP al /calendar/book
+
+sin más subagentes ni parseos raros

@@ -18,8 +18,95 @@ import {
 } from "../shared/types";
 import { authenticateToken, requireRole, generateToken, AuthRequest } from "./middleware/auth";
 import { capacityValidator } from "./services/capacity-validator";
+import { formatInTimeZone } from 'date-fns-tz';
+import { addMinutes, setHours, setMinutes, setSeconds, setMilliseconds, isWeekend, addDays } from 'date-fns';
 
 const prisma = new PrismaClient();
+
+// Helper: Format date to Europe/Madrid local string
+function formatToMadridLocal(date: Date): string {
+  return formatInTimeZone(date, 'Europe/Madrid', 'dd/MM/yyyy, HH:mm');
+}
+
+// Helper: Internal upsert logic (reusable)
+async function upsertAppointmentInternal(data: {
+  externalRef: string;
+  providerId: string | null;
+  providerName: string;
+  start: string;
+  end: string;
+  workMinutesNeeded: number;
+  forkliftsNeeded: number;
+  goodsType: string | null;
+  units: number | null;
+  lines: number | null;
+  deliveryNotesCount: number | null;
+}) {
+  const existing = await prisma.appointment.findUnique({
+    where: { externalRef: data.externalRef },
+  });
+
+  if (existing) {
+    const conflict = await capacityValidator.validateAppointment({
+      id: existing.id,
+      startUtc: new Date(data.start),
+      endUtc: new Date(data.end),
+      workMinutesNeeded: data.workMinutesNeeded,
+      forkliftsNeeded: data.forkliftsNeeded,
+    });
+
+    if (conflict) {
+      return { success: false, conflict };
+    }
+
+    const appointment = await prisma.appointment.update({
+      where: { id: existing.id },
+      data: {
+        providerId: data.providerId,
+        providerName: data.providerName,
+        startUtc: new Date(data.start),
+        endUtc: new Date(data.end),
+        workMinutesNeeded: data.workMinutesNeeded,
+        forkliftsNeeded: data.forkliftsNeeded,
+        goodsType: data.goodsType,
+        units: data.units,
+        lines: data.lines,
+        deliveryNotesCount: data.deliveryNotesCount,
+      },
+    });
+
+    return { success: true, action: "updated", appointment };
+  }
+
+  const conflict = await capacityValidator.validateAppointment({
+    startUtc: new Date(data.start),
+    endUtc: new Date(data.end),
+    workMinutesNeeded: data.workMinutesNeeded,
+    forkliftsNeeded: data.forkliftsNeeded,
+  });
+
+  if (conflict) {
+    return { success: false, conflict };
+  }
+
+  const appointment = await prisma.appointment.create({
+    data: {
+      providerId: data.providerId,
+      providerName: data.providerName,
+      startUtc: new Date(data.start),
+      endUtc: new Date(data.end),
+      workMinutesNeeded: data.workMinutesNeeded,
+      forkliftsNeeded: data.forkliftsNeeded,
+      goodsType: data.goodsType,
+      units: data.units,
+      lines: data.lines,
+      deliveryNotesCount: data.deliveryNotesCount,
+      externalRef: data.externalRef,
+    },
+  });
+
+  return { success: true, action: "created", appointment };
+}
 const router = Router();
 
 // Public routes - NO authentication required
@@ -441,73 +528,21 @@ router.post("/api/integration/appointments/upsert", authenticateToken, async (re
     const data = upsertAppointmentSchema.parse(req.body);
     console.log("[UPSERT] Parsed successfully:", JSON.stringify(data, null, 2));
     
-    // Check if appointment exists by externalRef
-    const existing = await prisma.appointment.findUnique({
-      where: { externalRef: data.externalRef },
+    const result = await upsertAppointmentInternal({
+      ...data,
+      providerId: data.providerId ?? null,
+      goodsType: data.goodsType ?? null,
+      units: data.units ?? null,
+      lines: data.lines ?? null,
+      deliveryNotesCount: data.deliveryNotesCount ?? null,
     });
-
-    if (existing) {
-      // Update existing
-      const conflict = await capacityValidator.validateAppointment({
-        id: existing.id,
-        startUtc: new Date(data.start),
-        endUtc: new Date(data.end),
-        workMinutesNeeded: data.workMinutesNeeded,
-        forkliftsNeeded: data.forkliftsNeeded,
-      });
-
-      if (conflict) {
-        return res.status(409).json({ error: "Capacity conflict", conflict });
-      }
-
-      const appointment = await prisma.appointment.update({
-        where: { id: existing.id },
-        data: {
-          providerId: data.providerId,
-          providerName: data.providerName,
-          startUtc: new Date(data.start),
-          endUtc: new Date(data.end),
-          workMinutesNeeded: data.workMinutesNeeded,
-          forkliftsNeeded: data.forkliftsNeeded,
-          goodsType: data.goodsType,
-          units: data.units,
-          lines: data.lines,
-          deliveryNotesCount: data.deliveryNotesCount,
-        },
-      });
-
-      return res.json({ action: "updated", appointment });
+    
+    if (!result.success) {
+      return res.status(409).json({ error: "Capacity conflict", conflict: result.conflict });
     }
-
-    // Create new
-    const conflict = await capacityValidator.validateAppointment({
-      startUtc: new Date(data.start),
-      endUtc: new Date(data.end),
-      workMinutesNeeded: data.workMinutesNeeded,
-      forkliftsNeeded: data.forkliftsNeeded,
-    });
-
-    if (conflict) {
-      return res.status(409).json({ error: "Capacity conflict", conflict });
-    }
-
-    const appointment = await prisma.appointment.create({
-      data: {
-        providerId: data.providerId,
-        providerName: data.providerName,
-        startUtc: new Date(data.start),
-        endUtc: new Date(data.end),
-        workMinutesNeeded: data.workMinutesNeeded,
-        forkliftsNeeded: data.forkliftsNeeded,
-        goodsType: data.goodsType,
-        units: data.units,
-        lines: data.lines,
-        deliveryNotesCount: data.deliveryNotesCount,
-        externalRef: data.externalRef,
-      },
-    });
-
-    res.status(201).json({ action: "created", appointment });
+    
+    const statusCode = result.action === "created" ? 201 : 200;
+    res.status(statusCode).json({ action: result.action, appointment: result.appointment });
   } catch (error: any) {
     if (error.name === "ZodError") {
       console.log("[UPSERT] Zod validation error:", JSON.stringify(error.errors, null, 2));
@@ -584,6 +619,251 @@ router.post("/api/integration/calendar/parse", async (req, res) => {
     res.status(400).json({
       success: false,
       error: "Invalid JSON or unknown error",
+      details: error.message || "Unknown error"
+    });
+  }
+});
+
+// Calendar availability endpoint - PUBLIC, no auth required
+router.post("/api/integration/calendar/availability", async (req, res) => {
+  try {
+    let rawQuery: any;
+    if (req.body.query !== undefined) {
+      if (typeof req.body.query === "string") {
+        rawQuery = JSON.parse(req.body.query);
+      } else {
+        rawQuery = req.body.query;
+      }
+    } else {
+      rawQuery = req.body;
+    }
+
+    // Ensure action field is present
+    if (!rawQuery.action) {
+      rawQuery.action = "availability";
+    }
+
+    const parsed = rawCalendarQuerySchema.parse(rawQuery);
+    const normalized: NormalizedCalendarQuery = {
+      action: "availability",
+      from: parsed.from ?? "",
+      to: parsed.to ?? "",
+      duration_minutes: parsed.duration_minutes ?? 0,
+      start: parsed.start ?? "",
+      end: parsed.end ?? "",
+      providerName: parsed.providerName ?? "",
+      goodsType: parsed.goodsType ?? "",
+      units: parsed.units ?? 0,
+      lines: parsed.lines ?? 0,
+      deliveryNotesCount: parsed.deliveryNotesCount ?? 0,
+      workMinutesNeeded: parsed.workMinutesNeeded ?? 0,
+      forkliftsNeeded: parsed.forkliftsNeeded ?? 0,
+    };
+
+    if (!normalized.from || !normalized.to || !normalized.duration_minutes) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields",
+        details: "from, to, and duration_minutes are required"
+      });
+    }
+
+    const fromDate = new Date(normalized.from);
+    const toDate = new Date(normalized.to);
+    const durationMinutes = normalized.duration_minutes;
+
+    const slots: Array<{
+      start: string;
+      end: string;
+      startLocal: string;
+      endLocal: string;
+    }> = [];
+
+    let currentDate = new Date(fromDate);
+
+    // Search for slots up to 3 days from fromDate
+    const maxSearchDays = 3;
+    let daysSearched = 0;
+
+    while (slots.length < 3 && daysSearched < maxSearchDays) {
+      if (!isWeekend(currentDate)) {
+        // Operating hours: 08:00-14:00 Europe/Madrid
+        let workDayStart = setMilliseconds(setSeconds(setMinutes(setHours(currentDate, 8), 0), 0), 0);
+        const workDayEnd = setMilliseconds(setSeconds(setMinutes(setHours(currentDate, 14), 0), 0), 0);
+
+        while (workDayStart.getTime() + durationMinutes * 60 * 1000 <= workDayEnd.getTime()) {
+          const slotEnd = addMinutes(workDayStart, durationMinutes);
+
+          // Check capacity for this slot
+          const conflict = await capacityValidator.validateAppointment({
+            startUtc: workDayStart,
+            endUtc: slotEnd,
+            workMinutesNeeded: normalized.workMinutesNeeded || durationMinutes,
+            forkliftsNeeded: normalized.forkliftsNeeded || 1,
+          });
+
+          if (!conflict) {
+            slots.push({
+              start: workDayStart.toISOString(),
+              end: slotEnd.toISOString(),
+              startLocal: formatToMadridLocal(workDayStart),
+              endLocal: formatToMadridLocal(slotEnd),
+            });
+
+            if (slots.length >= 3) break;
+          }
+
+          workDayStart = addMinutes(workDayStart, 15);
+        }
+      }
+
+      currentDate = addDays(currentDate, 1);
+      daysSearched++;
+    }
+
+    if (slots.length === 0) {
+      return res.json({
+        success: false,
+        error: "No availability",
+        details: "No slots found for the given range and duration."
+      });
+    }
+
+    res.json({
+      success: true,
+      slotsFound: slots.length,
+      slots
+    });
+  } catch (error: any) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid calendar query",
+        details: error.errors
+      });
+    }
+
+    res.status(400).json({
+      success: false,
+      error: "Invalid request",
+      details: error.message || "Unknown error"
+    });
+  }
+});
+
+// Calendar book endpoint - PUBLIC, no auth required
+router.post("/api/integration/calendar/book", async (req, res) => {
+  try {
+    let rawQuery: any;
+    if (req.body.query !== undefined) {
+      if (typeof req.body.query === "string") {
+        rawQuery = JSON.parse(req.body.query);
+      } else {
+        rawQuery = req.body.query;
+      }
+    } else {
+      rawQuery = req.body;
+    }
+
+    // Ensure action field is present
+    if (!rawQuery.action) {
+      rawQuery.action = "book";
+    }
+
+    const parsed = rawCalendarQuerySchema.parse(rawQuery);
+    const normalized: NormalizedCalendarQuery = {
+      action: "book",
+      from: parsed.from ?? "",
+      to: parsed.to ?? "",
+      duration_minutes: parsed.duration_minutes ?? 0,
+      start: parsed.start ?? "",
+      end: parsed.end ?? "",
+      providerName: parsed.providerName ?? "",
+      goodsType: parsed.goodsType ?? "",
+      units: parsed.units ?? 0,
+      lines: parsed.lines ?? 0,
+      deliveryNotesCount: parsed.deliveryNotesCount ?? 0,
+      workMinutesNeeded: parsed.workMinutesNeeded ?? 0,
+      forkliftsNeeded: parsed.forkliftsNeeded ?? 0,
+    };
+
+    if (!normalized.start || !normalized.end || !normalized.providerName) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields",
+        details: "start, end, and providerName are required"
+      });
+    }
+
+    // Generate deterministic externalRef
+    const externalRef = `n8n-${normalized.providerName}-${normalized.start}-${normalized.units}-${normalized.lines}`;
+
+    // Retry logic: 3 attempts with 30-minute increments
+    const maxAttempts = 3;
+    let currentStart = new Date(normalized.start);
+    let currentEnd = new Date(normalized.end);
+    let lastConflict = null;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const result = await upsertAppointmentInternal({
+        externalRef,
+        providerId: null,
+        providerName: normalized.providerName,
+        start: currentStart.toISOString(),
+        end: currentEnd.toISOString(),
+        workMinutesNeeded: normalized.workMinutesNeeded,
+        forkliftsNeeded: normalized.forkliftsNeeded,
+        goodsType: normalized.goodsType || null,
+        units: normalized.units || null,
+        lines: normalized.lines || null,
+        deliveryNotesCount: normalized.deliveryNotesCount || null,
+      });
+
+      if (result.success) {
+        const appointment = result.appointment!;
+        const startLocal = formatToMadridLocal(currentStart);
+        const endLocal = formatToMadridLocal(currentEnd);
+        const duration = Math.round((currentEnd.getTime() - currentStart.getTime()) / 60000);
+
+        const confirmationHtml = `<b>Cita confirmada</b><br>Proveedor: ${normalized.providerName}<br>Tipo: ${normalized.goodsType}<br>Fecha: ${startLocal.split(',')[0]}<br>Hora: ${startLocal.split(', ')[1]}–${endLocal.split(', ')[1]} (duración: ${duration} min)<br>Muelles/Carretillas: validado ✅`;
+
+        return res.json({
+          success: true,
+          confirmationHtml,
+          providerName: normalized.providerName,
+          goodsType: normalized.goodsType,
+          startLocal,
+          endLocal,
+          workMinutesNeeded: normalized.workMinutesNeeded,
+          forkliftsNeeded: normalized.forkliftsNeeded,
+          externalRef,
+          id: appointment.id,
+        });
+      }
+
+      lastConflict = result.conflict;
+      currentStart = addMinutes(currentStart, 30);
+      currentEnd = addMinutes(currentEnd, 30);
+    }
+
+    return res.status(409).json({
+      success: false,
+      error: "No availability",
+      details: "All attempts resulted in time conflicts",
+      lastConflict
+    });
+  } catch (error: any) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid calendar booking request",
+        details: error.errors
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
       details: error.message || "Unknown error"
     });
   }

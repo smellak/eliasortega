@@ -77,3 +77,27 @@ A customer-facing public page that embeds the n8n AI chat assistant for appointm
 - Connects to n8n webhook for conversational appointment scheduling
 - Located at: `client/public/chat.html`
 - Accessible via custom domain: `https://citaschs.com/chat`
+
+### Integration API Endpoints (Public - No Authentication Required)
+
+**`POST /api/integration/calendar/parse`**
+- Parses and normalizes calendar queries from n8n
+- Accepts flexible input: query wrapper (JSON string/object) or direct object
+- Uses `rawCalendarQuerySchema` for validation with type coercion (strings → numbers)
+- Returns normalized `NormalizedCalendarQuery` with defaults for all optional fields
+
+**`POST /api/integration/calendar/availability`**
+- Returns available appointment slots based on date range and duration
+- Operating hours: 08:00-14:00 Europe/Madrid (weekdays only)
+- Returns up to 3 available slots with both UTC and local timestamps
+- Validates capacity (workers, forklifts, docks) for each slot
+- Searches up to 3 days from start date if needed
+
+**`POST /api/integration/calendar/book`**
+- Books appointments with automatic retry logic
+- Implements 3 retry attempts with +30 minute increments on capacity conflicts
+- Generates deterministic `externalRef` for idempotent operations
+- Returns HTML confirmation message with appointment details
+- All timestamps converted to Europe/Madrid timezone for user-facing display
+
+**Design Pattern**: All calendar endpoints accept multiple input formats (query wrapper as string/object or direct body) and use the shared `rawCalendarQuerySchema` for consistent validation and normalization. This eliminates the need for complex n8n parsing logic.

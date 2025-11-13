@@ -14,7 +14,7 @@ The frontend is built with React 18, utilizing Vite for tooling. The UI is devel
 ### Backend Architecture
 The backend runs on Node.js 20 with Express.js. Prisma Client provides type-safe database access, targeting PostgreSQL. Authentication is JWT-based with bcrypt for password hashing and role-based access control (RBAC) enforced via middleware. API documentation is provided via Swagger/OpenAPI 3.0 at `/docs`. Zod schemas ensure request/response validation across client and server. Timezone handling converts UTC database timestamps to `Europe/Madrid` for display. A core Capacity Validation Service discretizes time into minute-by-minute intervals to validate resource consumption against available capacity, returning detailed conflict information.
 
-**Public Routes**: The system includes a public chat interface at `/chat` that does not require authentication, allowing delivery providers to interact with an n8n-powered AI assistant to book appointments without accessing the management platform.
+**Public Routes**: The system includes a public chat interface at `/chat` that does not require authentication, allowing delivery providers to interact with a self-hosted AI agent (Claude Sonnet 4) to book appointments conversationally without accessing the management platform.
 
 ### Data Models
 -   **Users**: Email-based authentication with `ADMIN`, `PLANNER`, and `BASIC_READONLY` roles.
@@ -56,8 +56,10 @@ The backend runs on Node.js 20 with Express.js. Prisma Client provides type-safe
 -   swagger-jsdoc
 -   swagger-ui-express
 
-**Integration Services**:
--   n8n webhook integration for AI-powered chat assistant (embedded at `/chat`)
+**AI Integration Services**:
+-   Replit AI Anthropic Integration (Claude Sonnet 4.5) - Main conversational agent
+-   Replit AI OpenAI Integration (GPT-4.1) - Calculator subagent for complex computations
+-   Self-hosted agentic orchestrator with SSE streaming, conversation memory, and tool execution
 
 **Required Environment Variables**:
 -   `DATABASE_URL`
@@ -70,18 +72,38 @@ The backend runs on Node.js 20 with Express.js. Prisma Client provides type-safe
 ## Public Endpoints
 
 ### Chat Interface (`/chat`)
-A customer-facing public page that embeds the n8n AI chat assistant for appointment booking. This page:
+A customer-facing public page with a modern React chat UI powered by a self-hosted AI agent. This page:
 - Does not require authentication
 - Displays the Centro Hogar Sanchez branding (logo)
-- Includes video instructions for users
-- Connects to n8n webhook for conversational appointment scheduling
-- Located at: `client/public/chat.html`
+- Real-time SSE streaming for responsive conversational experience
+- Self-hosted AI orchestrator using Claude Sonnet 4.5 as main agent
 - Accessible via custom domain: `https://citaschs.com/chat`
+
+**Agent Architecture**:
+- **Main Agent**: Claude Sonnet 4.5 via Replit AI (no personal API keys required)
+- **Calculator Subagent**: GPT-4.1 via Replit AI for complex mathematical operations
+- **Orchestrator**: Custom TypeScript implementation with SSE streaming
+- **Memory**: PostgreSQL-backed conversation persistence
+- **Tools**: calendar-availability, calendar-book, calculator (with delegation to GPT-4.1)
+
+**Token Management**:
+- History limited to 20 most recent messages to prevent context overflow
+- Tool results truncated to 2000 characters max
+- Stop reason detection prevents infinite loops (checks `end_turn`)
+- Robust error handling with graceful degradation
+
+**Conversation Flow**:
+1. User sends message via POST `/api/chat/message`
+2. Orchestrator loads conversation history (limited to 20 messages)
+3. Claude Sonnet 4 processes message with available tools
+4. Responses stream via Server-Sent Events (SSE)
+5. Tool calls execute and results feed back to Claude
+6. Final response saved to conversation memory
 
 ### Integration API Endpoints (Public - No Authentication Required)
 
 **`POST /api/integration/calendar/parse`**
-- Parses and normalizes calendar queries from n8n
+- Parses and normalizes calendar queries from external integrations
 - Accepts flexible input: query wrapper (JSON string/object) or direct object
 - Uses `rawCalendarQuerySchema` for validation with type coercion (strings → numbers)
 - Returns normalized `NormalizedCalendarQuery` with defaults for all optional fields
@@ -100,4 +122,4 @@ A customer-facing public page that embeds the n8n AI chat assistant for appointm
 - Returns HTML confirmation message with appointment details
 - All timestamps converted to Europe/Madrid timezone for user-facing display
 
-**Design Pattern**: All calendar endpoints accept multiple input formats (query wrapper as string/object or direct body) and use the shared `rawCalendarQuerySchema` for consistent validation and normalization. This eliminates the need for complex n8n parsing logic.
+**Design Pattern**: All calendar endpoints accept multiple input formats and use shared Zod schemas for consistent validation and normalization.

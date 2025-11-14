@@ -227,3 +227,67 @@
 - Sidebar collapse/expand (instant)
 - Calendar view switching
 - Form field focus states
+
+## Public Chat Interface Design
+
+**Brand Colors (Centro Hogar Sanchez):**
+- Primary Blue: hsl(213, 94%, 46%) - #0B6DD9
+- Light Blue: hsl(204, 100%, 96%) - #EFF8FF
+- White: hsl(0, 0%, 100%)
+- Success Green: hsl(142, 76%, 36%)
+- Background Gradient: from-blue-50 via-white to-cyan-50
+
+**Chat UI Principles:**
+1. **Modern & Clean**: Minimalist design with ample whitespace
+2. **Approachable**: Friendly, conversational interface for delivery providers
+3. **Mobile-First**: Fully responsive for on-the-go usage
+4. **Brand Consistent**: Blue/white color scheme matching Centro Hogar Sanchez
+5. **Instructional**: Prominent video tutorial for first-time users
+
+**Layout Structure:**
+```
+┌─────────────────────────────────────────┐
+│ Header: Logo + Title (gradient)         │
+├─────────────────────────────────────────┤
+│ Video Tutorial Section (collapsible)    │
+├─────────────────────────────────────────┤
+│                                         │
+│        Chat Messages Area               │
+│        (scrollable)                     │
+│                                         │
+├─────────────────────────────────────────┤
+│ Input Area: Textarea + Send Button     │
+└─────────────────────────────────────────┘
+```
+
+**Message Bubbles:**
+- User messages: Emerald/green (bg-emerald-500), right-aligned
+- Assistant messages: Light gray (bg-gray-100 dark:bg-gray-700), left-aligned
+- Border radius: rounded-2xl for modern soft appearance
+- Max width: 80% of container
+- Padding: px-4 py-3
+- Timestamp: text-xs, subtle opacity
+
+**Video Section:**
+- Collapsible with smooth transition
+- Prominent "Ver Tutorial" button with video icon
+- Video player: rounded-lg, shadow
+- Description text encouraging users to watch
+
+**Input Area:**
+- Large textarea (min-h-[80px]) for multi-line messages
+- Rounded corners (rounded-xl)
+- Send button: Primary blue color, icon size
+- Disabled states with visual feedback
+
+**Header:**
+- Gradient background: from-primary to-blue-600
+- Logo centered and prominent
+- Subtitle explaining purpose
+- White text for contrast
+
+**Responsive Behavior:**
+- Mobile: Single column, full width
+- Tablet/Desktop: Max-width container (max-w-4xl)
+- Video collapses by default on mobile
+- Touch-friendly button sizes (min 44px)

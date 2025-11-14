@@ -123,3 +123,41 @@ A customer-facing public page with a modern React chat UI powered by a self-host
 - All timestamps converted to Europe/Madrid timezone for user-facing display
 
 **Design Pattern**: All calendar endpoints accept multiple input formats and use shared Zod schemas for consistent validation and normalization.
+
+## Chat Interface Design
+
+### Modern UI (Updated 2025-11-14)
+
+**Visual Design**:
+- Modern hero header with blue gradient (from-blue-600 to-blue-700) featuring Centro Hogar Sanchez logo
+- Collapsible tutorial section with instructional video (7.4MB MP4)
+  - Desktop: Tutorial open by default
+  - Mobile: Tutorial closed by default for performance
+- Contemporary message bubbles with user/assistant avatars (Bot/User icons)
+- Blue color scheme (#0B6DD9) consistent with brand
+- Improved spacing, rounded corners (rounded-2xl), and visual hierarchy
+
+**Video Tutorial Integration**:
+- 7.4MB video file: `attached_assets/tutorial-video.mp4`
+- Lazy loading: Video only loads when dialog is opened
+- HTML5 video player with controls, preload="metadata"
+- Dialog component for immersive viewing experience
+- Accessible with proper aria-labels
+
+**Accessibility Features**:
+- Send button has aria-label="Enviar mensaje" for screen readers
+- Proper button sizing (respects shadcn/ui defaults, no custom overrides)
+- Touch-friendly interface for mobile delivery providers
+- Keyboard navigation support (Enter to send, Shift+Enter for new line)
+
+**Responsive Behavior**:
+- Mobile-first design with single column layout
+- Max-width container (max-w-4xl) for optimal readability
+- Textarea adjusts height (min-h-[60px])
+- Items aligned properly with flexbox (items-end)
+
+## Recent Changes
+
+-   **Date: 2025-11-14** - Modernized public chat interface (/chat) with contemporary design. Added 7.4MB instructional video tutorial from Google Drive with lazy loading (only loads when dialog opens). Implemented collapsible tutorial section (desktop: open, mobile: closed), Dialog for immersive video viewing, modern message bubbles with avatars, blue gradient hero header, improved spacing and rounded corners. Fixed accessibility: added aria-label="Enviar mensaje" to send button, removed size overrides to respect shadcn defaults. Created 36 capacity shifts covering Nov 14 - Dec 31, 2025 with standard resources (10 workers, 8 forklifts, 5 docks). Fixed critical baseUrl bug in agent orchestrator.
+-   **Date: 2025-11-13** - Implemented self-hosted AI orchestrator with SSE streaming for public chat interface. Replaced unstable n8n integration with custom TypeScript agentic architecture using Replit AI integrations (Claude Sonnet 4 main agent + GPT-4.1 calculator subagent).
+-   **Date: 2025-11-12** - Enhanced capacity validation service with minute-by-minute resource tracking and shift overlap resolution.

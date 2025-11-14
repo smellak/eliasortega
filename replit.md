@@ -126,38 +126,53 @@ A customer-facing public page with a modern React chat UI powered by a self-host
 
 ## Chat Interface Design
 
-### Modern UI (Updated 2025-11-14)
+### Modern UI with Direct Video Preview (Updated 2025-11-14)
+
+**Layout Structure**:
+- Scrollable page layout (no fixed viewport height)
+- Three main sections: Hero header, Video preview, Chat interface
+- Max-width container (max-w-6xl) for optimal viewing
+- Responsive gaps between sections (gap-3 sm:gap-4)
 
 **Visual Design**:
 - Modern hero header with blue gradient (from-blue-600 to-blue-700) featuring Centro Hogar Sanchez logo
-- Collapsible tutorial section with instructional video (7.4MB MP4)
-  - Desktop: Tutorial open by default
-  - Mobile: Tutorial closed by default for performance
+- **Direct video preview** with agent thumbnail visible immediately
+  - No collapsible sections - video always visible at page load
+  - aspect-video responsive container with rounded corners
+  - Blue border (border-blue-200) matching brand colors
 - Contemporary message bubbles with user/assistant avatars (Bot/User icons)
 - Blue color scheme (#0B6DD9) consistent with brand
 - Improved spacing, rounded corners (rounded-2xl), and visual hierarchy
 
 **Video Tutorial Integration**:
-- 7.4MB video file: `attached_assets/tutorial-video.mp4`
-- Lazy loading: Video only loads when dialog is opened
-- HTML5 video player with controls, preload="metadata"
-- Dialog component for immersive viewing experience
-- Accessible with proper aria-labels
+- 7.4MB video file: `client/public/tutorial-video.mp4` (served directly)
+- HTML5 video with native controls enabled
+- Preload metadata for fast initial display
+- Direct asset path: `/tutorial-video.mp4` (no import bundling)
+- Video shows preview/poster automatically
 
 **Accessibility Features**:
 - Send button has aria-label="Enviar mensaje" for screen readers
 - Proper button sizing (respects shadcn/ui defaults, no custom overrides)
 - Touch-friendly interface for mobile delivery providers
 - Keyboard navigation support (Enter to send, Shift+Enter for new line)
+- All interactive elements have data-testid attributes
 
 **Responsive Behavior**:
 - Mobile-first design with single column layout
-- Max-width container (max-w-4xl) for optimal readability
-- Textarea adjusts height (min-h-[60px])
-- Items aligned properly with flexbox (items-end)
+- Responsive padding: px-2 sm:px-4
+- Responsive font sizes throughout (text-xl sm:text-2xl md:text-3xl)
+- Message bubbles adapt to screen size:
+  - Mobile: max-w-[85%] (wider for better readability)
+  - Tablet: max-w-[75%]
+  - Desktop: max-w-[70%]
+- Chat container minimum height: min-h-[500px] sm:min-h-[600px]
+- Avatars scale responsively: h-7 sm:h-8
+- Help text hidden on mobile (hidden sm:block)
+- Page scrolls naturally - all content accessible on any screen size
 
 ## Recent Changes
 
--   **Date: 2025-11-14** - Modernized public chat interface (/chat) with contemporary design. Added 7.4MB instructional video tutorial from Google Drive with lazy loading (only loads when dialog opens). Implemented collapsible tutorial section (desktop: open, mobile: closed), Dialog for immersive video viewing, modern message bubbles with avatars, blue gradient hero header, improved spacing and rounded corners. Fixed accessibility: added aria-label="Enviar mensaje" to send button, removed size overrides to respect shadcn defaults. Created 36 capacity shifts covering Nov 14 - Dec 31, 2025 with standard resources (10 workers, 8 forklifts, 5 docks). Fixed critical baseUrl bug in agent orchestrator.
+-   **Date: 2025-11-14** - Redesigned public chat interface (/chat) with direct video preview for better UX. Video now displays immediately at page load (no collapsible sections) showing agent thumbnail. Fixed critical mobile responsiveness issues: removed fixed viewport height (h-screen), added scrollable layout, responsive padding/sizing throughout, wider message bubbles on mobile (85% vs 70% desktop), chat container minimum height (500px mobile, 600px desktop). Video moved to client/public/ for direct serving (/tutorial-video.mp4). Maintained modern design: blue gradient headers, rounded corners, avatars, white/blue color scheme. Created 36 capacity shifts covering Nov 14 - Dec 31, 2025. Fixed critical baseUrl bug in agent orchestrator. All accessibility features preserved: aria-labels, keyboard navigation, touch-friendly controls.
 -   **Date: 2025-11-13** - Implemented self-hosted AI orchestrator with SSE streaming for public chat interface. Replaced unstable n8n integration with custom TypeScript agentic architecture using Replit AI integrations (Claude Sonnet 4 main agent + GPT-4.1 calculator subagent).
 -   **Date: 2025-11-12** - Enhanced capacity validation service with minute-by-minute resource tracking and shift overlap resolution.

@@ -1,12 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2, Video, ChevronDown, ChevronUp, PlayCircle, Bot, User } from "lucide-react";
+import { Send, Loader2, Bot, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import tutorialVideoUrl from "@assets/tutorial-video.mp4";
 
@@ -37,32 +35,14 @@ export default function ChatPublic() {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
-  const [isTutorialOpen, setIsTutorialOpen] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth >= 768;
-    }
-    return true;
-  });
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isVideoDialogOpen, setIsVideoDialogOpen] = useState(false);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768 && !isTutorialOpen) {
-        setIsTutorialOpen(true);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [isTutorialOpen]);
 
   const sendMessage = async () => {
     if (!input.trim() || isStreaming) return;
@@ -187,138 +167,78 @@ export default function ChatPublic() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="container mx-auto px-4 py-6 h-screen flex flex-col max-w-4xl">
+      <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-6 h-screen flex flex-col max-w-6xl gap-3 sm:gap-4">
         {/* Hero Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl shadow-xl mb-4 p-8 text-center">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl sm:rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 text-center">
           <img
             src="/logo-sanchez.png"
             alt="Centro Hogar Sanchez"
-            className="max-w-[200px] mx-auto mb-4 h-auto"
+            className="max-w-[150px] sm:max-w-[200px] mx-auto mb-3 sm:mb-4 h-auto"
             data-testid="img-logo"
           />
-          <h1 className="text-3xl font-bold text-white mb-2">Sistema de Reservas de Citas</h1>
-          <p className="text-blue-100 text-lg">Programa tu entrega con nuestro asistente virtual Elías</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1 sm:mb-2">Sistema de Reservas de Citas</h1>
+          <p className="text-blue-100 text-sm sm:text-base md:text-lg">Programa tu entrega con nuestro asistente virtual Elías</p>
         </div>
 
-        {/* Tutorial Section */}
-        <Collapsible
-          open={isTutorialOpen}
-          onOpenChange={setIsTutorialOpen}
-          className="mb-4"
-        >
-          <Card className="overflow-hidden shadow-lg border-blue-200">
-            <CollapsibleTrigger className="w-full" data-testid="button-toggle-tutorial">
-              <CardHeader className="cursor-pointer hover-elevate active-elevate-2 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-lg">
-                      <Video className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div className="text-left">
-                      <CardTitle className="text-lg">Tutorial de Uso</CardTitle>
-                      <CardDescription>Aprende a reservar tu cita en 2 minutos</CardDescription>
-                    </div>
-                  </div>
-                  {isTutorialOpen ? (
-                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </div>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="pt-0 pb-6">
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Mira este breve video para aprender cómo utilizar nuestro sistema de reservas. Te explicaremos paso a paso cómo programar tu entrega de forma rápida y sencilla.
-                  </p>
-                  
-                  <Dialog open={isVideoDialogOpen} onOpenChange={setIsVideoDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        className="w-full gap-2 h-auto py-4 border-2 border-blue-200 hover:border-blue-400"
-                        data-testid="button-open-video"
-                      >
-                        <PlayCircle className="h-5 w-5" />
-                        <span className="font-semibold">Ver Tutorial Completo</span>
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl p-0">
-                      <DialogHeader className="p-6 pb-4">
-                        <DialogTitle>Tutorial: Cómo Reservar tu Cita</DialogTitle>
-                        <DialogDescription>
-                          Aprende a usar el sistema de reservas del almacén Centro Hogar Sanchez
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="px-6 pb-6">
-                        <div className="aspect-video rounded-lg overflow-hidden bg-black">
-                          {isVideoDialogOpen && (
-                            <video
-                              ref={videoRef}
-                              controls
-                              preload="metadata"
-                              className="w-full h-full"
-                              data-testid="video-tutorial"
-                            >
-                              <source src={tutorialVideoUrl} type="video/mp4" />
-                              Tu navegador no soporta la reproducción de videos.
-                            </video>
-                          )}
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
+        {/* Video Preview */}
+        <div className="w-full">
+          <div className="aspect-video rounded-xl sm:rounded-2xl overflow-hidden shadow-xl border-2 border-blue-200 bg-black">
+            <video
+              controls
+              preload="metadata"
+              poster="#"
+              className="w-full h-full"
+              data-testid="video-tutorial"
+            >
+              <source src={tutorialVideoUrl} type="video/mp4" />
+              Tu navegador no soporta la reproducción de videos.
+            </video>
+          </div>
+        </div>
 
         {/* Chat Container */}
-        <Card className="flex-1 flex flex-col overflow-hidden shadow-xl border-blue-200">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 border-b border-blue-700">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10 border-2 border-white">
+        <Card className="flex-1 flex flex-col overflow-hidden shadow-xl border-blue-200 min-h-0">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-3 sm:p-4 border-b border-blue-700">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Avatar className="h-8 w-8 sm:h-10 sm:w-10 border-2 border-white">
                 <AvatarFallback className="bg-blue-500 text-white">
-                  <Bot className="h-6 w-6" />
+                  <Bot className="h-4 w-4 sm:h-6 sm:w-6" />
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <h2 className="text-lg font-semibold text-white">Elías Ortega</h2>
-                <p className="text-sm text-blue-100">Asistente Virtual</p>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-base sm:text-lg font-semibold text-white truncate">Elías Ortega</h2>
+                <p className="text-xs sm:text-sm text-blue-100">Asistente Virtual</p>
               </div>
-              <Badge variant="secondary" className="ml-auto bg-green-500 text-white border-0">
+              <Badge variant="secondary" className="bg-green-500 text-white border-0 text-xs sm:text-sm">
                 En línea
               </Badge>
             </div>
           </div>
 
-          <ScrollArea ref={scrollRef} className="flex-1 p-4 md:p-6">
-            <div className="space-y-4">
+          <ScrollArea ref={scrollRef} className="flex-1 p-3 sm:p-4 md:p-6">
+            <div className="space-y-3 sm:space-y-4">
               {messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                   data-testid={`message-${msg.role}-${msg.id}`}
                 >
                   {msg.role === "assistant" && (
-                    <Avatar className="h-8 w-8 shrink-0 mt-1">
+                    <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0 mt-1">
                       <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400">
-                        <Bot className="h-4 w-4" />
+                        <Bot className="h-3 w-3 sm:h-4 sm:w-4" />
                       </AvatarFallback>
                     </Avatar>
                   )}
                   <div
-                    className={`max-w-[75%] md:max-w-[70%] rounded-2xl px-4 py-3 shadow-sm ${
+                    className={`max-w-[85%] sm:max-w-[75%] md:max-w-[70%] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-sm ${
                       msg.role === "user"
                         ? "bg-blue-600 text-white rounded-tr-sm"
                         : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-tl-sm"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.content}</p>
-                    <p className={`text-xs mt-2 ${msg.role === "user" ? "text-blue-100" : "text-muted-foreground"}`}>
+                    <p className="whitespace-pre-wrap break-words leading-relaxed text-sm sm:text-base">{msg.content}</p>
+                    <p className={`text-xs mt-1 sm:mt-2 ${msg.role === "user" ? "text-blue-100" : "text-muted-foreground"}`}>
                       {msg.timestamp.toLocaleTimeString("es-ES", {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -326,25 +246,25 @@ export default function ChatPublic() {
                     </p>
                   </div>
                   {msg.role === "user" && (
-                    <Avatar className="h-8 w-8 shrink-0 mt-1">
+                    <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0 mt-1">
                       <AvatarFallback className="bg-blue-600 text-white">
-                        <User className="h-4 w-4" />
+                        <User className="h-3 w-3 sm:h-4 sm:w-4" />
                       </AvatarFallback>
                     </Avatar>
                   )}
                 </div>
               ))}
               {isStreaming && (
-                <div className="flex justify-start gap-3">
-                  <Avatar className="h-8 w-8 shrink-0 mt-1">
+                <div className="flex justify-start gap-2 sm:gap-3">
+                  <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0 mt-1">
                     <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400">
-                      <Bot className="h-4 w-4" />
+                      <Bot className="h-3 w-3 sm:h-4 sm:w-4" />
                     </AvatarFallback>
                   </Avatar>
-                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-sm px-3 sm:px-4 py-2 sm:py-3 shadow-sm">
                     <div className="flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                      <span className="text-sm text-muted-foreground">Elías está escribiendo...</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground">Elías está escribiendo...</span>
                     </div>
                   </div>
                 </div>
@@ -352,14 +272,14 @@ export default function ChatPublic() {
             </div>
           </ScrollArea>
 
-          <div className="p-4 border-t bg-gray-50 dark:bg-gray-900">
-            <div className="flex gap-3 items-end">
+          <div className="p-3 sm:p-4 border-t bg-gray-50 dark:bg-gray-900">
+            <div className="flex gap-2 sm:gap-3 items-end">
               <Textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Escribe tu mensaje aquí..."
-                className="resize-none min-h-[60px] rounded-xl border-gray-300 focus-visible:ring-blue-500"
+                className="resize-none min-h-[50px] sm:min-h-[60px] rounded-xl border-gray-300 focus-visible:ring-blue-500 text-sm sm:text-base"
                 disabled={isStreaming}
                 data-testid="input-message"
               />
@@ -372,13 +292,13 @@ export default function ChatPublic() {
                 data-testid="button-send"
               >
                 {isStreaming ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
                 ) : (
-                  <Send className="h-5 w-5" />
+                  <Send className="h-4 w-4 sm:h-5 sm:w-5" />
                 )}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground mt-2 text-center">
+            <p className="text-xs text-muted-foreground mt-2 text-center hidden sm:block">
               Presiona Enter para enviar • Shift+Enter para nueva línea
             </p>
           </div>

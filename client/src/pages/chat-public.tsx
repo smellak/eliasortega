@@ -6,7 +6,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import tutorialVideoUrl from "@assets/tutorial-video.mp4";
 
 interface Message {
   id: string;
@@ -166,8 +165,8 @@ export default function ChatPublic() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-6 h-screen flex flex-col max-w-6xl gap-3 sm:gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 pb-6">
+      <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-6 flex flex-col max-w-6xl gap-3 sm:gap-4">
         {/* Hero Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl sm:rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 text-center">
           <img
@@ -186,18 +185,17 @@ export default function ChatPublic() {
             <video
               controls
               preload="metadata"
-              poster="#"
               className="w-full h-full"
               data-testid="video-tutorial"
             >
-              <source src={tutorialVideoUrl} type="video/mp4" />
+              <source src="/tutorial-video.mp4" type="video/mp4" />
               Tu navegador no soporta la reproducción de videos.
             </video>
           </div>
         </div>
 
         {/* Chat Container */}
-        <Card className="flex-1 flex flex-col overflow-hidden shadow-xl border-blue-200 min-h-0">
+        <Card className="flex flex-col overflow-hidden shadow-xl border-blue-200 min-h-[500px] sm:min-h-[600px]">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-3 sm:p-4 border-b border-blue-700">
             <div className="flex items-center gap-2 sm:gap-3">
               <Avatar className="h-8 w-8 sm:h-10 sm:w-10 border-2 border-white">

@@ -37,7 +37,7 @@ export function CapacityIndicators({
             <Users className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-muted-foreground">Work Minutes</p>
+            <p className="text-sm text-muted-foreground">Minutos de Trabajo</p>
             <p className="text-lg font-mono font-semibold">
               {workUsed.toFixed(1)} / {workAvailable.toFixed(1)} min/min
             </p>
@@ -52,7 +52,7 @@ export function CapacityIndicators({
             <Truck className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-muted-foreground">Forklifts</p>
+            <p className="text-sm text-muted-foreground">Carretillas</p>
             <p className="text-lg font-mono font-semibold">
               {forkliftsUsed} / {forkliftsAvailable}
             </p>
@@ -68,7 +68,7 @@ export function CapacityIndicators({
               <Building2 className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-muted-foreground">Docks</p>
+              <p className="text-sm text-muted-foreground">Muelles</p>
               <p className="text-lg font-mono font-semibold">
                 {docksUsed || 0} / {docksAvailable}
               </p>

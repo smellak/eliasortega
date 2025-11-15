@@ -26,14 +26,14 @@ export default function ProvidersPage({ userRole }: ProvidersPageProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/providers"] });
       toast({
-        title: "Success",
-        description: "Provider created successfully",
+        title: "Éxito",
+        description: "Proveedor creado correctamente",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to create provider",
+        description: error.message || "Error al crear el proveedor",
         variant: "destructive",
       });
     },
@@ -46,14 +46,14 @@ export default function ProvidersPage({ userRole }: ProvidersPageProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/providers"] });
       toast({
-        title: "Success",
-        description: "Provider updated successfully",
+        title: "Éxito",
+        description: "Proveedor actualizado correctamente",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to update provider",
+        description: error.message || "Error al actualizar el proveedor",
         variant: "destructive",
       });
     },
@@ -65,14 +65,14 @@ export default function ProvidersPage({ userRole }: ProvidersPageProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/providers"] });
       toast({
-        title: "Success",
-        description: "Provider deleted successfully",
+        title: "Éxito",
+        description: "Proveedor eliminado correctamente",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to delete provider",
+        description: error.message || "Error al eliminar el proveedor",
         variant: "destructive",
       });
     },
@@ -87,7 +87,7 @@ export default function ProvidersPage({ userRole }: ProvidersPageProps) {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this provider?")) {
+    if (window.confirm("¿Estás seguro de que quieres eliminar este proveedor?")) {
       deleteMutation.mutate(id);
     }
   };
@@ -96,13 +96,13 @@ export default function ProvidersPage({ userRole }: ProvidersPageProps) {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-semibold">Providers</h1>
+          <h1 className="text-3xl font-semibold">Proveedores</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage your warehouse delivery providers
+            Gestiona los proveedores de entrega del almacén
           </p>
         </div>
         <Card className="p-12">
-          <div className="text-center text-muted-foreground">Loading providers...</div>
+          <div className="text-center text-muted-foreground">Cargando proveedores...</div>
         </Card>
       </div>
     );
@@ -112,14 +112,14 @@ export default function ProvidersPage({ userRole }: ProvidersPageProps) {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-semibold">Providers</h1>
+          <h1 className="text-3xl font-semibold">Proveedores</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage your warehouse delivery providers
+            Gestiona los proveedores de entrega del almacén
           </p>
         </div>
         <Card className="p-12">
           <div className="text-center text-destructive">
-            Error loading providers: {(error as Error).message}
+            Error al cargar los proveedores: {(error as Error).message}
           </div>
         </Card>
       </div>
@@ -129,9 +129,9 @@ export default function ProvidersPage({ userRole }: ProvidersPageProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold">Providers</h1>
+        <h1 className="text-3xl font-semibold">Proveedores</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Manage your warehouse delivery providers
+          Gestiona los proveedores de entrega del almacén
         </p>
       </div>
 

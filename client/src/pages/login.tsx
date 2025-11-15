@@ -21,7 +21,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       await onLogin(email, password);
     } catch (error) {
       console.error("Login error:", error);
-      alert("Login failed. Please check your credentials.");
+      alert("Error de inicio de sesión. Por favor, verifica tus credenciales.");
     } finally {
       setIsLoading(false);
     }
@@ -35,18 +35,18 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
             <Package className="h-10 w-10 text-primary-foreground" />
           </div>
           <div>
-            <CardTitle className="text-2xl">Warehouse Appointments</CardTitle>
-            <CardDescription>Sign in to manage your warehouse schedule</CardDescription>
+            <CardTitle className="text-2xl">Gestión de Citas</CardTitle>
+            <CardDescription>Inicia sesión para gestionar el almacén</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Correo electrónico</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="user@example.com"
+                placeholder="usuario@ejemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -54,7 +54,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Contraseña</Label>
               <Input
                 id="password"
                 type="password"
@@ -67,7 +67,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
             </div>
             <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-login">
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Sign In
+              Iniciar sesión
             </Button>
           </form>
         </CardContent>

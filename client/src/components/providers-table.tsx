@@ -65,7 +65,7 @@ export function ProvidersTable({
         <div className="flex justify-end">
           <Button onClick={() => setIsAdding(true)} disabled={isAdding} data-testid="button-add-provider">
             <Plus className="h-4 w-4 mr-2" />
-            Add Provider
+            Agregar Proveedor
           </Button>
         </div>
       )}
@@ -74,9 +74,9 @@ export function ProvidersTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Notes</TableHead>
-              {!readOnly && <TableHead className="text-right">Actions</TableHead>}
+              <TableHead>Nombre</TableHead>
+              <TableHead>Notas</TableHead>
+              {!readOnly && <TableHead className="text-right">Acciones</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -84,7 +84,7 @@ export function ProvidersTable({
               <TableRow>
                 <TableCell>
                   <Input
-                    placeholder="Provider name"
+                    placeholder="Nombre del proveedor"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     data-testid="input-new-provider-name"
@@ -92,7 +92,7 @@ export function ProvidersTable({
                 </TableCell>
                 <TableCell>
                   <Input
-                    placeholder="Optional notes"
+                    placeholder="Notas opcionales"
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     data-testid="input-new-provider-notes"
@@ -172,7 +172,7 @@ export function ProvidersTable({
             {providers.length === 0 && !isAdding && (
               <TableRow>
                 <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                  No providers yet. Click "Add Provider" to create one.
+                  No hay proveedores aún. Haz clic en "Agregar Proveedor" para crear uno.
                 </TableCell>
               </TableRow>
             )}

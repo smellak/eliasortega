@@ -61,7 +61,7 @@ export function UsersTable({ users, onAdd, onEdit, onDelete }: UsersTableProps) 
       <div className="flex justify-end">
         <Button onClick={() => setIsAdding(true)} disabled={isAdding} data-testid="button-add-user">
           <Plus className="h-4 w-4 mr-2" />
-          Add User
+          Agregar Usuario
         </Button>
       </div>
 
@@ -69,10 +69,10 @@ export function UsersTable({ users, onAdd, onEdit, onDelete }: UsersTableProps) 
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              {isAdding && <TableHead>Password</TableHead>}
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>Correo</TableHead>
+              <TableHead>Rol</TableHead>
+              {isAdding && <TableHead>Contraseña</TableHead>}
+              <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -96,16 +96,16 @@ export function UsersTable({ users, onAdd, onEdit, onDelete }: UsersTableProps) 
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ADMIN">Admin</SelectItem>
-                      <SelectItem value="PLANNER">Planner</SelectItem>
-                      <SelectItem value="BASIC_READONLY">View Only</SelectItem>
+                      <SelectItem value="ADMIN">Administrador</SelectItem>
+                      <SelectItem value="PLANNER">Planificador</SelectItem>
+                      <SelectItem value="BASIC_READONLY">Solo Lectura</SelectItem>
                     </SelectContent>
                   </Select>
                 </TableCell>
                 <TableCell>
                   <Input
                     type="password"
-                    placeholder="Password"
+                    placeholder="Contraseña"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     data-testid="input-new-user-password"
@@ -144,9 +144,9 @@ export function UsersTable({ users, onAdd, onEdit, onDelete }: UsersTableProps) 
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="ADMIN">Admin</SelectItem>
-                          <SelectItem value="PLANNER">Planner</SelectItem>
-                          <SelectItem value="BASIC_READONLY">View Only</SelectItem>
+                          <SelectItem value="ADMIN">Administrador</SelectItem>
+                          <SelectItem value="PLANNER">Planificador</SelectItem>
+                          <SelectItem value="BASIC_READONLY">Solo Lectura</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>
@@ -195,7 +195,7 @@ export function UsersTable({ users, onAdd, onEdit, onDelete }: UsersTableProps) 
             {users.length === 0 && !isAdding && (
               <TableRow>
                 <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                  No users yet. Click "Add User" to create one.
+                  No hay usuarios aún. Haz clic en "Agregar Usuario" para crear uno.
                 </TableCell>
               </TableRow>
             )}

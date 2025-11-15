@@ -69,7 +69,7 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
         }
       );
       if (!response.ok) {
-        throw new Error("Failed to fetch capacity");
+        throw new Error("Error al cargar la capacidad");
       }
       return response.json();
     },
@@ -86,8 +86,8 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
       setAppointmentDialogOpen(false);
       setSelectedEvent(null);
       toast({
-        title: "Success",
-        description: "Appointment created successfully",
+        title: "Éxito",
+        description: "Cita creada correctamente",
       });
     },
     onError: (error: any) => {
@@ -100,14 +100,14 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
         } catch {
           toast({
             title: "Error",
-            description: error.message || "Failed to create appointment",
+            description: error.message || "Error al crear la cita",
             variant: "destructive",
           });
         }
       } else {
         toast({
           title: "Error",
-          description: error.message || "Failed to create appointment",
+          description: error.message || "Error al crear la cita",
           variant: "destructive",
         });
       }
@@ -125,8 +125,8 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
       setAppointmentDialogOpen(false);
       setSelectedEvent(null);
       toast({
-        title: "Success",
-        description: "Appointment updated successfully",
+        title: "Éxito",
+        description: "Cita actualizada correctamente",
       });
     },
     onError: (error: any) => {
@@ -139,14 +139,14 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
         } catch {
           toast({
             title: "Error",
-            description: error.message || "Failed to update appointment",
+            description: error.message || "Error al actualizar la cita",
             variant: "destructive",
           });
         }
       } else {
         toast({
           title: "Error",
-          description: error.message || "Failed to update appointment",
+          description: error.message || "Error al actualizar la cita",
           variant: "destructive",
         });
       }
@@ -223,9 +223,9 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-semibold">Calendar</h1>
+          <h1 className="text-3xl font-semibold">Calendario</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage warehouse appointments and capacity
+            Gestiona las citas y la capacidad del almacén
           </p>
         </div>
         {!isReadOnly && (
@@ -234,7 +234,7 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
             setAppointmentDialogOpen(true);
           }} data-testid="button-new-appointment">
             <Plus className="h-4 w-4 mr-2" />
-            New Appointment
+            Nueva Cita
           </Button>
         )}
       </div>

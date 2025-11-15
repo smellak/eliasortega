@@ -43,9 +43,9 @@ export function ConflictErrorDialog({ open, onOpenChange, error }: ConflictError
               <AlertCircle className="h-6 w-6 text-destructive" />
             </div>
             <div>
-              <AlertDialogTitle>Appointment Cannot Be Scheduled</AlertDialogTitle>
+              <AlertDialogTitle>No se puede programar la cita</AlertDialogTitle>
               <AlertDialogDescription>
-                Capacity exceeded at {error.minuteMadrid} (Europe/Madrid)
+                Capacidad excedida en {error.minuteMadrid} (Europe/Madrid)
               </AlertDialogDescription>
             </div>
           </div>
@@ -53,52 +53,52 @@ export function ConflictErrorDialog({ open, onOpenChange, error }: ConflictError
 
         <div className="space-y-4">
           <div>
-            <h4 className="font-semibold mb-2">Capacity Breakdown</h4>
+            <h4 className="font-semibold mb-2">Desglose de Capacidad</h4>
             <div className="border border-border rounded-md">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Resource</TableHead>
-                    <TableHead className="text-right">Used</TableHead>
-                    <TableHead className="text-right">Available</TableHead>
-                    <TableHead className="text-right">Status</TableHead>
+                    <TableHead>Recurso</TableHead>
+                    <TableHead className="text-right">Usado</TableHead>
+                    <TableHead className="text-right">Disponible</TableHead>
+                    <TableHead className="text-right">Estado</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   <TableRow className={error.failedRule === "work" ? "bg-destructive/10" : ""}>
-                    <TableCell className="font-medium">Work Minutes (min/min)</TableCell>
+                    <TableCell className="font-medium">Minutos de Trabajo (min/min)</TableCell>
                     <TableCell className="text-right font-mono">{error.workUsed.toFixed(1)}</TableCell>
                     <TableCell className="text-right font-mono">{error.workAvailable.toFixed(1)}</TableCell>
                     <TableCell className="text-right">
                       {error.workUsed > error.workAvailable ? (
-                        <span className="text-destructive font-semibold">Exceeded</span>
+                        <span className="text-destructive font-semibold">Excedido</span>
                       ) : (
-                        <span className="text-muted-foreground">OK</span>
+                        <span className="text-muted-foreground">Bien</span>
                       )}
                     </TableCell>
                   </TableRow>
                   <TableRow className={error.failedRule === "forklifts" ? "bg-destructive/10" : ""}>
-                    <TableCell className="font-medium">Forklifts</TableCell>
+                    <TableCell className="font-medium">Carretillas</TableCell>
                     <TableCell className="text-right font-mono">{error.forkliftsUsed}</TableCell>
                     <TableCell className="text-right font-mono">{error.forkliftsAvailable}</TableCell>
                     <TableCell className="text-right">
                       {error.forkliftsUsed > error.forkliftsAvailable ? (
-                        <span className="text-destructive font-semibold">Exceeded</span>
+                        <span className="text-destructive font-semibold">Excedido</span>
                       ) : (
-                        <span className="text-muted-foreground">OK</span>
+                        <span className="text-muted-foreground">Bien</span>
                       )}
                     </TableCell>
                   </TableRow>
                   {error.docksAvailable !== undefined && (
                     <TableRow className={error.failedRule === "docks" ? "bg-destructive/10" : ""}>
-                      <TableCell className="font-medium">Docks</TableCell>
+                      <TableCell className="font-medium">Muelles</TableCell>
                       <TableCell className="text-right font-mono">{error.docksUsed || 0}</TableCell>
                       <TableCell className="text-right font-mono">{error.docksAvailable}</TableCell>
                       <TableCell className="text-right">
                         {(error.docksUsed || 0) > error.docksAvailable ? (
-                          <span className="text-destructive font-semibold">Exceeded</span>
+                          <span className="text-destructive font-semibold">Excedido</span>
                         ) : (
-                          <span className="text-muted-foreground">OK</span>
+                          <span className="text-muted-foreground">Bien</span>
                         )}
                       </TableCell>
                     </TableRow>
@@ -109,18 +109,18 @@ export function ConflictErrorDialog({ open, onOpenChange, error }: ConflictError
           </div>
 
           <div>
-            <h4 className="font-semibold mb-2">Suggested Actions</h4>
+            <h4 className="font-semibold mb-2">Acciones Sugeridas</h4>
             <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-              <li>Adjust the appointment duration or time slot</li>
-              <li>Reduce work minutes or forklift requirements</li>
-              <li>Edit capacity windows to increase available resources</li>
-              <li>Move appointment to a less busy time period</li>
+              <li>Ajusta la duración de la cita o el horario</li>
+              <li>Reduce los minutos de trabajo o requisitos de carretillas</li>
+              <li>Edita las ventanas de capacidad para aumentar recursos disponibles</li>
+              <li>Mueve la cita a un periodo menos ocupado</li>
             </ul>
           </div>
         </div>
 
         <AlertDialogFooter>
-          <AlertDialogAction data-testid="button-dismiss-error">OK</AlertDialogAction>
+          <AlertDialogAction data-testid="button-dismiss-error">Entendido</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

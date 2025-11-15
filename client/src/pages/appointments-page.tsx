@@ -47,14 +47,14 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
       setAppointmentDialogOpen(false);
       setSelectedAppointment(null);
       toast({
-        title: "Success",
-        description: "Appointment created successfully",
+        title: "Éxito",
+        description: "Cita creada correctamente",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to create appointment",
+        description: error.message || "Error al crear la cita",
         variant: "destructive",
       });
     },
@@ -69,14 +69,14 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
       setAppointmentDialogOpen(false);
       setSelectedAppointment(null);
       toast({
-        title: "Success",
-        description: "Appointment updated successfully",
+        title: "Éxito",
+        description: "Cita actualizada correctamente",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to update appointment",
+        description: error.message || "Error al actualizar la cita",
         variant: "destructive",
       });
     },
@@ -88,14 +88,14 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
       toast({
-        title: "Success",
-        description: "Appointment deleted successfully",
+        title: "Éxito",
+        description: "Cita eliminada correctamente",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to delete appointment",
+        description: error.message || "Error al eliminar la cita",
         variant: "destructive",
       });
     },
@@ -111,7 +111,7 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this appointment?")) {
+    if (window.confirm("¿Estás seguro de que quieres eliminar esta cita?")) {
       deleteMutation.mutate(id);
     }
   };
@@ -128,13 +128,13 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-semibold">Appointments</h1>
+          <h1 className="text-3xl font-semibold">Citas</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            View and manage all warehouse appointments
+            Visualiza y gestiona todas las citas del almacén
           </p>
         </div>
         <Card className="p-12">
-          <div className="text-center text-muted-foreground">Loading appointments...</div>
+          <div className="text-center text-muted-foreground">Cargando citas...</div>
         </Card>
       </div>
     );
@@ -144,9 +144,9 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-semibold">Appointments</h1>
+          <h1 className="text-3xl font-semibold">Citas</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            View and manage all warehouse appointments
+            Visualiza y gestiona todas las citas del almacén
           </p>
         </div>
         {!isReadOnly && (
@@ -155,7 +155,7 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
             setAppointmentDialogOpen(true);
           }} data-testid="button-new-appointment">
             <Plus className="h-4 w-4 mr-2" />
-            New Appointment
+            Nueva Cita
           </Button>
         )}
       </div>
@@ -163,7 +163,7 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search by provider..."
+          placeholder="Buscar por proveedor..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10"
@@ -187,10 +187,10 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
                     {format(new Date(appointment.startUtc), "MMM dd, HH:mm")} -{" "}
                     {format(new Date(appointment.endUtc), "HH:mm")}
                   </div>
-                  <div>Work: {appointment.workMinutesNeeded} min</div>
-                  <div>Forklifts: {appointment.forkliftsNeeded}</div>
-                  {appointment.units !== null && <div>Units: {appointment.units}</div>}
-                  {appointment.lines !== null && <div>Lines: {appointment.lines}</div>}
+                  <div>Trabajo: {appointment.workMinutesNeeded} min</div>
+                  <div>Carretillas: {appointment.forkliftsNeeded}</div>
+                  {appointment.units !== null && <div>Unidades: {appointment.units}</div>}
+                  {appointment.lines !== null && <div>Líneas: {appointment.lines}</div>}
                 </div>
               </div>
               {!isReadOnly && (
@@ -220,8 +220,8 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
         {filteredAppointments.length === 0 && (
           <Card className="p-12">
             <div className="text-center text-muted-foreground">
-              <p>No appointments found.</p>
-              {searchQuery && <p className="text-sm mt-1">Try a different search term.</p>}
+              <p>No se encontraron citas.</p>
+              {searchQuery && <p className="text-sm mt-1">Intenta con otro término de búsqueda.</p>}
             </div>
           </Card>
         )}

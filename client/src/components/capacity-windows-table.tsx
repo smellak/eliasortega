@@ -98,7 +98,7 @@ export function CapacityWindowsTable({
         <div className="flex justify-end">
           <Button onClick={() => setIsAdding(true)} disabled={isAdding} data-testid="button-add-window">
             <Plus className="h-4 w-4 mr-2" />
-            Add Window
+            Agregar Ventana
           </Button>
         </div>
       )}
@@ -107,12 +107,12 @@ export function CapacityWindowsTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Start Time</TableHead>
-              <TableHead>End Time</TableHead>
-              <TableHead className="text-center">Workers</TableHead>
-              <TableHead className="text-center">Forklifts</TableHead>
-              <TableHead className="text-center">Docks</TableHead>
-              {!readOnly && <TableHead className="text-right">Actions</TableHead>}
+              <TableHead>Hora Inicio</TableHead>
+              <TableHead>Hora Fin</TableHead>
+              <TableHead className="text-center">Trabajadores</TableHead>
+              <TableHead className="text-center">Carretillas</TableHead>
+              <TableHead className="text-center">Muelles</TableHead>
+              {!readOnly && <TableHead className="text-right">Acciones</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -276,7 +276,7 @@ export function CapacityWindowsTable({
             {windows.length === 0 && !isAdding && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                  No capacity windows defined. Click "Add Window" to create one.
+                  No hay ventanas de capacidad definidas. Haz clic en "Agregar Ventana" para crear una.
                 </TableCell>
               </TableRow>
             )}

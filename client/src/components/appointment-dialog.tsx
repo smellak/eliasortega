@@ -142,19 +142,19 @@ export function AppointmentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl" data-testid="dialog-appointment">
         <DialogHeader>
-          <DialogTitle>{appointment ? "Edit Appointment" : "New Appointment"}</DialogTitle>
+          <DialogTitle>{appointment ? "Editar Cita" : "Nueva Cita"}</DialogTitle>
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div>
-              <Label htmlFor="provider">Provider</Label>
+              <Label htmlFor="provider">Proveedor</Label>
               <Select
                 value={formData.providerId}
                 onValueChange={(value) => setFormData({ ...formData, providerId: value })}
               >
                 <SelectTrigger id="provider" data-testid="select-provider">
-                  <SelectValue placeholder="Select provider" />
+                  <SelectValue placeholder="Seleccionar proveedor" />
                 </SelectTrigger>
                 <SelectContent>
                   {providers.map((provider) => (
@@ -167,7 +167,7 @@ export function AppointmentDialog({
             </div>
 
             <div>
-              <Label htmlFor="start-date">Start Date</Label>
+              <Label htmlFor="start-date">Fecha Inicio</Label>
               <Input
                 id="start-date"
                 type="date"
@@ -178,7 +178,7 @@ export function AppointmentDialog({
             </div>
 
             <div>
-              <Label htmlFor="start-time">Start Time</Label>
+              <Label htmlFor="start-time">Hora Inicio</Label>
               <Input
                 id="start-time"
                 type="time"
@@ -189,7 +189,7 @@ export function AppointmentDialog({
             </div>
 
             <div>
-              <Label htmlFor="end-date">End Date</Label>
+              <Label htmlFor="end-date">Fecha Fin</Label>
               <Input
                 id="end-date"
                 type="date"
@@ -200,7 +200,7 @@ export function AppointmentDialog({
             </div>
 
             <div>
-              <Label htmlFor="end-time">End Time</Label>
+              <Label htmlFor="end-time">Hora Fin</Label>
               <Input
                 id="end-time"
                 type="time"
@@ -213,7 +213,7 @@ export function AppointmentDialog({
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="work-minutes">Work Minutes Needed</Label>
+              <Label htmlFor="work-minutes">Minutos de Trabajo Necesarios</Label>
               <Input
                 id="work-minutes"
                 type="number"
@@ -225,7 +225,7 @@ export function AppointmentDialog({
             </div>
 
             <div>
-              <Label htmlFor="forklifts">Forklifts Needed</Label>
+              <Label htmlFor="forklifts">Carretillas Necesarias</Label>
               <Input
                 id="forklifts"
                 type="number"
@@ -237,18 +237,18 @@ export function AppointmentDialog({
             </div>
 
             <div>
-              <Label htmlFor="goods-type">Goods Type (Optional)</Label>
+              <Label htmlFor="goods-type">Tipo de Mercancía (Opcional)</Label>
               <Input
                 id="goods-type"
                 value={formData.goodsType}
                 onChange={(e) => setFormData({ ...formData, goodsType: e.target.value })}
-                placeholder="e.g., Electronics"
+                placeholder="ej., Electrónica"
                 data-testid="input-goods-type"
               />
             </div>
 
             <div>
-              <Label htmlFor="units">Units (Optional)</Label>
+              <Label htmlFor="units">Unidades (Opcional)</Label>
               <Input
                 id="units"
                 type="number"
@@ -260,7 +260,7 @@ export function AppointmentDialog({
             </div>
 
             <div>
-              <Label htmlFor="lines">Lines (Optional)</Label>
+              <Label htmlFor="lines">Líneas (Opcional)</Label>
               <Input
                 id="lines"
                 type="number"
@@ -275,11 +275,11 @@ export function AppointmentDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} data-testid="button-cancel">
-            Cancel
+            Cancelar
           </Button>
           <Button onClick={handleSave} disabled={isSaving} data-testid="button-save">
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Appointment
+            Guardar Cita
           </Button>
         </DialogFooter>
       </DialogContent>

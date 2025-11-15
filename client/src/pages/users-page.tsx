@@ -22,14 +22,14 @@ export default function UsersPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
-        title: "Success",
-        description: "User created successfully",
+        title: "Éxito",
+        description: "Usuario creado correctamente",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to create user",
+        description: error.message || "Error al crear el usuario",
         variant: "destructive",
       });
     },
@@ -42,14 +42,14 @@ export default function UsersPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
-        title: "Success",
-        description: "User updated successfully",
+        title: "Éxito",
+        description: "Usuario actualizado correctamente",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to update user",
+        description: error.message || "Error al actualizar el usuario",
         variant: "destructive",
       });
     },
@@ -61,14 +61,14 @@ export default function UsersPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
-        title: "Success",
-        description: "User deleted successfully",
+        title: "Éxito",
+        description: "Usuario eliminado correctamente",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to delete user",
+        description: error.message || "Error al eliminar el usuario",
         variant: "destructive",
       });
     },
@@ -83,7 +83,7 @@ export default function UsersPage() {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this user?")) {
+    if (window.confirm("¿Estás seguro de que quieres eliminar este usuario?")) {
       deleteMutation.mutate(id);
     }
   };
@@ -92,13 +92,13 @@ export default function UsersPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-semibold">Users</h1>
+          <h1 className="text-3xl font-semibold">Usuarios</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage user accounts and permissions
+            Gestiona las cuentas y permisos de usuarios
           </p>
         </div>
         <Card className="p-12">
-          <div className="text-center text-muted-foreground">Loading users...</div>
+          <div className="text-center text-muted-foreground">Cargando usuarios...</div>
         </Card>
       </div>
     );
@@ -108,14 +108,14 @@ export default function UsersPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-semibold">Users</h1>
+          <h1 className="text-3xl font-semibold">Usuarios</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage user accounts and permissions
+            Gestiona las cuentas y permisos de usuarios
           </p>
         </div>
         <Card className="p-12">
           <div className="text-center text-destructive">
-            Error loading users: {(error as Error).message}
+            Error al cargar los usuarios: {(error as Error).message}
           </div>
         </Card>
       </div>
@@ -125,9 +125,9 @@ export default function UsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold">Users</h1>
+        <h1 className="text-3xl font-semibold">Usuarios</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Manage user accounts and permissions
+          Gestiona las cuentas y permisos de usuarios
         </p>
       </div>
 

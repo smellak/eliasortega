@@ -25,14 +25,14 @@ export function AppSidebar({ userRole, userEmail, onLogout }: AppSidebarProps) {
   const [location] = useLocation();
 
   const mainItems = [
-    { title: "Calendar", url: "/", icon: Calendar },
-    { title: "Appointments", url: "/appointments", icon: List },
+    { title: "Calendario", url: "/", icon: Calendar },
+    { title: "Citas", url: "/appointments", icon: List },
   ];
 
   const managementItems = [
-    { title: "Capacity", url: "/capacity", icon: Gauge, roles: ["ADMIN", "PLANNER"] },
-    { title: "Providers", url: "/providers", icon: Package, roles: ["ADMIN", "PLANNER"] },
-    { title: "Users", url: "/users", icon: Users, roles: ["ADMIN"] },
+    { title: "Capacidad", url: "/capacity", icon: Gauge, roles: ["ADMIN", "PLANNER"] },
+    { title: "Proveedores", url: "/providers", icon: Package, roles: ["ADMIN", "PLANNER"] },
+    { title: "Usuarios", url: "/users", icon: Users, roles: ["ADMIN"] },
   ];
 
   const filteredManagementItems = managementItems.filter(
@@ -47,15 +47,15 @@ export function AppSidebar({ userRole, userEmail, onLogout }: AppSidebarProps) {
             <Package className="h-5 w-5 text-primary-foreground" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold">Warehouse</h2>
-            <p className="text-xs text-muted-foreground">Appointments</p>
+            <h2 className="text-sm font-semibold">Almacén</h2>
+            <p className="text-xs text-muted-foreground">Citas</p>
           </div>
         </div>
       </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Main</SidebarGroupLabel>
+          <SidebarGroupLabel>Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainItems.map((item) => (
@@ -74,7 +74,7 @@ export function AppSidebar({ userRole, userEmail, onLogout }: AppSidebarProps) {
 
         {filteredManagementItems.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>Management</SidebarGroupLabel>
+            <SidebarGroupLabel>Gestión</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {filteredManagementItems.map((item) => (
@@ -102,7 +102,7 @@ export function AppSidebar({ userRole, userEmail, onLogout }: AppSidebarProps) {
         </div>
         <SidebarMenuButton onClick={onLogout} data-testid="button-logout">
           <LogOut className="h-4 w-4" />
-          <span>Logout</span>
+          <span>Cerrar sesión</span>
         </SidebarMenuButton>
       </SidebarFooter>
     </Sidebar>

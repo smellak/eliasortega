@@ -81,10 +81,21 @@ A customer-facing public page with a modern React chat UI powered by a self-host
 
 **Agent Architecture**:
 - **Main Agent**: Claude Sonnet 4.5 via Replit AI (no personal API keys required)
-- **Calculator Subagent**: GPT-4.1 via Replit AI for complex mathematical operations
+- **Calculator Subagent**: GPT-4.1 via Replit AI implementing exact n8n discharge calculation logic
 - **Orchestrator**: Custom TypeScript implementation with SSE streaming
 - **Memory**: PostgreSQL-backed conversation persistence
 - **Tools**: calendar-availability, calendar-book, calculator (with delegation to GPT-4.1)
+
+**Calculator Agent Logic (n8n Implementation)**:
+- **8 Product Categories**: Asientos, Baño, Cocina, Colchonería, Electro, Mobiliario, PAE, Tapicería
+- **Coefficient Tables**: Category-specific TD (fixed cost), TA (albaranes), TL (lines), TU (units)
+- **Formulas**: 
+  - Asientos: `(U × TU) + (A × TA) + (L × TL)` (no fixed TD)
+  - Others: `TD + (U × TU) + (A × TA) + (L × TL)` (TD added conditionally)
+- **Human Rounding**: 0-44→×10 down, 45-94→×5 nearest, ≥95→×10 up
+- **Forklift Logic**: Category-specific rules (e.g., Colchonería always 1, Electro based on duration)
+- **Worker Calculation**: Based on duration ranges and category (e.g., <45min=1, 45-90=2, >90=3)
+- **Albaranes Parameter**: Delivery notes count now correctly passed and used in formulas
 
 **Token Management**:
 - History limited to 20 most recent messages to prevent context overflow
@@ -173,6 +184,7 @@ A customer-facing public page with a modern React chat UI powered by a self-host
 
 ## Recent Changes
 
+-   **Date: 2025-11-15** - Implemented exact n8n calculator logic with 8 product categories and precise coefficient tables. Calculator agent (GPT-4.1) now uses category-specific TD/TA/TL/TU coefficients, conditional formulas (Asientos without TD, others with TD), human rounding rules (0-44→×10 down, 45-94→×5 nearest, ≥95→×10 up), and category/duration-based forklift/worker logic. Added albaranes (delivery notes) parameter throughout the system - now correctly passed from main agent to calculator via executeToolCall. Fixed critical bug where albaranes was being dropped in tool execution. Updated main agent prompt to call calculator IMMEDIATELY after collecting albaranes, before asking for date. Verified with e2e test: Colchonería example (100 units, 5 lines, 2 albaranes) produces correct output (50min, 1 forklift, 2 workers).
 -   **Date: 2025-11-14** - Redesigned public chat interface (/chat) with direct video preview for better UX. Video now displays immediately at page load (no collapsible sections) showing agent thumbnail. Fixed critical mobile responsiveness issues: removed fixed viewport height (h-screen), added scrollable layout, responsive padding/sizing throughout, wider message bubbles on mobile (85% vs 70% desktop), chat container minimum height (500px mobile, 600px desktop). Video moved to client/public/ for direct serving (/tutorial-video.mp4). Maintained modern design: blue gradient headers, rounded corners, avatars, white/blue color scheme. Created 36 capacity shifts covering Nov 14 - Dec 31, 2025. Fixed critical baseUrl bug in agent orchestrator. All accessibility features preserved: aria-labels, keyboard navigation, touch-friendly controls.
 -   **Date: 2025-11-13** - Implemented self-hosted AI orchestrator with SSE streaming for public chat interface. Replaced unstable n8n integration with custom TypeScript agentic architecture using Replit AI integrations (Claude Sonnet 4 main agent + GPT-4.1 calculator subagent).
 -   **Date: 2025-11-12** - Enhanced capacity validation service with minute-by-minute resource tracking and shift overlap resolution.

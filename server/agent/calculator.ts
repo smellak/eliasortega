@@ -4,9 +4,10 @@ import { z } from "zod";
 
 const calculatorInputSchema = z.object({
   providerName: z.string().optional(),
-  goodsType: z.string().optional(),
-  units: z.number().int().min(0).optional(),
-  lines: z.number().int().min(0).optional(),
+  goodsType: z.string(),
+  units: z.number().int().min(0),
+  lines: z.number().int().min(0),
+  albaranes: z.number().int().min(0),
 });
 
 const calculatorOutputSchema = z.object({

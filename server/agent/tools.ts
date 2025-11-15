@@ -25,7 +25,7 @@ const CALENDAR_AVAILABILITY_TOOL: Anthropic.Tool = {
       },
       goodsType: {
         type: "string",
-        description: "Tipo de mercancía (ej: 'Muebles', 'Electrodomésticos', 'Textil')",
+        description: "Tipo de mercancía (ej: 'Colchones', 'Sofás', 'Electrodomésticos', 'Muebles')",
       },
       units: {
         type: "number",
@@ -34,6 +34,10 @@ const CALENDAR_AVAILABILITY_TOOL: Anthropic.Tool = {
       lines: {
         type: "number",
         description: "Número de líneas/referencias diferentes",
+      },
+      albaranes: {
+        type: "number",
+        description: "Número de albaranes/documentos de entrega",
       },
       workMinutesNeeded: {
         type: "number",
@@ -44,7 +48,7 @@ const CALENDAR_AVAILABILITY_TOOL: Anthropic.Tool = {
         description: "Número de carretillas necesarias (obtenido del calculator agent)",
       },
     },
-    required: ["from", "to", "duration_minutes", "providerName", "goodsType", "units", "lines", "workMinutesNeeded", "forkliftsNeeded"],
+    required: ["from", "to", "duration_minutes", "providerName", "goodsType", "units", "lines", "albaranes", "workMinutesNeeded", "forkliftsNeeded"],
   },
 };
 
@@ -68,7 +72,7 @@ const CALENDAR_BOOK_TOOL: Anthropic.Tool = {
       },
       goodsType: {
         type: "string",
-        description: "Tipo de mercancía (ej: 'Muebles', 'Electrodomésticos', 'Textil')",
+        description: "Tipo de mercancía (ej: 'Colchones', 'Sofás', 'Electrodomésticos', 'Muebles')",
       },
       units: {
         type: "number",
@@ -77,6 +81,10 @@ const CALENDAR_BOOK_TOOL: Anthropic.Tool = {
       lines: {
         type: "number",
         description: "Número de líneas/referencias diferentes",
+      },
+      albaranes: {
+        type: "number",
+        description: "Número de albaranes/documentos de entrega",
       },
       workMinutesNeeded: {
         type: "number",
@@ -87,13 +95,13 @@ const CALENDAR_BOOK_TOOL: Anthropic.Tool = {
         description: "Número de carretillas necesarias (obtenido del calculator agent)",
       },
     },
-    required: ["start", "end", "providerName", "goodsType", "units", "lines", "workMinutesNeeded", "forkliftsNeeded"],
+    required: ["start", "end", "providerName", "goodsType", "units", "lines", "albaranes", "workMinutesNeeded", "forkliftsNeeded"],
   },
 };
 
 const CALCULATOR_TOOL: Anthropic.Tool = {
   name: "calculator",
-  description: "Calcula los recursos necesarios (tiempo, carretillas, operarios) para una entrega basándose en el tipo de mercancía, unidades y líneas. Usa esta herramienta antes de buscar disponibilidad o reservar.",
+  description: "Calcula los recursos necesarios (tiempo, carretillas, operarios) para una entrega basándose en el tipo de mercancía, unidades, líneas y albaranes. Usa esta herramienta antes de buscar disponibilidad o reservar.",
   input_schema: {
     type: "object",
     properties: {
@@ -103,7 +111,7 @@ const CALCULATOR_TOOL: Anthropic.Tool = {
       },
       goodsType: {
         type: "string",
-        description: "Tipo de mercancía (ej: 'Muebles', 'Electrodomésticos', 'Textil', 'Paletizado')",
+        description: "Tipo de mercancía (ej: 'Colchones', 'Sofás', 'Electrodomésticos', 'Muebles', 'Asientos', 'Baño', 'Cocina', 'PAE')",
       },
       units: {
         type: "number",
@@ -111,10 +119,14 @@ const CALCULATOR_TOOL: Anthropic.Tool = {
       },
       lines: {
         type: "number",
-        description: "Número de líneas/referencias diferentes",
+        description: "Número de líneas/referencias diferentes en el pedido",
+      },
+      albaranes: {
+        type: "number",
+        description: "Número de albaranes/documentos de entrega",
       },
     },
-    required: ["goodsType", "units", "lines"],
+    required: ["goodsType", "units", "lines", "albaranes"],
   },
 };
 
@@ -140,6 +152,7 @@ export async function executeToolCall(
           goodsType: toolInput.goodsType,
           units: toolInput.units,
           lines: toolInput.lines,
+          albaranes: toolInput.albaranes,
         };
         const calcResult = await runCalculator(calcInput);
         console.log(`[TOOL EXECUTION] Calculator result:`, JSON.stringify(calcResult, null, 2));

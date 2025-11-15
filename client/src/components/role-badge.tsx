@@ -6,7 +6,7 @@ interface RoleBadgeProps {
 }
 
 const roleConfig: Record<UserRole, { label: string; variant: "default" | "secondary" | "outline" }> = {
-  ADMIN: { label: "ADMIN", variant: "default" },
+  ADMIN: { label: "ADMINISTRADOR", variant: "default" },
   PLANNER: { label: "PLANIFICADOR", variant: "secondary" },
   BASIC_READONLY: { label: "SOLO LECTURA", variant: "outline" },
 };

@@ -204,7 +204,20 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
 
   // Handle when FullCalendar changes its date range
   const handleDatesChange = (start: Date, end: Date, viewType: "dayGridMonth" | "timeGridWeek" | "timeGridDay") => {
-    setDateRange({ startDate: start, endDate: end });
+    // For month view, limit to actual month boundaries to avoid counting
+    // appointments from adjacent months (FullCalendar shows partial weeks)
+    let queryStart = start;
+    let queryEnd = end;
+    
+    if (viewType === "dayGridMonth") {
+      // Get the first and last day of the month being displayed
+      const monthStart = new Date(start);
+      monthStart.setDate(15); // Move to middle of month to avoid edge cases
+      queryStart = startOfMonth(monthStart);
+      queryEnd = endOfMonth(monthStart);
+    }
+    
+    setDateRange({ startDate: queryStart, endDate: queryEnd });
     setCurrentView(viewType);
   };
 

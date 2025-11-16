@@ -148,6 +148,14 @@ export function CalendarView({
             const endDate = dateInfo.end;
             const viewType = dateInfo.view.type as "dayGridMonth" | "timeGridWeek" | "timeGridDay";
             setCurrentDate(dateInfo.view.currentStart);
+            
+            console.log("[CALENDAR] Date range changed:", {
+              viewType,
+              startDate: startDate.toISOString(),
+              endDate: endDate.toISOString(),
+              currentStart: dateInfo.view.currentStart.toISOString(),
+            });
+            
             onDatesChange?.(startDate, endDate, viewType);
           }}
           eventContent={(eventInfo) => {

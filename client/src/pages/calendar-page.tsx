@@ -54,17 +54,10 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
   // Fetch capacity utilization for current date range
   const { data: capacityUtilization } = useQuery<CapacityUtilization>({
     queryKey: ["/api/capacity/utilization", startDate.toISOString(), endDate.toISOString()],
-    queryFn: () => {
-      console.log("[CAPACITY QUERY] Fetching capacity utilization:", {
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        view: currentView,
-      });
-      return capacityApi.getUtilization({
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-      });
-    },
+    queryFn: () => capacityApi.getUtilization({
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    }),
   });
 
   // Create appointment mutation
@@ -210,27 +203,22 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
   };
 
   // Handle when FullCalendar changes its date range
-  const handleDatesChange = (start: Date, end: Date, viewType: "dayGridMonth" | "timeGridWeek" | "timeGridDay") => {
+  const handleDatesChange = (
+    start: Date, 
+    end: Date, 
+    viewType: "dayGridMonth" | "timeGridWeek" | "timeGridDay",
+    viewCurrentStart?: Date
+  ) => {
     // For month view, limit to actual month boundaries to avoid counting
     // appointments from adjacent months (FullCalendar shows partial weeks)
     let queryStart = start;
     let queryEnd = end;
     
-    if (viewType === "dayGridMonth") {
-      // Get the first and last day of the month being displayed
-      const monthStart = new Date(start);
-      monthStart.setDate(15); // Move to middle of month to avoid edge cases
-      queryStart = startOfMonth(monthStart);
-      queryEnd = endOfMonth(monthStart);
+    if (viewType === "dayGridMonth" && viewCurrentStart) {
+      // Use the view's currentStart which points to the actual month being viewed
+      queryStart = startOfMonth(viewCurrentStart);
+      queryEnd = endOfMonth(viewCurrentStart);
     }
-    
-    console.log("[DATES CHANGE] Calendar range updated:", {
-      viewType,
-      fcStart: start.toISOString(),
-      fcEnd: end.toISOString(),
-      queryStart: queryStart.toISOString(),
-      queryEnd: queryEnd.toISOString(),
-    });
     
     setDateRange({ startDate: queryStart, endDate: queryEnd });
     setCurrentView(viewType);

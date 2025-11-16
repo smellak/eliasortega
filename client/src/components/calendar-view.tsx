@@ -28,7 +28,7 @@ interface CalendarViewProps {
   onEventDrop?: (eventDropInfo: any) => void;
   onViewChange?: (view: "dayGridMonth" | "timeGridWeek" | "timeGridDay") => void;
   onDateChange?: (date: Date) => void;
-  onDatesChange?: (startDate: Date, endDate: Date, viewType: "dayGridMonth" | "timeGridWeek" | "timeGridDay") => void;
+  onDatesChange?: (startDate: Date, endDate: Date, viewType: "dayGridMonth" | "timeGridWeek" | "timeGridDay", currentStart?: Date) => void;
   readOnly?: boolean;
 }
 
@@ -147,16 +147,12 @@ export function CalendarView({
             const startDate = dateInfo.start;
             const endDate = dateInfo.end;
             const viewType = dateInfo.view.type as "dayGridMonth" | "timeGridWeek" | "timeGridDay";
-            setCurrentDate(dateInfo.view.currentStart);
+            const currentStart = dateInfo.view.currentStart; // This is the actual month/week/day start
             
-            console.log("[CALENDAR] Date range changed:", {
-              viewType,
-              startDate: startDate.toISOString(),
-              endDate: endDate.toISOString(),
-              currentStart: dateInfo.view.currentStart.toISOString(),
-            });
+            setCurrentDate(currentStart);
             
-            onDatesChange?.(startDate, endDate, viewType);
+            // Pass the actual view's current start instead of the render range
+            onDatesChange?.(startDate, endDate, viewType, currentStart);
           }}
           eventContent={(eventInfo) => {
             const props = eventInfo.event.extendedProps;

@@ -304,12 +304,12 @@ export class CapacityValidator {
       docks: { used: number; available: number };
     };
   }> {
-    // Fetch all appointments in range
+    // Fetch all appointments that overlap with the range (not just contained within)
     const appointments = await prisma.appointment.findMany({
       where: {
         AND: [
-          { startUtc: { gte: startDate } },
-          { endUtc: { lte: endDate } },
+          { startUtc: { lt: endDate } },  // Appointment starts before range ends
+          { endUtc: { gt: startDate } },  // Appointment ends after range starts
         ],
       },
     });
@@ -342,20 +342,23 @@ export class CapacityValidator {
 
     // Process each day in range
     const currentDate = new Date(startDate);
+    currentDate.setHours(0, 0, 0, 0); // Start at beginning of day
     const dailyUtilizations: Array<{ date: string; percentage: number }> = [];
+    
+    const endDateMidnight = new Date(endDate);
+    endDateMidnight.setHours(0, 0, 0, 0);
 
-    while (currentDate < endDate) {
+    while (currentDate <= endDateMidnight) {
       const dayOfWeek = currentDate.getDay();
       const defaultCapacity = getDefaultCapacityForDay(dayOfWeek);
       
+      // Always set dayStart to beginning of current day
       const dayStart = new Date(currentDate);
-      if (defaultCapacity.startHour !== null) {
-        dayStart.setHours(defaultCapacity.startHour, 0, 0, 0);
-      }
+      dayStart.setHours(0, 0, 0, 0);
+      
+      // Always set dayEnd to end of current day
       const dayEnd = new Date(currentDate);
-      if (defaultCapacity.endHour !== null) {
-        dayEnd.setHours(defaultCapacity.endHour, 0, 0, 0);
-      }
+      dayEnd.setHours(23, 59, 59, 999);
 
       // Get shifts for this day
       const dayShifts = shifts.filter(
@@ -391,27 +394,38 @@ export class CapacityValidator {
       }
 
       // Calculate day utilization for peak detection
+      // Use overlapping logic: appointment overlaps if it starts before day ends AND ends after day starts
       const dayAppointments = appointments.filter(
-        appt => appt.startUtc >= dayStart && appt.endUtc <= dayEnd
+        appt => appt.startUtc < dayEnd && appt.endUtc > dayStart
       );
 
       if (dayAppointments.length > 0) {
-        // Workers: use workMinutesNeeded directly (already in worker-minutes)
-        const dayWorkUsed = dayAppointments.reduce((sum, appt) => sum + appt.workMinutesNeeded, 0);
+        // Calculate resource usage considering only the overlap with this day
+        let dayWorkUsed = 0;
+        let dayForkliftsUsed = 0;
+        let dayDocksUsed = 0;
         
-        // Forklifts: forklifts needed × duration in minutes = forklift-minutes
-        const dayForkliftsUsed = dayAppointments.reduce((sum, appt) => {
-          const durationMs = appt.endUtc.getTime() - appt.startUtc.getTime();
-          const durationMinutes = Math.ceil(durationMs / 60000);
-          return sum + (appt.forkliftsNeeded * durationMinutes);
-        }, 0);
-        
-        // Docks: 1 dock per appointment × duration in minutes = dock-minutes
-        const dayDocksUsed = dayAppointments.reduce((sum, appt) => {
-          const durationMs = appt.endUtc.getTime() - appt.startUtc.getTime();
-          const durationMinutes = Math.ceil(durationMs / 60000);
-          return sum + durationMinutes;
-        }, 0);
+        for (const appt of dayAppointments) {
+          // Calculate the overlap between appointment and this day
+          const overlapStart = appt.startUtc > dayStart ? appt.startUtc : dayStart;
+          const overlapEnd = appt.endUtc < dayEnd ? appt.endUtc : dayEnd;
+          const overlapMs = overlapEnd.getTime() - overlapStart.getTime();
+          const overlapMinutes = Math.ceil(overlapMs / 60000);
+          
+          // Calculate what fraction of the appointment falls within this day
+          const totalApptMs = appt.endUtc.getTime() - appt.startUtc.getTime();
+          const totalApptMinutes = Math.ceil(totalApptMs / 60000);
+          const fractionInDay = overlapMinutes / totalApptMinutes;
+          
+          // Workers: proportion of workMinutesNeeded that falls in this day
+          dayWorkUsed += appt.workMinutesNeeded * fractionInDay;
+          
+          // Forklifts: forklifts needed × overlap duration
+          dayForkliftsUsed += appt.forkliftsNeeded * overlapMinutes;
+          
+          // Docks: overlap duration (1 dock per appointment)
+          dayDocksUsed += overlapMinutes;
+        }
 
         const dayWorkersCapacity = dayShifts.length > 0 
           ? dayShifts.reduce((sum, s) => {

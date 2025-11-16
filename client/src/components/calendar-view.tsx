@@ -16,7 +16,7 @@ interface CalendarEvent {
     providerName: string;
     workMinutesNeeded: number;
     forkliftsNeeded: number;
-    goodsType?: string;
+    goodsType?: string | null;
   };
 }
 

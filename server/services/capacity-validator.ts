@@ -365,11 +365,17 @@ export class CapacityValidator {
         shift => shift.startUtc < dayEnd && shift.endUtc > dayStart
       );
 
+      // Calculate day capacity correctly handling overlapping shifts
+      // Use event-based timeline for efficiency instead of iterating every minute
+      let dayWorkersCapacity = 0;
+      let dayForkliftsCapacity = 0;
+      let dayDocksCapacity = 0;
+
       if (dayShifts.length === 0) {
-        // No shifts programmed - use day-specific defaults
-        totalWorkersMinutes += defaultCapacity.workers * defaultCapacity.minutesPerDay;
-        totalForkliftsMinutes += defaultCapacity.forklifts * defaultCapacity.minutesPerDay;
-        totalDocksMinutes += defaultCapacity.docks * defaultCapacity.minutesPerDay;
+        // No shifts - use default capacity
+        dayWorkersCapacity = defaultCapacity.workers * defaultCapacity.minutesPerDay;
+        dayForkliftsCapacity = defaultCapacity.forklifts * defaultCapacity.minutesPerDay;
+        dayDocksCapacity = defaultCapacity.docks * defaultCapacity.minutesPerDay;
         daysUsingDefaults++;
         
         // Track by day type
@@ -381,17 +387,74 @@ export class CapacityValidator {
           defaultWeekdays++;
         }
       } else {
-        // Sum capacity from all shifts (handling overlaps)
+        // Build timeline of capacity change events
+        const events: Array<{ time: Date; isStart: boolean; shift: any }> = [];
         for (const shift of dayShifts) {
           const shiftStart = shift.startUtc > dayStart ? shift.startUtc : dayStart;
           const shiftEnd = shift.endUtc < dayEnd ? shift.endUtc : dayEnd;
-          const shiftMinutes = Math.ceil((shiftEnd.getTime() - shiftStart.getTime()) / 60000);
+          events.push({ time: shiftStart, isStart: true, shift });
+          events.push({ time: shiftEnd, isStart: false, shift });
+        }
+        
+        // Sort events by time, with start events before end events at same time
+        events.sort((a, b) => {
+          const timeDiff = a.time.getTime() - b.time.getTime();
+          if (timeDiff !== 0) return timeDiff;
+          return a.isStart ? -1 : 1; // starts before ends at same timestamp
+        });
 
-          totalWorkersMinutes += shift.workers * shiftMinutes;
-          totalForkliftsMinutes += shift.forklifts * shiftMinutes;
-          totalDocksMinutes += (shift.docks ?? DEFAULT_DOCKS) * shiftMinutes;
+        // Process events to calculate capacity
+        const activeShifts: any[] = [];
+        let lastTime = dayStart;
+
+        for (const event of events) {
+          // Calculate capacity for the period before this event
+          if (event.time > lastTime) {
+            const minutes = Math.ceil((event.time.getTime() - lastTime.getTime()) / 60000);
+            
+            if (activeShifts.length > 0) {
+              // Use most specific shift (shortest duration) for this period
+              const mostSpecific = activeShifts.reduce((shortest, current) => {
+                const currentDuration = current.endUtc.getTime() - current.startUtc.getTime();
+                const shortestDuration = shortest.endUtc.getTime() - shortest.startUtc.getTime();
+                return currentDuration < shortestDuration ? current : shortest;
+              });
+              dayWorkersCapacity += mostSpecific.workers * minutes;
+              dayForkliftsCapacity += mostSpecific.forklifts * minutes;
+              dayDocksCapacity += (mostSpecific.docks ?? defaultCapacity.docks) * minutes;
+            } else {
+              // No shifts active - use default capacity for this gap
+              dayWorkersCapacity += defaultCapacity.workers * minutes;
+              dayForkliftsCapacity += defaultCapacity.forklifts * minutes;
+              dayDocksCapacity += defaultCapacity.docks * minutes;
+            }
+          }
+
+          // Update active shifts
+          if (event.isStart) {
+            activeShifts.push(event.shift);
+          } else {
+            const index = activeShifts.findIndex(s => s === event.shift);
+            if (index >= 0) activeShifts.splice(index, 1);
+          }
+
+          lastTime = event.time;
+        }
+
+        // Handle any remaining time after last event until end of day
+        if (lastTime < dayEnd) {
+          const minutes = Math.ceil((dayEnd.getTime() - lastTime.getTime()) / 60000);
+          dayWorkersCapacity += defaultCapacity.workers * minutes;
+          dayForkliftsCapacity += defaultCapacity.forklifts * minutes;
+          dayDocksCapacity += defaultCapacity.docks * minutes;
         }
       }
+
+      // Accumulate day capacity into total capacity for the range
+      // This ensures total capacity uses the same overlap-safe logic as day capacity
+      totalWorkersMinutes += dayWorkersCapacity;
+      totalForkliftsMinutes += dayForkliftsCapacity;
+      totalDocksMinutes += dayDocksCapacity;
 
       // Calculate day utilization for peak detection
       // Use overlapping logic: appointment overlaps if it starts before day ends AND ends after day starts
@@ -426,33 +489,6 @@ export class CapacityValidator {
           // Docks: overlap duration (1 dock per appointment)
           dayDocksUsed += overlapMinutes;
         }
-
-        const dayWorkersCapacity = dayShifts.length > 0 
-          ? dayShifts.reduce((sum, s) => {
-              const sStart = s.startUtc > dayStart ? s.startUtc : dayStart;
-              const sEnd = s.endUtc < dayEnd ? s.endUtc : dayEnd;
-              const mins = Math.ceil((sEnd.getTime() - sStart.getTime()) / 60000);
-              return sum + (s.workers * mins);
-            }, 0)
-          : defaultCapacity.workers * defaultCapacity.minutesPerDay;
-
-        const dayForkliftsCapacity = dayShifts.length > 0
-          ? dayShifts.reduce((sum, s) => {
-              const sStart = s.startUtc > dayStart ? s.startUtc : dayStart;
-              const sEnd = s.endUtc < dayEnd ? s.endUtc : dayEnd;
-              const mins = Math.ceil((sEnd.getTime() - sStart.getTime()) / 60000);
-              return sum + (s.forklifts * mins);
-            }, 0)
-          : defaultCapacity.forklifts * defaultCapacity.minutesPerDay;
-
-        const dayDocksCapacity = dayShifts.length > 0
-          ? dayShifts.reduce((sum, s) => {
-              const sStart = s.startUtc > dayStart ? s.startUtc : dayStart;
-              const sEnd = s.endUtc < dayEnd ? s.endUtc : dayEnd;
-              const mins = Math.ceil((sEnd.getTime() - sStart.getTime()) / 60000);
-              return sum + ((s.docks ?? defaultCapacity.docks) * mins);
-            }, 0)
-          : defaultCapacity.docks * defaultCapacity.minutesPerDay;
 
         const dayWorkersPct = dayWorkersCapacity > 0 ? (dayWorkUsed / dayWorkersCapacity) * 100 : 0;
         const dayForkliftsPct = dayForkliftsCapacity > 0 ? (dayForkliftsUsed / dayForkliftsCapacity) * 100 : 0;

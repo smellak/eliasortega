@@ -25,7 +25,11 @@ The backend is built with Node.js 20 and Express.js, using Prisma Client for Pos
 -   **Uniform Resource Distribution**: Constant work rate and consistent usage for validation.
 -   **Shift Overlap Resolution**: Prioritizes specific capacity shifts.
 -   **Shared Type Definitions**: Zod schemas ensure type consistency across the stack.
--   **Default Capacity Values**: Environment variables provide fallback capacity.
+-   **Day-of-Week Capacity Differentiation**: Default capacity varies by day type:
+    -   **Weekdays (Mon-Fri)**: 08:00-19:00, 3 workers, 2 forklifts, 3 docks
+    -   **Saturdays**: 08:00-14:00, 2 workers, 1 forklift, 2 docks (reduced capacity)
+    -   **Sundays**: Closed (0 workers, 0 forklifts, 0 docks)
+-   **Capacity Indicators**: UI displays appointment count and warehouse capacity percentage (bottleneck approach using most saturated resource). Expandable details show resource-specific percentages and breakdown of days using default values by type (weekdays/Saturdays/Sundays).
 -   **Public vs Protected Routes**: Management platform requires authentication; `/chat` is public.
 
 ### Public Endpoints & AI Integration

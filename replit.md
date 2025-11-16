@@ -29,7 +29,8 @@ The backend is built with Node.js 20 and Express.js, using Prisma Client for Pos
     -   **Weekdays (Mon-Fri)**: 08:00-19:00, 3 workers, 2 forklifts, 3 docks
     -   **Saturdays**: 08:00-14:00, 2 workers, 1 forklift, 2 docks (reduced capacity)
     -   **Sundays**: Closed (0 workers, 0 forklifts, 0 docks)
--   **Capacity Indicators**: UI displays appointment count and warehouse capacity percentage (bottleneck approach using most saturated resource). Expandable details show resource-specific percentages and breakdown of days using default values by type (weekdays/Saturdays/Sundays).
+-   **Capacity Indicators**: UI displays appointment count and warehouse capacity percentage (bottleneck approach using most saturated resource). Expandable details show resource-specific percentages and breakdown of days using default values by type (weekdays/Saturdays/Sundays). Uses FullCalendar's `datesSet` callback to synchronize date ranges between calendar view and capacity queries, ensuring indicators update correctly when switching between Month/Week/Day views.
+-   **Authentication Error Handling**: Backend returns 401 (Unauthorized) for expired/invalid JWT tokens, triggering automatic frontend redirect to login page. This prevents users from seeing stale data or empty indicators.
 -   **Public vs Protected Routes**: Management platform requires authentication; `/chat` is public.
 
 ### Public Endpoints & AI Integration

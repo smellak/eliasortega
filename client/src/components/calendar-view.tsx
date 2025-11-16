@@ -28,6 +28,7 @@ interface CalendarViewProps {
   onEventDrop?: (eventDropInfo: any) => void;
   onViewChange?: (view: "dayGridMonth" | "timeGridWeek" | "timeGridDay") => void;
   onDateChange?: (date: Date) => void;
+  onDatesChange?: (startDate: Date, endDate: Date, viewType: "dayGridMonth" | "timeGridWeek" | "timeGridDay") => void;
   readOnly?: boolean;
 }
 
@@ -38,6 +39,7 @@ export function CalendarView({
   onEventDrop,
   onViewChange,
   onDateChange,
+  onDatesChange,
   readOnly = false,
 }: CalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null);
@@ -140,6 +142,14 @@ export function CalendarView({
           eventClick={onEventClick}
           select={onDateSelect}
           eventDrop={onEventDrop}
+          datesSet={(dateInfo) => {
+            // FullCalendar notifies when the date range changes
+            const startDate = dateInfo.start;
+            const endDate = dateInfo.end;
+            const viewType = dateInfo.view.type as "dayGridMonth" | "timeGridWeek" | "timeGridDay";
+            setCurrentDate(dateInfo.view.currentStart);
+            onDatesChange?.(startDate, endDate, viewType);
+          }}
           eventContent={(eventInfo) => {
             const props = eventInfo.event.extendedProps;
             return (

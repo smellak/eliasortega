@@ -24,29 +24,20 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [currentView, setCurrentView] = useState<"dayGridMonth" | "timeGridWeek" | "timeGridDay">("timeGridWeek");
+  
+  // Store the actual date range from FullCalendar
+  const [dateRange, setDateRange] = useState<{ startDate: Date; endDate: Date }>(() => {
+    // Initialize with week range for default view
+    return {
+      startDate: startOfWeek(new Date(), { weekStartsOn: 1 }),
+      endDate: endOfWeek(new Date(), { weekStartsOn: 1 }),
+    };
+  });
 
   const isReadOnly = userRole === "BASIC_READONLY";
 
-  // Calculate date range based on current view using useMemo to ensure stability
-  const { startDate, endDate } = useMemo(() => {
-    switch (currentView) {
-      case "dayGridMonth":
-        return {
-          startDate: startOfMonth(currentDate),
-          endDate: endOfMonth(currentDate),
-        };
-      case "timeGridWeek":
-        return {
-          startDate: startOfWeek(currentDate, { weekStartsOn: 1 }),
-          endDate: endOfWeek(currentDate, { weekStartsOn: 1 }),
-        };
-      case "timeGridDay":
-        return {
-          startDate: startOfDay(currentDate),
-          endDate: endOfDay(currentDate),
-        };
-    }
-  }, [currentDate, currentView]);
+  // Use the date range from FullCalendar
+  const { startDate, endDate } = dateRange;
 
   // Fetch appointments
   const { data: appointments = [] } = useQuery<Appointment[]>({
@@ -211,6 +202,12 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
     setCurrentDate(date);
   };
 
+  // Handle when FullCalendar changes its date range
+  const handleDatesChange = (start: Date, end: Date, viewType: "dayGridMonth" | "timeGridWeek" | "timeGridDay") => {
+    setDateRange({ startDate: start, endDate: end });
+    setCurrentView(viewType);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -252,6 +249,7 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
         onEventDrop={handleEventDrop}
         onViewChange={handleViewChange}
         onDateChange={handleDateChange}
+        onDatesChange={handleDatesChange}
         readOnly={isReadOnly}
       />
 

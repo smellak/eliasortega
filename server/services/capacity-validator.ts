@@ -470,21 +470,31 @@ export class CapacityValidator {
     }
 
     // Calculate total resource usage (in resource-minutes)
+    // Only count the portion of each appointment that falls within the requested range
     let totalWorkUsed = 0;
     let totalForkliftsUsed = 0;
     let totalDocksUsed = 0;
 
     for (const appt of appointments) {
-      // Workers: workMinutesNeeded is already in worker-minutes
-      totalWorkUsed += appt.workMinutesNeeded;
+      // Calculate overlap between appointment and requested range
+      const overlapStart = appt.startUtc > startDate ? appt.startUtc : startDate;
+      const overlapEnd = appt.endUtc < endDate ? appt.endUtc : endDate;
+      const overlapMs = overlapEnd.getTime() - overlapStart.getTime();
+      const overlapMinutes = Math.ceil(overlapMs / 60000);
       
-      // Forklifts: forklifts × duration = forklift-minutes
-      const durationMs = appt.endUtc.getTime() - appt.startUtc.getTime();
-      const durationMinutes = Math.ceil(durationMs / 60000);
-      totalForkliftsUsed += appt.forkliftsNeeded * durationMinutes;
+      // Calculate fraction of appointment within range
+      const totalApptMs = appt.endUtc.getTime() - appt.startUtc.getTime();
+      const totalApptMinutes = Math.ceil(totalApptMs / 60000);
+      const fractionInRange = overlapMinutes / totalApptMinutes;
       
-      // Docks: 1 dock per appointment × duration = dock-minutes
-      totalDocksUsed += durationMinutes;
+      // Workers: proportion of workMinutesNeeded within range
+      totalWorkUsed += appt.workMinutesNeeded * fractionInRange;
+      
+      // Forklifts: forklifts × overlap duration
+      totalForkliftsUsed += appt.forkliftsNeeded * overlapMinutes;
+      
+      // Docks: overlap duration
+      totalDocksUsed += overlapMinutes;
     }
 
     // Calculate percentages

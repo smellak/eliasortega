@@ -313,6 +313,8 @@ export class CapacityValidator {
         ],
       },
     });
+    
+    console.log("[CAPACITY] Found appointments:", appointments.length);
 
     // Fetch all capacity shifts in range
     const shifts = await prisma.capacityShift.findMany({

@@ -583,13 +583,28 @@ router.get("/api/capacity/utilization", authenticateToken, async (req: AuthReque
       return res.status(400).json({ error: "startDate and endDate parameters required" });
     }
 
+    console.log("[CAPACITY] Calculating utilization:", {
+      startDate: startDate as string,
+      endDate: endDate as string
+    });
+
     const utilization = await capacityValidator.calculateUtilization(
       new Date(startDate as string),
       new Date(endDate as string)
     );
+    
+    console.log("[CAPACITY] Calculated successfully:", {
+      count: utilization.appointmentCount,
+      percentage: utilization.capacityPercentage
+    });
+    
     res.json(utilization);
-  } catch (error) {
-    console.error("Get capacity utilization error:", error);
+  } catch (error: any) {
+    console.error("[CAPACITY] Error calculating utilization:", {
+      message: error.message,
+      stack: error.stack,
+      query: req.query
+    });
     res.status(500).json({ error: "Internal server error" });
   }
 });

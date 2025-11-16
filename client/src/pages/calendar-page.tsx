@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { CalendarView } from "@/components/calendar-view";
 import { CapacityIndicators } from "@/components/capacity-indicators";
@@ -27,8 +27,8 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
 
   const isReadOnly = userRole === "BASIC_READONLY";
 
-  // Calculate date range based on current view
-  const getDateRange = () => {
+  // Calculate date range based on current view using useMemo to ensure stability
+  const { startDate, endDate } = useMemo(() => {
     switch (currentView) {
       case "dayGridMonth":
         return {
@@ -46,9 +46,7 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
           endDate: endOfDay(currentDate),
         };
     }
-  };
-
-  const { startDate, endDate } = getDateRange();
+  }, [currentDate, currentView]);
 
   // Fetch appointments
   const { data: appointments = [] } = useQuery<Appointment[]>({

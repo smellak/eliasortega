@@ -26,6 +26,8 @@ interface CalendarViewProps {
   onEventClick?: (event: any) => void;
   onDateSelect?: (selectInfo: any) => void;
   onEventDrop?: (eventDropInfo: any) => void;
+  onViewChange?: (view: "dayGridMonth" | "timeGridWeek" | "timeGridDay") => void;
+  onDateChange?: (date: Date) => void;
   readOnly?: boolean;
 }
 
@@ -34,6 +36,8 @@ export function CalendarView({
   onEventClick,
   onDateSelect,
   onEventDrop,
+  onViewChange,
+  onDateChange,
   readOnly = false,
 }: CalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null);
@@ -42,17 +46,23 @@ export function CalendarView({
 
   const handlePrev = () => {
     calendarRef.current?.getApi().prev();
-    setCurrentDate(calendarRef.current?.getApi().getDate() || new Date());
+    const newDate = calendarRef.current?.getApi().getDate() || new Date();
+    setCurrentDate(newDate);
+    onDateChange?.(newDate);
   };
 
   const handleNext = () => {
     calendarRef.current?.getApi().next();
-    setCurrentDate(calendarRef.current?.getApi().getDate() || new Date());
+    const newDate = calendarRef.current?.getApi().getDate() || new Date();
+    setCurrentDate(newDate);
+    onDateChange?.(newDate);
   };
 
   const handleToday = () => {
     calendarRef.current?.getApi().today();
-    setCurrentDate(new Date());
+    const newDate = new Date();
+    setCurrentDate(newDate);
+    onDateChange?.(newDate);
   };
 
   return (
@@ -78,6 +88,7 @@ export function CalendarView({
             onClick={() => {
               setViewType("dayGridMonth");
               calendarRef.current?.getApi().changeView("dayGridMonth");
+              onViewChange?.("dayGridMonth");
             }}
             data-testid="button-view-month"
           >
@@ -89,6 +100,7 @@ export function CalendarView({
             onClick={() => {
               setViewType("timeGridWeek");
               calendarRef.current?.getApi().changeView("timeGridWeek");
+              onViewChange?.("timeGridWeek");
             }}
             data-testid="button-view-week"
           >
@@ -100,6 +112,7 @@ export function CalendarView({
             onClick={() => {
               setViewType("timeGridDay");
               calendarRef.current?.getApi().changeView("timeGridDay");
+              onViewChange?.("timeGridDay");
             }}
             data-testid="button-view-day"
           >

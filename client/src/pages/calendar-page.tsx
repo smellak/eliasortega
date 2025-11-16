@@ -10,15 +10,22 @@ import { appointmentsApi, providersApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Appointment, Provider, CreateAppointmentInput, UpdateAppointmentInput, CapacityConflictError, UserRole } from "@shared/types";
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 
-interface CapacityAtMinute {
-  minute: string;
-  workUsed: number;
-  workAvailable: number;
-  forkliftsUsed: number;
-  forkliftsAvailable: number;
-  docksUsed: number;
-  docksAvailable: number;
+interface CapacityUtilization {
+  appointmentCount: number;
+  capacityPercentage: number;
+  workersPercentage: number;
+  forkliftsPercentage: number;
+  docksPercentage: number;
+  peakDay: string | null;
+  peakPercentage: number;
+  daysUsingDefaults: number;
+  breakdown: {
+    workers: { used: number; available: number };
+    forklifts: { used: number; available: number };
+    docks: { used: number; available: number };
+  };
 }
 
 interface CalendarPageProps {
@@ -31,18 +38,33 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
   const [conflictErrorOpen, setConflictErrorOpen] = useState(false);
   const [conflictError, setConflictError] = useState<CapacityConflictError | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
-  const [currentMinute, setCurrentMinute] = useState<string>(new Date().toISOString());
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [currentView, setCurrentView] = useState<"dayGridMonth" | "timeGridWeek" | "timeGridDay">("timeGridWeek");
 
   const isReadOnly = userRole === "BASIC_READONLY";
 
-  // Update current minute every minute
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentMinute(new Date().toISOString());
-    }, 60000); // Update every minute
+  // Calculate date range based on current view
+  const getDateRange = () => {
+    switch (currentView) {
+      case "dayGridMonth":
+        return {
+          startDate: startOfMonth(currentDate),
+          endDate: endOfMonth(currentDate),
+        };
+      case "timeGridWeek":
+        return {
+          startDate: startOfWeek(currentDate, { weekStartsOn: 1 }),
+          endDate: endOfWeek(currentDate, { weekStartsOn: 1 }),
+        };
+      case "timeGridDay":
+        return {
+          startDate: startOfDay(currentDate),
+          endDate: endOfDay(currentDate),
+        };
+    }
+  };
 
-    return () => clearInterval(interval);
-  }, []);
+  const { startDate, endDate } = getDateRange();
 
   // Fetch appointments
   const { data: appointments = [] } = useQuery<Appointment[]>({
@@ -56,24 +78,21 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
     queryFn: () => providersApi.list(),
   });
 
-  // Fetch real-time capacity at current minute
-  const { data: capacityData } = useQuery<CapacityAtMinute>({
-    queryKey: ["/api/capacity/at-minute", currentMinute],
+  // Fetch capacity utilization for current date range
+  const { data: capacityUtilization } = useQuery<CapacityUtilization>({
+    queryKey: ["/api/capacity/utilization", startDate.toISOString(), endDate.toISOString()],
     queryFn: async () => {
       const response = await fetch(
-        `/api/capacity/at-minute?minute=${encodeURIComponent(currentMinute)}`,
+        `/api/capacity/utilization?startDate=${encodeURIComponent(startDate.toISOString())}&endDate=${encodeURIComponent(endDate.toISOString())}`,
         {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+          credentials: "include",
         }
       );
       if (!response.ok) {
-        throw new Error("Error al cargar la capacidad");
+        throw new Error("Error al cargar la utilización de capacidad");
       }
       return response.json();
     },
-    refetchInterval: 60000, // Refetch every minute
   });
 
   // Create appointment mutation
@@ -81,8 +100,8 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
     mutationFn: (input: CreateAppointmentInput) => appointmentsApi.create(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
-      // Invalidate all capacity queries (exact: false matches any query starting with this key)
-      queryClient.invalidateQueries({ queryKey: ["/api/capacity/at-minute"], exact: false });
+      // Invalidate all capacity queries
+      queryClient.invalidateQueries({ queryKey: ["/api/capacity/utilization"], exact: false });
       setAppointmentDialogOpen(false);
       setSelectedEvent(null);
       toast({
@@ -120,8 +139,8 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
       appointmentsApi.update(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
-      // Invalidate all capacity queries (exact: false matches any query starting with this key)
-      queryClient.invalidateQueries({ queryKey: ["/api/capacity/at-minute"], exact: false });
+      // Invalidate all capacity queries
+      queryClient.invalidateQueries({ queryKey: ["/api/capacity/utilization"], exact: false });
       setAppointmentDialogOpen(false);
       setSelectedEvent(null);
       toast({
@@ -209,14 +228,13 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
     }
   };
 
-  // Real-time capacity indicators from API
-  const capacityIndicators = {
-    workUsed: capacityData?.workUsed ?? 0,
-    workAvailable: capacityData?.workAvailable ?? 3.0,
-    forkliftsUsed: capacityData?.forkliftsUsed ?? 0,
-    forkliftsAvailable: capacityData?.forkliftsAvailable ?? 3,
-    docksUsed: capacityData?.docksUsed ?? 0,
-    docksAvailable: capacityData?.docksAvailable ?? 3,
+  // Callback handlers for calendar navigation
+  const handleViewChange = (view: "dayGridMonth" | "timeGridWeek" | "timeGridDay") => {
+    setCurrentView(view);
+  };
+
+  const handleDateChange = (date: Date) => {
+    setCurrentDate(date);
   };
 
   return (
@@ -239,20 +257,26 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
         )}
       </div>
 
-      <CapacityIndicators
-        workUsed={capacityIndicators.workUsed}
-        workAvailable={capacityIndicators.workAvailable}
-        forkliftsUsed={capacityIndicators.forkliftsUsed}
-        forkliftsAvailable={capacityIndicators.forkliftsAvailable}
-        docksUsed={capacityIndicators.docksUsed}
-        docksAvailable={capacityIndicators.docksAvailable}
-      />
+      {capacityUtilization && (
+        <CapacityIndicators
+          appointmentCount={capacityUtilization.appointmentCount}
+          capacityPercentage={capacityUtilization.capacityPercentage}
+          workersPercentage={capacityUtilization.workersPercentage}
+          forkliftsPercentage={capacityUtilization.forkliftsPercentage}
+          docksPercentage={capacityUtilization.docksPercentage}
+          peakDay={capacityUtilization.peakDay}
+          peakPercentage={capacityUtilization.peakPercentage}
+          daysUsingDefaults={capacityUtilization.daysUsingDefaults}
+        />
+      )}
 
       <CalendarView
         events={events}
         onEventClick={handleEventClick}
         onDateSelect={handleDateSelect}
         onEventDrop={handleEventDrop}
+        onViewChange={handleViewChange}
+        onDateChange={handleDateChange}
         readOnly={isReadOnly}
       />
 

@@ -574,6 +574,26 @@ router.get("/api/capacity/at-minute", authenticateToken, async (req: AuthRequest
   }
 });
 
+// Get warehouse capacity utilization for a date range
+router.get("/api/capacity/utilization", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: "startDate and endDate parameters required" });
+    }
+
+    const utilization = await capacityValidator.calculateUtilization(
+      new Date(startDate as string),
+      new Date(endDate as string)
+    );
+    res.json(utilization);
+  } catch (error) {
+    console.error("Get capacity utilization error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Integration endpoints (for n8n, etc.)
 router.post("/api/integration/appointments/upsert", authenticateToken, async (req: AuthRequest, res) => {
   try {

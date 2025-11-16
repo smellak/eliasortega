@@ -128,6 +128,23 @@ export interface CapacityConflictError {
   failedRule: "work" | "forklifts" | "docks";
 }
 
+// Capacity utilization
+export interface CapacityUtilization {
+  appointmentCount: number;
+  capacityPercentage: number;
+  workersPercentage: number;
+  forkliftsPercentage: number;
+  docksPercentage: number;
+  peakDay: string | null;
+  peakPercentage: number;
+  daysUsingDefaults: number;
+  breakdown: {
+    workers: { used: number; available: number };
+    forklifts: { used: number; available: number };
+    docks: { used: number; available: number };
+  };
+}
+
 // Integration types
 export const upsertAppointmentSchema = appointmentBaseSchema.extend({
   externalRef: z.string().min(1), // Required for upsert

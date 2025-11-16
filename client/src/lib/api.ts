@@ -11,6 +11,7 @@ import type {
   CreateAppointmentInput,
   UpdateAppointmentInput,
   UserResponse,
+  CapacityUtilization,
 } from "@shared/types";
 
 const API_BASE = "/api";
@@ -224,6 +225,20 @@ export const appointmentsApi = {
       headers: getHeaders(),
     });
     return handleResponse(response);
+  },
+};
+
+// Capacity API
+export const capacityApi = {
+  getUtilization: async (params: { startDate: string; endDate: string }): Promise<CapacityUtilization> => {
+    const query = new URLSearchParams();
+    query.append("startDate", params.startDate);
+    query.append("endDate", params.endDate);
+
+    const response = await fetch(`${API_BASE}/capacity/utilization?${query}`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<CapacityUtilization>(response);
   },
 };
 

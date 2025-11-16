@@ -6,27 +6,11 @@ import { AppointmentDialog } from "@/components/appointment-dialog";
 import { ConflictErrorDialog } from "@/components/conflict-error-dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { appointmentsApi, providersApi } from "@/lib/api";
+import { appointmentsApi, providersApi, capacityApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Appointment, Provider, CreateAppointmentInput, UpdateAppointmentInput, CapacityConflictError, UserRole } from "@shared/types";
+import type { Appointment, Provider, CreateAppointmentInput, UpdateAppointmentInput, CapacityConflictError, UserRole, CapacityUtilization } from "@shared/types";
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
-
-interface CapacityUtilization {
-  appointmentCount: number;
-  capacityPercentage: number;
-  workersPercentage: number;
-  forkliftsPercentage: number;
-  docksPercentage: number;
-  peakDay: string | null;
-  peakPercentage: number;
-  daysUsingDefaults: number;
-  breakdown: {
-    workers: { used: number; available: number };
-    forklifts: { used: number; available: number };
-    docks: { used: number; available: number };
-  };
-}
 
 interface CalendarPageProps {
   userRole: UserRole;
@@ -81,18 +65,10 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
   // Fetch capacity utilization for current date range
   const { data: capacityUtilization } = useQuery<CapacityUtilization>({
     queryKey: ["/api/capacity/utilization", startDate.toISOString(), endDate.toISOString()],
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/capacity/utilization?startDate=${encodeURIComponent(startDate.toISOString())}&endDate=${encodeURIComponent(endDate.toISOString())}`,
-        {
-          credentials: "include",
-        }
-      );
-      if (!response.ok) {
-        throw new Error("Error al cargar la utilización de capacidad");
-      }
-      return response.json();
-    },
+    queryFn: () => capacityApi.getUtilization({
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    }),
   });
 
   // Create appointment mutation

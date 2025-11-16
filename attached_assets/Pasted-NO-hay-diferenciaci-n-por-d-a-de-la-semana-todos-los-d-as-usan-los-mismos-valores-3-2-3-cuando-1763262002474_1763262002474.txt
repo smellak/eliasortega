@@ -1,0 +1,111 @@
+NO hay diferenciación por día de la semana - todos los días usan los mismos valores (3, 2, 3) cuando no hay capacity shifts programados.
+
+¿Debería cambiarse esto?
+Mi recomendación es SÍ, agregar diferenciación por día de la semana por estas razones:
+
+Problemas actuales con valores uniformes:
+❌ Domingos operativos: El sistema permite citas en domingo con capacidad 3/2/3
+❌ Sin días de descanso: No refleja que los almacenes típicamente cierran domingos
+❌ Sábados a capacidad completa: No refleja operación reducida típica de fines de semana
+❌ Cálculos de capacidad mensual inexactos: Sobrestima disponibilidad al contar 30-31 días completos
+Propuesta de mejora:
+Opción 1: Diferenciación básica (recomendada)
+typescript
+
+function getDefaultCapacityForDay(dayOfWeek: number) {
+  // dayOfWeek: 0=Domingo, 1=Lunes, ..., 6=Sábado
+  
+  switch (dayOfWeek) {
+    case 0: // Domingo - CERRADO
+      return {
+        workers: 0,
+        forklifts: 0,
+        docks: 0,
+        startHour: null,
+        endHour: null,
+        minutesPerDay: 0
+      }
+    
+    case 6: // Sábado - REDUCIDO
+      return {
+        workers: 2,
+        forklifts: 1,
+        docks: 2,
+        startHour: 8,
+        endHour: 14, // Solo mañana
+        minutesPerDay: 360
+      }
+    
+    default: // Lunes-Viernes - NORMAL
+      return {
+        workers: 3,
+        forklifts: 2,
+        docks: 3,
+        startHour: 8,
+        endHour: 19,
+        minutesPerDay: 660
+      }
+  }
+}
+Opción 2: Configuración granular (más flexible)
+typescript
+
+const DEFAULT_CAPACITY_BY_DAY = {
+  0: { workers: 0, forklifts: 0, docks: 0, hours: null },        // Dom - Cerrado
+  1: { workers: 3, forklifts: 2, docks: 3, hours: "08:00-19:00" }, // Lun
+  2: { workers: 3, forklifts: 2, docks: 3, hours: "08:00-19:00" }, // Mar
+  3: { workers: 3, forklifts: 2, docks: 3, hours: "08:00-19:00" }, // Mié
+  4: { workers: 3, forklifts: 2, docks: 3, hours: "08:00-19:00" }, // Jue
+  5: { workers: 3, forklifts: 2, docks: 3, hours: "08:00-19:00" }, // Vie
+  6: { workers: 2, forklifts: 1, docks: 2, hours: "08:00-14:00" }  // Sáb - Reducido
+}
+Beneficios de implementar diferenciación:
+1. UX mejorada
+typescript
+
+// Al intentar crear cita en domingo:
+if (defaultCapacity.workers === 0) {
+  return {
+    canBook: false,
+    message: "⚠️ El almacén no opera los domingos. Por favor selecciona otro día.",
+    suggestedDates: getNextAvailableDates()
+  }
+}
+2. Cálculos precisos de capacidad mensual
+typescript
+
+// Antes (incorrecto):
+Noviembre: 30 días × 3 workers × 660 min = 59,400 worker-minutes
+
+// Después (correcto):
+Noviembre: 
+  - 22 días laborables × 3 workers × 660 min = 43,560 worker-minutes
+  - 4 sábados × 2 workers × 360 min = 2,880 worker-minutes
+  - 4 domingos × 0 workers × 0 min = 0 worker-minutes
+  Total: 46,440 worker-minutes (21.8% menos capacidad real)
+3. Advertencias claras
+tsx
+
+{usesDefaultCapacity && (
+  <Badge variant="warning">
+    {defaultDaysBreakdown.sundays > 0 && "⚠️ Incluye domingos (cerrado)"}
+    {defaultDaysBreakdown.saturdays > 0 && "📅 Incluye sábados (capacidad reducida)"}
+    {defaultDaysBreakdown.weekdays > 0 && `${defaultDaysBreakdown.weekdays}d laborables sin turnos programados`}
+  </Badge>
+)}
+¿Qué te recomiendo hacer?
+Opción A: Implementar ahora (15-20 min)
+✅ Mejora inmediata de precisión
+✅ Previene confusiones de usuarios
+✅ Cálculos más realistas
+
+Prompt para Replit:
+
+apache
+
+Actualiza los valores por defecto en capacity-validator.ts para diferenciar por día de la semana:
+- Lunes-Viernes: 3 workers, 2 forklifts, 3 docks (08:00-19:00)
+- Sábado: 2 workers, 1 forklift, 2 docks (08:00-14:00)
+- Domingo: 0 workers, 0 forklifts, 0 docks (cerrado)
+
+Actualiza también la UI para mostrar advertencias específicas cuando se usen estos valores por defecto

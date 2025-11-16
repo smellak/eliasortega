@@ -13,6 +13,52 @@ const DEFAULT_START_HOUR = 8;
 const DEFAULT_END_HOUR = 19;
 const DEFAULT_MINUTES_PER_DAY = (DEFAULT_END_HOUR - DEFAULT_START_HOUR) * 60;
 
+/**
+ * Get default capacity values for a specific day of the week
+ * @param dayOfWeek - JavaScript day of week (0=Sunday, 1=Monday, ..., 6=Saturday)
+ * @returns Capacity configuration for that day
+ */
+function getDefaultCapacityForDay(dayOfWeek: number): {
+  workers: number;
+  forklifts: number;
+  docks: number;
+  startHour: number | null;
+  endHour: number | null;
+  minutesPerDay: number;
+} {
+  switch (dayOfWeek) {
+    case 0: // Domingo - CERRADO
+      return {
+        workers: 0,
+        forklifts: 0,
+        docks: 0,
+        startHour: null,
+        endHour: null,
+        minutesPerDay: 0,
+      };
+    
+    case 6: // Sábado - CAPACIDAD REDUCIDA
+      return {
+        workers: 2,
+        forklifts: 1,
+        docks: 2,
+        startHour: 8,
+        endHour: 14, // Solo mañana (6 horas)
+        minutesPerDay: 360,
+      };
+    
+    default: // Lunes-Viernes - CAPACIDAD NORMAL
+      return {
+        workers: DEFAULT_WORKERS,
+        forklifts: DEFAULT_FORKLIFTS,
+        docks: DEFAULT_DOCKS,
+        startHour: DEFAULT_START_HOUR,
+        endHour: DEFAULT_END_HOUR,
+        minutesPerDay: DEFAULT_MINUTES_PER_DAY,
+      };
+  }
+}
+
 interface AppointmentToValidate {
   id?: string; // Exclude this ID when checking conflicts (for updates)
   startUtc: Date;
@@ -38,10 +84,13 @@ export class CapacityValidator {
     );
 
     if (applicableShifts.length === 0) {
+      // Use day-specific default capacity
+      const dayOfWeek = minute.getDay();
+      const defaultCapacity = getDefaultCapacityForDay(dayOfWeek);
       return {
-        workers: DEFAULT_WORKERS,
-        forklifts: DEFAULT_FORKLIFTS,
-        docks: DEFAULT_DOCKS,
+        workers: defaultCapacity.workers,
+        forklifts: defaultCapacity.forklifts,
+        docks: defaultCapacity.docks,
       };
     }
 
@@ -244,6 +293,11 @@ export class CapacityValidator {
     peakDay: string | null;
     peakPercentage: number;
     daysUsingDefaults: number;
+    defaultDaysBreakdown: {
+      sundays: number;
+      saturdays: number;
+      weekdays: number;
+    };
     breakdown: {
       workers: { used: number; available: number };
       forklifts: { used: number; available: number };
@@ -276,6 +330,11 @@ export class CapacityValidator {
     let totalForkliftsMinutes = 0;
     let totalDocksMinutes = 0;
     let daysUsingDefaults = 0;
+    
+    // Track default days by type
+    let defaultSundays = 0;
+    let defaultSaturdays = 0;
+    let defaultWeekdays = 0;
 
     // Track peak day
     let peakDay: string | null = null;
@@ -286,10 +345,17 @@ export class CapacityValidator {
     const dailyUtilizations: Array<{ date: string; percentage: number }> = [];
 
     while (currentDate < endDate) {
+      const dayOfWeek = currentDate.getDay();
+      const defaultCapacity = getDefaultCapacityForDay(dayOfWeek);
+      
       const dayStart = new Date(currentDate);
-      dayStart.setHours(DEFAULT_START_HOUR, 0, 0, 0);
+      if (defaultCapacity.startHour !== null) {
+        dayStart.setHours(defaultCapacity.startHour, 0, 0, 0);
+      }
       const dayEnd = new Date(currentDate);
-      dayEnd.setHours(DEFAULT_END_HOUR, 0, 0, 0);
+      if (defaultCapacity.endHour !== null) {
+        dayEnd.setHours(defaultCapacity.endHour, 0, 0, 0);
+      }
 
       // Get shifts for this day
       const dayShifts = shifts.filter(
@@ -297,11 +363,20 @@ export class CapacityValidator {
       );
 
       if (dayShifts.length === 0) {
-        // No shifts programmed - use defaults
-        totalWorkersMinutes += DEFAULT_WORKERS * DEFAULT_MINUTES_PER_DAY;
-        totalForkliftsMinutes += DEFAULT_FORKLIFTS * DEFAULT_MINUTES_PER_DAY;
-        totalDocksMinutes += DEFAULT_DOCKS * DEFAULT_MINUTES_PER_DAY;
+        // No shifts programmed - use day-specific defaults
+        totalWorkersMinutes += defaultCapacity.workers * defaultCapacity.minutesPerDay;
+        totalForkliftsMinutes += defaultCapacity.forklifts * defaultCapacity.minutesPerDay;
+        totalDocksMinutes += defaultCapacity.docks * defaultCapacity.minutesPerDay;
         daysUsingDefaults++;
+        
+        // Track by day type
+        if (dayOfWeek === 0) {
+          defaultSundays++;
+        } else if (dayOfWeek === 6) {
+          defaultSaturdays++;
+        } else {
+          defaultWeekdays++;
+        }
       } else {
         // Sum capacity from all shifts (handling overlaps)
         for (const shift of dayShifts) {
@@ -345,7 +420,7 @@ export class CapacityValidator {
               const mins = Math.ceil((sEnd.getTime() - sStart.getTime()) / 60000);
               return sum + (s.workers * mins);
             }, 0)
-          : DEFAULT_WORKERS * DEFAULT_MINUTES_PER_DAY;
+          : defaultCapacity.workers * defaultCapacity.minutesPerDay;
 
         const dayForkliftsCapacity = dayShifts.length > 0
           ? dayShifts.reduce((sum, s) => {
@@ -354,16 +429,16 @@ export class CapacityValidator {
               const mins = Math.ceil((sEnd.getTime() - sStart.getTime()) / 60000);
               return sum + (s.forklifts * mins);
             }, 0)
-          : DEFAULT_FORKLIFTS * DEFAULT_MINUTES_PER_DAY;
+          : defaultCapacity.forklifts * defaultCapacity.minutesPerDay;
 
         const dayDocksCapacity = dayShifts.length > 0
           ? dayShifts.reduce((sum, s) => {
               const sStart = s.startUtc > dayStart ? s.startUtc : dayStart;
               const sEnd = s.endUtc < dayEnd ? s.endUtc : dayEnd;
               const mins = Math.ceil((sEnd.getTime() - sStart.getTime()) / 60000);
-              return sum + ((s.docks ?? DEFAULT_DOCKS) * mins);
+              return sum + ((s.docks ?? defaultCapacity.docks) * mins);
             }, 0)
-          : DEFAULT_DOCKS * DEFAULT_MINUTES_PER_DAY;
+          : defaultCapacity.docks * defaultCapacity.minutesPerDay;
 
         const dayWorkersPct = dayWorkersCapacity > 0 ? (dayWorkUsed / dayWorkersCapacity) * 100 : 0;
         const dayForkliftsPct = dayForkliftsCapacity > 0 ? (dayForkliftsUsed / dayForkliftsCapacity) * 100 : 0;
@@ -421,6 +496,11 @@ export class CapacityValidator {
       peakDay,
       peakPercentage: parseFloat(peakPercentage.toFixed(1)),
       daysUsingDefaults,
+      defaultDaysBreakdown: {
+        sundays: defaultSundays,
+        saturdays: defaultSaturdays,
+        weekdays: defaultWeekdays,
+      },
       breakdown: {
         workers: { used: totalWorkUsed, available: totalWorkersMinutes },
         forklifts: { used: totalForkliftsUsed, available: totalForkliftsMinutes },

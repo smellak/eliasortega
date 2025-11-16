@@ -138,6 +138,11 @@ export interface CapacityUtilization {
   peakDay: string | null;
   peakPercentage: number;
   daysUsingDefaults: number;
+  defaultDaysBreakdown: {
+    sundays: number;
+    saturdays: number;
+    weekdays: number;
+  };
   breakdown: {
     workers: { used: number; available: number };
     forklifts: { used: number; available: number };

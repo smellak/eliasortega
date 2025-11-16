@@ -54,10 +54,17 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
   // Fetch capacity utilization for current date range
   const { data: capacityUtilization } = useQuery<CapacityUtilization>({
     queryKey: ["/api/capacity/utilization", startDate.toISOString(), endDate.toISOString()],
-    queryFn: () => capacityApi.getUtilization({
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-    }),
+    queryFn: () => {
+      console.log("[CAPACITY QUERY] Fetching capacity utilization:", {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        view: currentView,
+      });
+      return capacityApi.getUtilization({
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+      });
+    },
   });
 
   // Create appointment mutation
@@ -216,6 +223,14 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
       queryStart = startOfMonth(monthStart);
       queryEnd = endOfMonth(monthStart);
     }
+    
+    console.log("[DATES CHANGE] Calendar range updated:", {
+      viewType,
+      fcStart: start.toISOString(),
+      fcEnd: end.toISOString(),
+      queryStart: queryStart.toISOString(),
+      queryEnd: queryEnd.toISOString(),
+    });
     
     setDateRange({ startDate: queryStart, endDate: queryEnd });
     setCurrentView(viewType);

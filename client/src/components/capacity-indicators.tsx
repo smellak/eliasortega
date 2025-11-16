@@ -16,6 +16,11 @@ interface CapacityIndicatorsProps {
   peakDay: string | null;
   peakPercentage: number;
   daysUsingDefaults: number;
+  defaultDaysBreakdown: {
+    sundays: number;
+    saturdays: number;
+    weekdays: number;
+  };
 }
 
 export function CapacityIndicators({
@@ -27,6 +32,7 @@ export function CapacityIndicators({
   peakDay,
   peakPercentage,
   daysUsingDefaults,
+  defaultDaysBreakdown,
 }: CapacityIndicatorsProps) {
   const [showDetails, setShowDetails] = useState(false);
 
@@ -178,14 +184,32 @@ export function CapacityIndicators({
               <div className="p-3 rounded-md bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800">
                 <div className="flex gap-2">
                   <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">
                       Capacidad Estimada
                     </p>
                     <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
-                      {daysUsingDefaults} {daysUsingDefaults === 1 ? 'día' : 'días'} sin ventana de capacidad programada. 
-                      Usando valores por defecto (08:00-19:00, 3 trabajadores, 2 carretillas, 3 muelles).
+                      {daysUsingDefaults} {daysUsingDefaults === 1 ? 'día' : 'días'} sin ventana de capacidad programada:
                     </p>
+                    <ul className="text-xs text-yellow-700 dark:text-yellow-300 mt-2 space-y-1 list-disc list-inside">
+                      {defaultDaysBreakdown.weekdays > 0 && (
+                        <li>
+                          <span className="font-semibold">{defaultDaysBreakdown.weekdays} {defaultDaysBreakdown.weekdays === 1 ? 'día laborable' : 'días laborables'}</span>
+                          : 08:00-19:00, 3 trabajadores, 2 carretillas, 3 muelles
+                        </li>
+                      )}
+                      {defaultDaysBreakdown.saturdays > 0 && (
+                        <li>
+                          <span className="font-semibold">{defaultDaysBreakdown.saturdays} {defaultDaysBreakdown.saturdays === 1 ? 'sábado' : 'sábados'}</span>
+                          : 08:00-14:00, 2 trabajadores, 1 carretilla, 2 muelles
+                        </li>
+                      )}
+                      {defaultDaysBreakdown.sundays > 0 && (
+                        <li className="text-destructive dark:text-red-400 font-semibold">
+                          {defaultDaysBreakdown.sundays} {defaultDaysBreakdown.sundays === 1 ? 'domingo' : 'domingos'}: CERRADO
+                        </li>
+                      )}
+                    </ul>
                   </div>
                 </div>
               </div>

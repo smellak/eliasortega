@@ -243,6 +243,7 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
           peakDay={capacityUtilization.peakDay}
           peakPercentage={capacityUtilization.peakPercentage}
           daysUsingDefaults={capacityUtilization.daysUsingDefaults}
+          defaultDaysBreakdown={capacityUtilization.defaultDaysBreakdown}
         />
       )}
 

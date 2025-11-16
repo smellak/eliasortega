@@ -1,0 +1,160 @@
+# 📋 PROMPT PARA REPLIT: Implementación de Cálculo de Capacidad del Almacén
+
+## 🎯 OBJETIVO
+Implementar la lógica de cálculo de capacidad del almacén que muestre:
+1. **Número de citas de descarga** en el periodo visible
+2. **Porcentaje de capacidad del almacén** (0-100%+) basado en el recurso más saturado
+
+Este cálculo debe adaptarse a la vista activa (día/semana/mes) y considerar las ventanas de capacidad (capacity shifts) programadas.
+
+---
+
+## 📊 REQUISITOS FUNCIONALES
+
+### 1. Cálculo de Capacidad por Recurso
+
+Para cada recurso (workers, forklifts, docks), calcular:
+
+**Capacidad Total Disponible:**
+```typescript
+// Para el rango de fechas visible (día, semana o mes):
+Para cada día en el rango:
+  1. Obtener todos los capacity_shifts del día de la tabla capacity_shifts
+  2. Si HAY shifts programados:
+     Capacidad_Día = Σ (cantidad_recurso × duración_shift_minutos)
+     
+     Ejemplo:
+     Shift 06:00-14:00 con 5 workers → 5 × 480min = 2,400 worker-min
+     Shift 14:00-22:00 con 3 workers → 3 × 480min = 1,440 worker-min
+     Total del día: 3,840 worker-min
+  
+  3. Si NO HAY shifts programados para el día:
+     Usar horario por defecto: 06:00-22:00 (960 minutos)
+     Capacidad_Día = DEFAULT_WORKERS × 960
+     // Donde: DEFAULT_WORKERS=3, DEFAULT_FORKLIFTS=2, DEFAULT_DOCKS=3
+     
+  4. Sumar capacidades de todos los días:
+     Capacidad_Total_Recurso = Σ Capacidad_Día
+
+// Ejemplo para una semana:
+Lunes: 3,840 worker-min
+Martes: 3,840 worker-min  
+Miércoles: 2,880 worker-min (sin shifts, usa default)
+Jueves: 3,840 worker-min
+Viernes: 3,840 worker-min
+Sábado: 0 worker-min (sin operación)
+Domingo: 0 worker-min (sin operación)
+Total semana: 18,240 worker-min disponibles
+Uso Total de Recursos:
+
+typescript
+
+// Para todas las citas de descarga en el rango:
+Para cada cita:
+  Uso_Cita = workers_needed × duration_min
+  
+  Ejemplo:
+  Cita A: 2 workers × 50 min = 100 worker-min
+  Cita B: 3 workers × 120 min = 360 worker-min
+  
+Uso_Total_Recurso = Σ Uso_Cita
+Porcentaje por Recurso:
+
+typescript
+
+Porcentaje_Recurso = (Uso_Total / Capacidad_Total) × 100
+
+Ejemplo:
+Workers: (460 / 18,240) × 100 = 2.52%
+Forklifts: (780 / 12,160) × 100 = 6.41%
+Docks: (340 / 18,240) × 100 = 1.86%
+Capacidad del Almacén (Cuello de Botella):
+
+typescript
+
+Capacidad_Almacén = MAX(Porcentaje_Workers, Porcentaje_Forklifts, Porcentaje_Docks)
+
+// En el ejemplo anterior:
+Capacidad_Almacén = 6.41% (limitado por forklifts)
+2. Adaptación por Vista
+Vista DÍA:
+
+typescript
+
+Rango: currentDate (un solo día)
+Capacidad Total: Suma de shifts del día
+Uso Total: Suma de citas del día
+Resultado: Capacidad del día específico
+Vista SEMANA:
+
+typescript
+
+Rango: Todos los días de la semana visible (lun-dom)
+Capacidad Total: Suma de shifts de los 7 días
+Uso Total: Suma de citas de los 7 días
+Resultado: Capacidad promedio de la semana
+
+OPCIONAL (mostrar también):
+Capacidad_Pico = MAX(capacidad de cada día individual)
+Día_Pico = día con mayor capacidad
+Vista MES:
+
+typescript
+
+Rango: Todos los días del mes visible (1-28/29/30/31)
+Capacidad Total: Suma de shifts de todos los días
+Uso Total: Suma de citas de todos los días
+Resultado: Capacidad promedio del mes
+
+OPCIONAL (mostrar también):
+Capacidad_Pico = MAX(capacidad de cada día individual)
+Día_Pico = día con mayor capacidad
+3. Manejo de Casos Especiales
+Caso A: Día sin Capacity Shifts
+
+typescript
+
+Si capacity_shifts.filter(s => s.date === targetDate).length === 0:
+  
+  Usar valores por defecto:
+  - Horario: 06:00-22:00 (960 minutos)
+  - Workers: 3 × 960 = 2,880 worker-min
+  - Forklifts: 2 × 960 = 1,920 forklift-min
+  - Docks: 3 × 960 = 2,880 dock-min
+  
+  Marcar el día con flag: usesDefaultCapacity = true
+  // Para mostrar indicador visual en UI
+Caso B: Cita que Cruza entre Shifts
+
+typescript
+
+Cita: 13:00-15:00 (120 min, 3 workers, 2 forklifts)
+Shift A: 06:00-14:00 (5 workers, 3 forklifts)
+Shift B: 14:00-22:00 (3 workers, 2 forklifts)
+
+Dividir la cita:
+  Parte 1 (13:00-14:00): 60 min
+    - Consumir de Shift A: 3 × 60 = 180 worker-min
+    - Consumir de Shift A: 2 × 60 = 120 forklift-min
+  
+  Parte 2 (14:00-15:00): 60 min
+    - Consumir de Shift B: 3 × 60 = 180 worker-min
+    - Consumir de Shift B: 2 × 60 = 120 forklift-min
+
+Total consumido:
+  - Shift A pierde: 180 worker-min, 120 forklift-min
+  - Shift B pierde: 180 worker-min, 120 forklift-min
+Caso C: Cita en Hueco sin Shift
+
+typescript
+
+Cita: 13:00-15:00
+Shift A: 06:00-14:00
+(Sin shift de 14:00-15:00)
+Shift B: 15:00-22:00
+
+Dividir:
+  Parte 1 (13:00-14:00): Usar capacidad de Shift A
+  Parte 2 (14:00-15:00): Usar valores por defecto
+  
+  usesDefaultCapacity = true para esta cita

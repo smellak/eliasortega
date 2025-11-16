@@ -321,16 +321,21 @@ export class CapacityValidator {
       );
 
       if (dayAppointments.length > 0) {
+        // Workers: use workMinutesNeeded directly (already in worker-minutes)
         const dayWorkUsed = dayAppointments.reduce((sum, appt) => sum + appt.workMinutesNeeded, 0);
+        
+        // Forklifts: forklifts needed × duration in minutes = forklift-minutes
         const dayForkliftsUsed = dayAppointments.reduce((sum, appt) => {
           const durationMs = appt.endUtc.getTime() - appt.startUtc.getTime();
           const durationMinutes = Math.ceil(durationMs / 60000);
           return sum + (appt.forkliftsNeeded * durationMinutes);
         }, 0);
+        
+        // Docks: 1 dock per appointment × duration in minutes = dock-minutes
         const dayDocksUsed = dayAppointments.reduce((sum, appt) => {
           const durationMs = appt.endUtc.getTime() - appt.startUtc.getTime();
           const durationMinutes = Math.ceil(durationMs / 60000);
-          return sum + durationMinutes; // Each appointment uses 1 dock
+          return sum + durationMinutes;
         }, 0);
 
         const dayWorkersCapacity = dayShifts.length > 0 
@@ -375,18 +380,22 @@ export class CapacityValidator {
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    // Calculate total resource usage
+    // Calculate total resource usage (in resource-minutes)
     let totalWorkUsed = 0;
     let totalForkliftsUsed = 0;
     let totalDocksUsed = 0;
 
     for (const appt of appointments) {
+      // Workers: workMinutesNeeded is already in worker-minutes
       totalWorkUsed += appt.workMinutesNeeded;
       
+      // Forklifts: forklifts × duration = forklift-minutes
       const durationMs = appt.endUtc.getTime() - appt.startUtc.getTime();
       const durationMinutes = Math.ceil(durationMs / 60000);
       totalForkliftsUsed += appt.forkliftsNeeded * durationMinutes;
-      totalDocksUsed += durationMinutes; // Each appointment uses 1 dock
+      
+      // Docks: 1 dock per appointment × duration = dock-minutes
+      totalDocksUsed += durationMinutes;
     }
 
     // Calculate percentages

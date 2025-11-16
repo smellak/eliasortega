@@ -123,11 +123,11 @@ export function CapacityIndicators({
           <div className="mt-4 space-y-4" data-testid="container-capacity-details">
             {/* Peak Day Info */}
             {peakDay && (
-              <div className="p-3 rounded-md bg-muted/50 flex items-center gap-3">
+              <div className="p-3 rounded-md bg-muted/50 flex items-center gap-3" data-testid="container-peak-day">
                 <TrendingUp className="h-5 w-5 text-primary flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-semibold">Día Pico</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground" data-testid="text-peak-day-info">
                     {format(new Date(peakDay), "EEEE, d 'de' MMMM", { locale: es })} - {peakPercentage.toFixed(1)}%
                   </p>
                 </div>
@@ -140,7 +140,7 @@ export function CapacityIndicators({
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-sm font-medium">Trabajadores</span>
-                  <span className={`text-sm font-mono ${getPercentageColor(workersPercentage)}`}>
+                  <span className={`text-sm font-mono ${getPercentageColor(workersPercentage)}`} data-testid="text-workers-percentage">
                     {workersPercentage.toFixed(1)}%
                   </span>
                 </div>
@@ -154,7 +154,7 @@ export function CapacityIndicators({
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-sm font-medium">Carretillas</span>
-                  <span className={`text-sm font-mono ${getPercentageColor(forkliftsPercentage)}`}>
+                  <span className={`text-sm font-mono ${getPercentageColor(forkliftsPercentage)}`} data-testid="text-forklifts-percentage">
                     {forkliftsPercentage.toFixed(1)}%
                   </span>
                 </div>
@@ -168,7 +168,7 @@ export function CapacityIndicators({
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-sm font-medium">Muelles</span>
-                  <span className={`text-sm font-mono ${getPercentageColor(docksPercentage)}`}>
+                  <span className={`text-sm font-mono ${getPercentageColor(docksPercentage)}`} data-testid="text-docks-percentage">
                     {docksPercentage.toFixed(1)}%
                   </span>
                 </div>

@@ -23,7 +23,7 @@ The backend is built with Node.js 20 and Express.js, using Prisma Client for Pos
 ### Key Architectural Decisions
 -   **Minute-by-Minute Validation**: Precise resource allocation.
 -   **Uniform Resource Distribution**: Constant work rate and consistent usage for validation.
--   **Shift Overlap Resolution**: Prioritizes specific capacity shifts.
+-   **Event-Based Capacity Calculation**: Uses timeline algorithm to handle overlapping shifts without double-counting. When shifts overlap, selects the most specific (shortest duration) shift. Accumulates capacity day-by-day for accurate totals.
 -   **Shared Type Definitions**: Zod schemas ensure type consistency across the stack.
 -   **Day-of-Week Capacity Differentiation**: Default capacity varies by day type:
     -   **Weekdays (Mon-Fri)**: 08:00-19:00, 3 workers, 2 forklifts, 3 docks

@@ -52,7 +52,7 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
       message: error.message,
       tokenPreview: token.substring(0, 20) + "...",
     });
-    return res.status(403).json({ error: "Invalid or expired token" });
+    return res.status(401).json({ error: "Invalid or expired token" });
   }
 }
 

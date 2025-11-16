@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,7 @@ export function CalendarView({
 }: CalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewType, setViewType] = useState<"timeGridDay" | "timeGridWeek">("timeGridWeek");
+  const [viewType, setViewType] = useState<"dayGridMonth" | "timeGridWeek" | "timeGridDay">("timeGridWeek");
 
   const handlePrev = () => {
     calendarRef.current?.getApi().prev();
@@ -61,7 +62,7 @@ export function CalendarView({
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={handleToday} data-testid="button-calendar-today">
-            Today
+            Hoy
           </Button>
           <Button variant="outline" size="sm" onClick={handleNext} data-testid="button-calendar-next">
             <ChevronRight className="h-4 w-4" />
@@ -71,15 +72,15 @@ export function CalendarView({
 
         <div className="flex gap-2">
           <Button
-            variant={viewType === "timeGridDay" ? "default" : "outline"}
+            variant={viewType === "dayGridMonth" ? "default" : "outline"}
             size="sm"
             onClick={() => {
-              setViewType("timeGridDay");
-              calendarRef.current?.getApi().changeView("timeGridDay");
+              setViewType("dayGridMonth");
+              calendarRef.current?.getApi().changeView("dayGridMonth");
             }}
-            data-testid="button-view-day"
+            data-testid="button-view-month"
           >
-            Day
+            Mes
           </Button>
           <Button
             variant={viewType === "timeGridWeek" ? "default" : "outline"}
@@ -90,7 +91,18 @@ export function CalendarView({
             }}
             data-testid="button-view-week"
           >
-            Week
+            Semana
+          </Button>
+          <Button
+            variant={viewType === "timeGridDay" ? "default" : "outline"}
+            size="sm"
+            onClick={() => {
+              setViewType("timeGridDay");
+              calendarRef.current?.getApi().changeView("timeGridDay");
+            }}
+            data-testid="button-view-day"
+          >
+            Día
           </Button>
         </div>
       </div>
@@ -98,7 +110,7 @@ export function CalendarView({
       <div className="calendar-container bg-card rounded-md border border-card-border p-4">
         <FullCalendar
           ref={calendarRef}
-          plugins={[timeGridPlugin, interactionPlugin]}
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="timeGridWeek"
           headerToolbar={false}
           slotMinTime="06:00:00"

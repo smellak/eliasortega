@@ -6,6 +6,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 interface CalendarEvent {
   id: string;
@@ -67,7 +68,7 @@ export function CalendarView({
           <Button variant="outline" size="sm" onClick={handleNext} data-testid="button-calendar-next">
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <h2 className="text-xl font-semibold ml-2">{format(currentDate, "MMMM yyyy")}</h2>
+          <h2 className="text-xl font-semibold ml-2 capitalize">{format(currentDate, "MMMM yyyy", { locale: es })}</h2>
         </div>
 
         <div className="flex gap-2">
@@ -132,8 +133,8 @@ export function CalendarView({
               <div className="p-1 text-xs overflow-hidden">
                 <div className="font-semibold truncate">{props.providerName}</div>
                 <div className="font-mono text-[10px] opacity-90">
-                  {format(new Date(eventInfo.event.start!), "HH:mm")} -{" "}
-                  {format(new Date(eventInfo.event.end!), "HH:mm")}
+                  {format(new Date(eventInfo.event.start!), "HH:mm", { locale: es })} -{" "}
+                  {format(new Date(eventInfo.event.end!), "HH:mm", { locale: es })}
                 </div>
                 <div className="text-[10px] opacity-80 mt-0.5">
                   W:{props.workMinutesNeeded} F:{props.forkliftsNeeded}

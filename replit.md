@@ -34,7 +34,7 @@ The backend is built with Node.js 20 and Express.js, using Prisma Client for Pos
 -   **Public vs Protected Routes**: Management platform requires authentication; `/chat` is public.
 
 ### Public Endpoints & AI Integration
-The `/chat` interface provides a public, unauthenticated React UI with real-time SSE streaming. It uses a self-hosted AI orchestrator with Claude Sonnet 4.5 (Replit AI) as the main agent and GPT-4.1 (Replit AI) as a calculator subagent. Conversation history is PostgreSQL-backed. Tools include `calendar-availability`, `calendar-book`, and `calculator`.
+The `/chat` interface provides a public, unauthenticated React UI with real-time SSE streaming. It uses a self-hosted AI orchestrator with Claude Sonnet 4.5 as the main agent and GPT-4.1 as a calculator subagent. Conversation history is PostgreSQL-backed. Tools include `calendar-availability`, `calendar-book`, and `calculator`.
 
 Public integration API endpoints (`/api/integration/calendar/parse`, `/api/integration/calendar/availability`, `/api/integration/calendar/book`) allow external systems to parse queries, check availability, and book appointments. The booking endpoint includes retry logic for capacity conflicts.
 
@@ -48,7 +48,7 @@ Public integration API endpoints (`/api/integration/calendar/parse`, `/api/integ
 
 **Build & Development Tools**:
 -   Vite, esbuild, TypeScript, Tailwind CSS, PostCSS
--   Replit-specific plugins
+-   Development plugins for enhanced DX
 
 **Authentication & Validation**:
 -   bcryptjs, jsonwebtoken, Zod
@@ -57,8 +57,8 @@ Public integration API endpoints (`/api/integration/calendar/parse`, `/api/integ
 -   swagger-jsdoc, swagger-ui-express
 
 **AI Integration Services**:
--   Replit AI Anthropic Integration (Claude Sonnet 4.5)
--   Replit AI OpenAI Integration (GPT-4.1)
+-   Claude Sonnet 4.5 (via Anthropic API)
+-   GPT-4.1 (via OpenAI API)
 -   Self-hosted agentic orchestrator
 
 **Required Environment Variables**:

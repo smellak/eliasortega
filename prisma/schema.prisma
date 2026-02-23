@@ -54,6 +54,7 @@ model CapacityShift {
 
 model SlotTemplate {
   id        String   @id @default(cuid())
+  /// 0 = Sunday, 1 = Monday, ..., 6 = Saturday (JavaScript Date.getDay() convention)
   dayOfWeek Int      @map("day_of_week")
   startTime String   @map("start_time")
   endTime   String   @map("end_time")

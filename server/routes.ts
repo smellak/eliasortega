@@ -35,11 +35,11 @@ const INTEGRATION_API_KEY = process.env.INTEGRATION_API_KEY || "";
 
 function authenticateIntegration(req: Request, res: Response, next: NextFunction) {
   if (!INTEGRATION_API_KEY) {
-    return res.status(403).json({ error: "Integration API is disabled. Set INTEGRATION_API_KEY to enable." });
+    return res.status(403).json({ success: false, error: "Integration API is disabled. Set INTEGRATION_API_KEY to enable." });
   }
   const apiKey = req.headers["x-api-key"] as string;
   if (!apiKey || apiKey !== INTEGRATION_API_KEY) {
-    return res.status(401).json({ error: "Invalid or missing API key" });
+    return res.status(401).json({ success: false, error: "Invalid or missing API key" });
   }
   next();
 }
@@ -61,7 +61,7 @@ function integrationRateLimiter(req: Request, res: Response, next: NextFunction)
   entry.count++;
 
   if (entry.count > maxRequests) {
-    return res.status(429).json({ error: "Too many requests. Limit: 50 req/min for integration endpoints." });
+    return res.status(429).json({ success: false, error: "Too many requests. Limit: 50 req/min for integration endpoints." });
   }
 
   next();
@@ -1442,17 +1442,17 @@ router.post("/api/integration/appointments/upsert", integrationRateLimiter, auth
     });
     
     if (!result.success) {
-      return res.status(409).json({ error: "Capacity conflict", conflict: result.conflict });
+      return res.status(409).json({ success: false, error: "Capacity conflict", details: result.conflict });
     }
-    
+
     const statusCode = result.action === "created" ? 201 : 200;
-    res.status(statusCode).json({ action: result.action, appointment: result.appointment });
+    res.status(statusCode).json({ success: true, data: { action: result.action, appointment: result.appointment } });
   } catch (error: any) {
     if (error.name === "ZodError") {
-      return res.status(400).json({ error: "Invalid input", details: error.errors });
+      return res.status(400).json({ success: false, error: "Invalid input", details: error.errors });
     }
     console.error("Upsert appointment error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ success: false, error: "Internal server error" });
   }
 });
 
@@ -1761,13 +1761,13 @@ router.get("/api/integration/appointments/by-external-ref/:externalRef", authent
     });
 
     if (!appointment) {
-      return res.status(404).json({ error: "Appointment not found" });
+      return res.status(404).json({ success: false, error: "Appointment not found" });
     }
 
-    res.json(appointment);
+    res.json({ success: true, data: appointment });
   } catch (error) {
     console.error("Get appointment by external ref error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ success: false, error: "Internal server error" });
   }
 });
 

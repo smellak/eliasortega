@@ -114,6 +114,10 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
+  if (isNaN(port) || port < 1 || port > 65535) {
+    console.error(`Invalid PORT value: "${process.env.PORT}". Must be a number between 1 and 65535.`);
+    process.exit(1);
+  }
   const server = createServer(app);
 
   // importantly only setup vite in development and after
@@ -125,8 +129,12 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  const { startEmailCron } = await import("./services/email-cron");
-  startEmailCron();
+  try {
+    const { startEmailCron } = await import("./services/email-cron");
+    startEmailCron();
+  } catch (cronErr) {
+    console.error("Failed to start email cron — server will continue without scheduled emails:", cronErr);
+  }
 
   server.listen(port, "0.0.0.0", () => {
     log(`Server running on port ${port}`);

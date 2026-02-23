@@ -90,6 +90,12 @@ export async function sendEmail(
   }
 }
 
+/**
+ * Send daily summary email for a given date.
+ * By default (no targetDate), sends the summary for TOMORROW (addDays +1).
+ * This is intentional: the cron job runs in the evening to prepare staff
+ * for the next day's appointments.
+ */
 export async function sendDailySummary(targetDate?: Date): Promise<number> {
   const date = targetDate || addDays(new Date(), 1);
   const dateStr = formatInTimeZone(date, "Europe/Madrid", "dd/MM/yyyy");

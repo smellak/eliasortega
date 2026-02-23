@@ -1,11 +1,96 @@
-export const MAIN_AGENT_SYSTEM_PROMPT = `Eres Elías Ortega, Agente de Citas del almacén Centro Hogar Sanchez. Hablas siempre en español, profesional y conciso.
+import { prisma } from "../db/client";
+
+const DAY_NAMES_ES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+let cachedSchedule: { text: string; expiresAt: number } | null = null;
+const SCHEDULE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Query active SlotTemplates and format as human-readable schedule text.
+ * Cached for 5 minutes to avoid repeated DB queries during a conversation.
+ */
+export async function getActiveSlotSchedule(): Promise<string> {
+  if (cachedSchedule && Date.now() < cachedSchedule.expiresAt) {
+    return cachedSchedule.text;
+  }
+
+  const templates = await prisma.slotTemplate.findMany({
+    where: { active: true },
+    orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
+  });
+
+  if (templates.length === 0) {
+    const fallback = "No hay franjas configuradas en el sistema.";
+    cachedSchedule = { text: fallback, expiresAt: Date.now() + SCHEDULE_CACHE_TTL_MS };
+    return fallback;
+  }
+
+  // Group by dayOfWeek
+  const byDay = new Map<number, Array<{ startTime: string; endTime: string; maxPoints: number }>>();
+  for (const t of templates) {
+    const daySlots = byDay.get(t.dayOfWeek) || [];
+    daySlots.push({ startTime: t.startTime, endTime: t.endTime, maxPoints: t.maxPoints });
+    byDay.set(t.dayOfWeek, daySlots);
+  }
+
+  // Merge consecutive days with identical slots
+  const dayLines: string[] = [];
+  const processedDays = new Set<number>();
+
+  for (let d = 1; d <= 6; d++) { // Mon-Sat first
+    if (processedDays.has(d)) continue;
+    const slots = byDay.get(d);
+    if (!slots || slots.length === 0) continue;
+
+    const slotsKey = JSON.stringify(slots);
+    const groupDays = [d];
+    processedDays.add(d);
+
+    // Look ahead for identical days
+    for (let next = d + 1; next <= 6; next++) {
+      if (processedDays.has(next)) continue;
+      const nextSlots = byDay.get(next);
+      if (nextSlots && JSON.stringify(nextSlots) === slotsKey) {
+        groupDays.push(next);
+        processedDays.add(next);
+      }
+    }
+
+    // Format day range
+    let dayLabel: string;
+    if (groupDays.length === 1) {
+      dayLabel = DAY_NAMES_ES[groupDays[0]];
+    } else if (groupDays.length === groupDays[groupDays.length - 1] - groupDays[0] + 1) {
+      // Consecutive range
+      dayLabel = `${DAY_NAMES_ES[groupDays[0]]} a ${DAY_NAMES_ES[groupDays[groupDays.length - 1]]}`;
+    } else {
+      dayLabel = groupDays.map((dd) => DAY_NAMES_ES[dd]).join(", ");
+    }
+
+    const slotTexts = slots.map((s) => `${s.startTime}-${s.endTime} (${s.maxPoints}pts)`).join(", ");
+    dayLines.push(`- ${dayLabel}: ${slotTexts}`);
+  }
+
+  // Check Sunday (0)
+  const sundaySlots = byDay.get(0);
+  if (sundaySlots && sundaySlots.length > 0) {
+    const slotTexts = sundaySlots.map((s) => `${s.startTime}-${s.endTime} (${s.maxPoints}pts)`).join(", ");
+    dayLines.push(`- Domingo: ${slotTexts}`);
+  } else {
+    dayLines.push("- Domingo: cerrado");
+  }
+
+  const text = dayLines.join("\n");
+  cachedSchedule = { text, expiresAt: Date.now() + SCHEDULE_CACHE_TTL_MS };
+  return text;
+}
+
+const MAIN_AGENT_SYSTEM_PROMPT_TEMPLATE = `Eres Elías Ortega, Agente de Citas del almacén Centro Hogar Sanchez. Hablas siempre en español, profesional y conciso.
 
 Hoy: {{ NOW }} (Europe/Madrid)
 
 Franjas horarias (sistema de puntos):
-- Lun-Vie: 08:00-10:00, 10:00-12:00, 12:00-14:00 (6 pts cada una)
-- Sáb: 08:00-11:00, 11:00-14:00 (4 pts cada una)
-- Dom: cerrado
+{{ SCHEDULE }}
 
 Tallas de cita: S (≤30min, 1pt), M (31-90min, 2pts), L (>90min, 3pts)
 
@@ -17,7 +102,7 @@ FLUJO:
 
 REGLAS:
 - No preguntes fecha antes del cálculo
-- Rechaza domingos y fechas pasadas
+- Rechaza domingos (si están cerrados) y fechas pasadas
 - Si no hay espacio, ofrece siguiente disponible
 - Si el usuario modifica datos, recalcula
 - Confirma todo antes de reservar`;
@@ -157,11 +242,14 @@ Cálculo:
 Salida:
 {"categoria_elegida":"Colchonería","work_minutes_needed":50,"forklifts_needed":1,"workers_needed":2,"duration_min":50}`;
 
-export function getMainAgentPrompt(now: Date): string {
-  const madridTime = now.toLocaleString('es-ES', { 
+export async function getMainAgentPrompt(now: Date): Promise<string> {
+  const madridTime = now.toLocaleString('es-ES', {
     timeZone: 'Europe/Madrid',
     dateStyle: 'full',
     timeStyle: 'short'
   });
-  return MAIN_AGENT_SYSTEM_PROMPT.replace('{{ NOW }}', madridTime);
+  const schedule = await getActiveSlotSchedule();
+  return MAIN_AGENT_SYSTEM_PROMPT_TEMPLATE
+    .replace('{{ NOW }}', madridTime)
+    .replace('{{ SCHEDULE }}', schedule);
 }

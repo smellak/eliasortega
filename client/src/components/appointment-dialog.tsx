@@ -4,7 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Loader2, CalendarPlus } from "lucide-react";
+import { slotsApi } from "@/lib/api";
+
+interface SlotAvailability {
+  startTime: string;
+  endTime: string;
+  maxPoints: number;
+  pointsUsed: number;
+  pointsAvailable: number;
+  isOverride: boolean;
+  hasCapacity: boolean;
+}
 
 interface AppointmentDialogProps {
   open: boolean;
@@ -37,6 +49,12 @@ interface FormErrors {
   forkliftsNeeded?: string;
 }
 
+function getSizeBadge(workMinutes: number): { label: string; points: number; variant: "default" | "secondary" | "outline" } {
+  if (workMinutes <= 30) return { label: "S", points: 1, variant: "outline" };
+  if (workMinutes <= 90) return { label: "M", points: 2, variant: "secondary" };
+  return { label: "L", points: 3, variant: "default" };
+}
+
 export function AppointmentDialog({
   open,
   onOpenChange,
@@ -46,6 +64,9 @@ export function AppointmentDialog({
 }: AppointmentDialogProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [availableSlots, setAvailableSlots] = useState<SlotAvailability[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<string>("");
   const [formData, setFormData] = useState({
     providerId: "",
     startDate: "",
@@ -63,6 +84,8 @@ export function AppointmentDialog({
   useEffect(() => {
     if (open) {
       setErrors({});
+      setAvailableSlots([]);
+      setSelectedSlot("");
       if (appointment) {
         setFormData({
           providerId: appointment.providerId,
@@ -96,6 +119,42 @@ export function AppointmentDialog({
       }
     }
   }, [open, appointment]);
+
+  // Fetch slot availability when date changes
+  useEffect(() => {
+    if (!open || !formData.startDate) return;
+
+    const workMin = parseInt(formData.workMinutesNeeded, 10) || 60;
+    const { points } = getSizeBadge(workMin);
+
+    setLoadingSlots(true);
+    slotsApi.getAvailability({ date: formData.startDate, points })
+      .then((slots) => {
+        setAvailableSlots(slots as SlotAvailability[]);
+      })
+      .catch(() => {
+        setAvailableSlots([]);
+      })
+      .finally(() => {
+        setLoadingSlots(false);
+      });
+  }, [open, formData.startDate, formData.workMinutesNeeded]);
+
+  const handleSlotSelect = (slotKey: string) => {
+    setSelectedSlot(slotKey);
+    const slot = availableSlots.find((s) => `${s.startTime}-${s.endTime}` === slotKey);
+    if (slot) {
+      setFormData((prev) => ({
+        ...prev,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        endDate: prev.startDate,
+      }));
+      if (errors.startTime || errors.endTime || errors.dateRange) {
+        setErrors((prev) => ({ ...prev, startTime: undefined, endTime: undefined, dateRange: undefined }));
+      }
+    }
+  };
 
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
@@ -149,7 +208,7 @@ export function AppointmentDialog({
 
     const startDate = new Date(`${formData.startDate}T${formData.startTime}:00`);
     const endDate = new Date(`${formData.endDate}T${formData.endTime}:00`);
-    
+
     const startISO = startDate.toISOString();
     const endISO = endDate.toISOString();
 
@@ -177,7 +236,7 @@ export function AppointmentDialog({
     if (formData.deliveryNotesCount && formData.deliveryNotesCount !== "") {
       payload.deliveryNotesCount = parseInt(formData.deliveryNotesCount, 10);
     }
-    
+
     try {
       await onSave(payload);
       setIsSaving(false);
@@ -190,6 +249,9 @@ export function AppointmentDialog({
     if (!errors[field]) return null;
     return <p className="text-xs mt-1.5 px-2 py-0.5 rounded bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400 inline-block" data-testid={`error-${field}`}>{errors[field]}</p>;
   };
+
+  const workMin = parseInt(formData.workMinutesNeeded, 10) || 60;
+  const sizeBadge = getSizeBadge(workMin);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -237,7 +299,8 @@ export function AppointmentDialog({
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => {
-                  setFormData({ ...formData, startDate: e.target.value });
+                  setFormData({ ...formData, startDate: e.target.value, endDate: e.target.value });
+                  setSelectedSlot("");
                   if (errors.startDate || errors.dateRange) setErrors({ ...errors, startDate: undefined, dateRange: undefined });
                 }}
                 className={errors.startDate ? "border-destructive" : ""}
@@ -245,6 +308,38 @@ export function AppointmentDialog({
               />
               {fieldError("startDate")}
             </div>
+
+            {/* Slot Picker */}
+            {formData.startDate && (
+              <div>
+                <Label>Slot disponible</Label>
+                {loadingSlots ? (
+                  <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Cargando slots...
+                  </div>
+                ) : availableSlots.length > 0 ? (
+                  <Select value={selectedSlot} onValueChange={handleSlotSelect}>
+                    <SelectTrigger data-testid="select-slot">
+                      <SelectValue placeholder="Seleccionar slot" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableSlots.map((slot) => {
+                        const key = `${slot.startTime}-${slot.endTime}`;
+                        return (
+                          <SelectItem key={key} value={key} disabled={!slot.hasCapacity}>
+                            {slot.startTime}-{slot.endTime} ({slot.pointsAvailable}/{slot.maxPoints} pts disponibles)
+                            {!slot.hasCapacity && " - LLENO"}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-xs text-muted-foreground py-2">No hay slots configurados para esta fecha</p>
+                )}
+              </div>
+            )}
 
             <div>
               <Label htmlFor="start-time">Hora Inicio *</Label>
@@ -307,12 +402,21 @@ export function AppointmentDialog({
                 value={formData.workMinutesNeeded}
                 onChange={(e) => {
                   setFormData({ ...formData, workMinutesNeeded: e.target.value });
+                  setSelectedSlot("");
                   if (errors.workMinutesNeeded) setErrors({ ...errors, workMinutesNeeded: undefined });
                 }}
                 className={errors.workMinutesNeeded ? "border-destructive" : ""}
                 data-testid="input-work-minutes"
               />
               {fieldError("workMinutesNeeded")}
+              <div className="flex items-center gap-2 mt-2">
+                <Badge variant={sizeBadge.variant}>
+                  Tamaño: {sizeBadge.label}
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  Esta cita usará {sizeBadge.points} punto(s)
+                </span>
+              </div>
             </div>
 
             <div>

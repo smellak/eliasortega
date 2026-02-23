@@ -1,3 +1,8 @@
+/**
+ * @deprecated This module is deprecated. Use slot-validator.ts (SlotCapacityValidator) instead.
+ * The slot-based capacity model (SlotTemplates + SlotOverrides with points: S=1pt, M=2pts, L=3pts)
+ * is now the primary and only validation gate for appointment capacity.
+ */
 import { prisma } from "../db/client";
 import { CapacityConflictError } from "../../shared/types";
 import { toMadrid } from "../utils/timezone";
@@ -120,10 +125,12 @@ export class CapacityValidator {
    * Validate an appointment against capacity constraints
    * Returns null if valid, or CapacityConflictError if there's a conflict
    */
+  /** @deprecated Use slotCapacityValidator.validateSlotCapacity() instead */
   async validateAppointment(
     appointment: AppointmentToValidate,
     tx?: PrismaTransactionClient
   ): Promise<CapacityConflictError | null> {
+    console.warn("[DEPRECATED] capacityValidator.validateAppointment() called. Use slotCapacityValidator.validateSlotCapacity() instead.");
     const client = this.getClient(tx);
     const { startUtc, endUtc, workMinutesNeeded, forkliftsNeeded, id } = appointment;
 
@@ -290,6 +297,7 @@ export class CapacityValidator {
    * Calculate warehouse capacity utilization for a date range
    * Returns percentage based on most saturated resource (bottleneck)
    */
+  /** @deprecated Use slot-based utilization via GET /api/capacity/utilization instead */
   async calculateUtilization(startDate: Date, endDate: Date): Promise<{
     appointmentCount: number;
     capacityPercentage: number;
@@ -310,6 +318,7 @@ export class CapacityValidator {
       docks: { used: number; available: number };
     };
   }> {
+    console.warn("[DEPRECATED] capacityValidator.calculateUtilization() called. Use slot-based utilization instead.");
     // Fetch all appointments that overlap with the range (not just contained within)
     const appointments = await prisma.appointment.findMany({
       where: {

@@ -1,38 +1,19 @@
 import { Card } from "@/components/ui/card";
-import { Package, Gauge, AlertTriangle, TrendingUp, ChevronDown, ChevronUp } from "lucide-react";
+import { Package, Gauge, TrendingUp, ChevronDown, ChevronUp } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import type { SlotUtilization } from "@shared/types";
 
-interface CapacityIndicatorsProps {
-  appointmentCount: number;
-  capacityPercentage: number;
-  workersPercentage: number;
-  forkliftsPercentage: number;
-  docksPercentage: number;
-  peakDay: string | null;
-  peakPercentage: number;
-  daysUsingDefaults: number;
-  defaultDaysBreakdown: {
-    sundays: number;
-    saturdays: number;
-    weekdays: number;
-  };
-}
+type CapacityIndicatorsProps = SlotUtilization;
 
 export function CapacityIndicators({
   appointmentCount,
-  capacityPercentage,
-  workersPercentage,
-  forkliftsPercentage,
-  docksPercentage,
-  peakDay,
-  peakPercentage,
-  daysUsingDefaults,
-  defaultDaysBreakdown,
+  slots,
+  totalMaxPoints,
+  totalPointsUsed,
+  utilizationPercentage,
+  peakSlot,
 }: CapacityIndicatorsProps) {
   const [showDetails, setShowDetails] = useState(false);
 
@@ -48,11 +29,13 @@ export function CapacityIndicators({
     return "text-primary";
   };
 
-  const bottleneck = workersPercentage >= forkliftsPercentage && workersPercentage >= docksPercentage
-    ? "Trabajadores"
-    : forkliftsPercentage >= docksPercentage
-    ? "Carretillas"
-    : "Muelles";
+  // Group slots by date for display
+  const slotsByDate = new Map<string, typeof slots>();
+  for (const slot of slots) {
+    const existing = slotsByDate.get(slot.date) || [];
+    existing.push(slot);
+    slotsByDate.set(slot.date, existing);
+  }
 
   return (
     <div className="space-y-4">
@@ -73,34 +56,26 @@ export function CapacityIndicators({
           </div>
         </Card>
 
-        {/* Capacity Percentage */}
+        {/* Utilization Percentage */}
         <Card className="p-5" data-testid="card-capacity-percentage">
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 flex items-center justify-center flex-shrink-0">
               <Gauge className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-muted-foreground">Capacidad del Almacén</p>
-                {daysUsingDefaults > 0 && (
-                  <Badge variant="outline" className="text-xs" data-testid="badge-using-defaults">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
-                    {daysUsingDefaults}d estimados
-                  </Badge>
-                )}
-              </div>
-              <p 
-                className={`text-3xl font-bold ${getPercentageColor(capacityPercentage)}`}
+              <p className="text-sm text-muted-foreground">Ocupación por Slots</p>
+              <p
+                className={`text-3xl font-bold ${getPercentageColor(utilizationPercentage)}`}
                 data-testid="text-capacity-percentage"
               >
-                {capacityPercentage.toFixed(1)}%
+                {utilizationPercentage.toFixed(1)}%
               </p>
-              <Progress 
-                value={Math.min(capacityPercentage, 100)} 
-                className={`mt-2 ${getProgressClassName(capacityPercentage)}`} 
+              <Progress
+                value={Math.min(utilizationPercentage, 100)}
+                className={`mt-2 ${getProgressClassName(utilizationPercentage)}`}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Limitado por: {bottleneck}
+                {totalPointsUsed}/{totalMaxPoints} puntos totales
               </p>
             </div>
           </div>
@@ -115,114 +90,48 @@ export function CapacityIndicators({
           onClick={() => setShowDetails(!showDetails)}
           data-testid="button-toggle-details"
         >
-          <span className="font-semibold">Detalles de Recursos</span>
+          <span className="font-semibold">Detalles por Slot</span>
           {showDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </Button>
 
         {showDetails && (
           <div className="mt-4 space-y-4" data-testid="container-capacity-details">
-            {/* Peak Day Info */}
-            {peakDay && (
-              <div className="p-3 rounded-md bg-muted/50 flex items-center gap-3" data-testid="container-peak-day">
+            {/* Peak Slot Info */}
+            {peakSlot && (
+              <div className="p-3 rounded-md bg-muted/50 flex items-center gap-3" data-testid="container-peak-slot">
                 <TrendingUp className="h-5 w-5 text-primary flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold">Día Pico</p>
-                  <p className="text-xs text-muted-foreground" data-testid="text-peak-day-info">
-                    {format(new Date(peakDay), "EEEE, d 'de' MMMM", { locale: es })} - {peakPercentage.toFixed(1)}%
+                  <p className="text-sm font-semibold">Slot Pico</p>
+                  <p className="text-xs text-muted-foreground" data-testid="text-peak-slot-info">
+                    {peakSlot.date} {peakSlot.startTime} - {peakSlot.percentage.toFixed(1)}%
                   </p>
                 </div>
               </div>
             )}
 
-            {/* Resource Breakdown */}
+            {/* Slot Breakdown */}
             <div className="space-y-3">
-              {/* Workers */}
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm font-medium flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-500" />
-                    Trabajadores
-                  </span>
-                  <span className={`text-sm font-mono ${getPercentageColor(workersPercentage)}`} data-testid="text-workers-percentage">
-                    {workersPercentage.toFixed(1)}%
-                  </span>
-                </div>
-                <Progress 
-                  value={Math.min(workersPercentage, 100)} 
-                  className={getProgressClassName(workersPercentage)} 
-                />
-              </div>
-
-              {/* Forklifts */}
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm font-medium flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-teal-500" />
-                    Carretillas
-                  </span>
-                  <span className={`text-sm font-mono ${getPercentageColor(forkliftsPercentage)}`} data-testid="text-forklifts-percentage">
-                    {forkliftsPercentage.toFixed(1)}%
-                  </span>
-                </div>
-                <Progress 
-                  value={Math.min(forkliftsPercentage, 100)} 
-                  className={getProgressClassName(forkliftsPercentage)} 
-                />
-              </div>
-
-              {/* Docks */}
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm font-medium flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-amber-500" />
-                    Muelles
-                  </span>
-                  <span className={`text-sm font-mono ${getPercentageColor(docksPercentage)}`} data-testid="text-docks-percentage">
-                    {docksPercentage.toFixed(1)}%
-                  </span>
-                </div>
-                <Progress 
-                  value={Math.min(docksPercentage, 100)} 
-                  className={getProgressClassName(docksPercentage)} 
-                />
-              </div>
-            </div>
-
-            {/* Default Capacity Warning */}
-            {daysUsingDefaults > 0 && (
-              <div className="p-3 rounded-md bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800">
-                <div className="flex gap-2">
-                  <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">
-                      Capacidad Estimada
-                    </p>
-                    <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
-                      {daysUsingDefaults} {daysUsingDefaults === 1 ? 'día' : 'días'} sin ventana de capacidad programada:
-                    </p>
-                    <ul className="text-xs text-yellow-700 dark:text-yellow-300 mt-2 space-y-1 list-disc list-inside">
-                      {defaultDaysBreakdown.weekdays > 0 && (
-                        <li>
-                          <span className="font-semibold">{defaultDaysBreakdown.weekdays} {defaultDaysBreakdown.weekdays === 1 ? 'día laborable' : 'días laborables'}</span>
-                          : 08:00-19:00, 3 trabajadores, 2 carretillas, 3 muelles
-                        </li>
-                      )}
-                      {defaultDaysBreakdown.saturdays > 0 && (
-                        <li>
-                          <span className="font-semibold">{defaultDaysBreakdown.saturdays} {defaultDaysBreakdown.saturdays === 1 ? 'sábado' : 'sábados'}</span>
-                          : 08:00-14:00, 2 trabajadores, 1 carretilla, 2 muelles
-                        </li>
-                      )}
-                      {defaultDaysBreakdown.sundays > 0 && (
-                        <li className="text-destructive dark:text-red-400 font-semibold">
-                          {defaultDaysBreakdown.sundays} {defaultDaysBreakdown.sundays === 1 ? 'domingo' : 'domingos'}: CERRADO
-                        </li>
-                      )}
-                    </ul>
+              {slots.map((slot, idx) => {
+                const pct = slot.maxPoints > 0 ? (slot.pointsUsed / slot.maxPoints) * 100 : 0;
+                return (
+                  <div key={`${slot.date}-${slot.startTime}-${idx}`}>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm font-medium flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-500" />
+                        {slot.date} {slot.startTime}-{slot.endTime}
+                      </span>
+                      <span className={`text-sm font-mono ${getPercentageColor(pct)}`}>
+                        {slot.pointsUsed}/{slot.maxPoints} pts
+                      </span>
+                    </div>
+                    <Progress
+                      value={Math.min(pct, 100)}
+                      className={getProgressClassName(pct)}
+                    />
                   </div>
-                </div>
-              </div>
-            )}
+                );
+              })}
+            </div>
           </div>
         )}
       </Card>

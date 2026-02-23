@@ -73,6 +73,7 @@ export function buildDailySummaryHtml(data: DailySummaryData): string {
     <p style="margin:8px 0 0;opacity:0.9;">${data.date}</p>
   </div>
   <div style="background:#f8fafc;padding:20px;border:1px solid #e2e8f0;">
+    <p style="margin:0 0 12px;color:#64748b;font-size:14px;">Este es el resumen de citas programadas para mañana.</p>
     <h2 style="margin:0 0 12px;font-size:16px;color:#334155;">
       ${data.totalAppointments} cita${data.totalAppointments !== 1 ? "s" : ""} programada${data.totalAppointments !== 1 ? "s" : ""}
     </h2>
@@ -117,7 +118,7 @@ export function buildDailySummaryHtml(data: DailySummaryData): string {
 }
 
 export function buildDailySummarySubject(date: string, count: number): string {
-  return `Resumen del día ${date} — ${count} cita${count !== 1 ? "s" : ""}`;
+  return `Citas de almacén para MAÑANA ${date} — ${count} descarga${count !== 1 ? "s" : ""} programada${count !== 1 ? "s" : ""}`;
 }
 
 export function buildAlertHtml(data: AlertData): string {

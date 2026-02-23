@@ -1,11 +1,12 @@
 import { prisma } from "../db/client";
+import { formatInTimeZone } from "date-fns-tz";
 
 type PrismaTransactionClient = Omit<
   typeof prisma,
   "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
 >;
 
-interface SlotInfo {
+export interface SlotInfo {
   startTime: string;
   endTime: string;
   maxPoints: number;
@@ -13,7 +14,7 @@ interface SlotInfo {
   reason?: string | null;
 }
 
-interface SlotUsageInfo extends SlotInfo {
+export interface SlotUsageInfo extends SlotInfo {
   pointsUsed: number;
   pointsAvailable: number;
 }
@@ -21,6 +22,23 @@ interface SlotUsageInfo extends SlotInfo {
 interface CacheEntry {
   data: any;
   expiresAt: number;
+}
+
+const DAY_NAMES_ES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+
+export interface SlotValidationResult {
+  valid: boolean;
+  error?: string;
+  pointsUsed: number;
+  maxPoints: number;
+  pointsAvailable: number;
+  slotStartTime: string;
+  slotEndTime?: string;
+}
+
+export interface SlotUsageResult {
+  pointsUsed: number;
+  appointments: Array<{ id: string; pointsUsed: number }>;
 }
 
 export class SlotCapacityValidator {
@@ -66,6 +84,12 @@ export class SlotCapacityValidator {
       case "L":
         return 3;
     }
+  }
+
+  determineSizeAndPoints(durationMin: number): { size: "S" | "M" | "L"; points: number } {
+    const size = this.determineSizeFromDuration(durationMin);
+    const points = this.getPointsForSize(size);
+    return { size, points };
   }
 
   async getSlotsForDate(
@@ -136,12 +160,44 @@ export class SlotCapacityValidator {
     return slots;
   }
 
+  /**
+   * Find which slot a given time falls into.
+   * E.g., "09:23" falls within the "08:00"-"10:00" slot.
+   */
+  async findSlotForTime(
+    date: Date,
+    timeHHMM: string,
+    tx?: PrismaTransactionClient
+  ): Promise<SlotInfo | null> {
+    const slots = await this.getSlotsForDate(date, tx);
+    for (const slot of slots) {
+      if (timeHHMM >= slot.startTime && timeHHMM < slot.endTime) {
+        return slot;
+      }
+    }
+    return null;
+  }
+
   async getSlotUsage(
     date: Date,
     slotStartTime: string,
     excludeId?: string,
     tx?: PrismaTransactionClient
-  ): Promise<number> {
+  ): Promise<number>;
+  async getSlotUsage(
+    date: Date,
+    slotStartTime: string,
+    excludeId: string | undefined,
+    tx: PrismaTransactionClient | undefined,
+    detailed: true
+  ): Promise<SlotUsageResult>;
+  async getSlotUsage(
+    date: Date,
+    slotStartTime: string,
+    excludeId?: string,
+    tx?: PrismaTransactionClient,
+    detailed?: boolean
+  ): Promise<number | SlotUsageResult> {
     const client = this.getClient(tx);
 
     const dateStart = new Date(date);
@@ -160,35 +216,92 @@ export class SlotCapacityValidator {
 
     const appointments = await client.appointment.findMany({
       where: whereClause,
-      select: { pointsUsed: true },
+      select: { id: true, pointsUsed: true },
     });
 
-    return appointments.reduce((sum, a) => sum + (a.pointsUsed || 0), 0);
+    const pointsUsed = appointments.reduce((sum, a) => sum + (a.pointsUsed || 0), 0);
+
+    if (detailed) {
+      return {
+        pointsUsed,
+        appointments: appointments.map((a) => ({ id: a.id, pointsUsed: a.pointsUsed || 0 })),
+      };
+    }
+
+    return pointsUsed;
   }
 
+  /**
+   * Validate slot capacity. Accepts either a slotStartTime directly or a raw time
+   * (which will be resolved to a slot via findSlotForTime).
+   */
   async validateSlotCapacity(
     date: Date,
     slotStartTime: string,
     pointsNeeded: number,
     excludeId?: string,
     tx?: PrismaTransactionClient
-  ): Promise<{ valid: boolean; pointsUsed: number; maxPoints: number; pointsAvailable: number }> {
+  ): Promise<SlotValidationResult> {
     const slots = await this.getSlotsForDate(date, tx);
-    const slot = slots.find((s) => s.startTime === slotStartTime);
+    let slot = slots.find((s) => s.startTime === slotStartTime);
 
+    // If no exact match, try to find slot that contains this time
     if (!slot) {
-      return { valid: false, pointsUsed: 0, maxPoints: 0, pointsAvailable: 0 };
+      slot = slots.find(
+        (s) => slotStartTime >= s.startTime && slotStartTime < s.endTime
+      );
     }
 
-    const pointsUsed = await this.getSlotUsage(date, slotStartTime, excludeId, tx);
+    const dayOfWeek = date.getDay();
+    const dayName = DAY_NAMES_ES[dayOfWeek];
+
+    if (!slot) {
+      return {
+        valid: false,
+        error: `No hay slot disponible para las ${slotStartTime} del ${dayName}`,
+        pointsUsed: 0,
+        maxPoints: 0,
+        pointsAvailable: 0,
+        slotStartTime,
+      };
+    }
+
+    const pointsUsed = await this.getSlotUsage(date, slot.startTime, excludeId, tx);
     const pointsAvailable = slot.maxPoints - pointsUsed;
 
+    if (pointsAvailable < pointsNeeded) {
+      return {
+        valid: false,
+        error: `Slot ${slot.startTime}-${slot.endTime} lleno: ${pointsUsed}/${slot.maxPoints} puntos usados, necesitas ${pointsNeeded}`,
+        pointsUsed,
+        maxPoints: slot.maxPoints,
+        pointsAvailable,
+        slotStartTime: slot.startTime,
+        slotEndTime: slot.endTime,
+      };
+    }
+
     return {
-      valid: pointsAvailable >= pointsNeeded,
+      valid: true,
       pointsUsed,
       maxPoints: slot.maxPoints,
       pointsAvailable,
+      slotStartTime: slot.startTime,
+      slotEndTime: slot.endTime,
     };
+  }
+
+  /**
+   * Resolve the correct slotStartTime for a given appointment start date.
+   * Returns the slot's startTime (e.g., "08:00"), not the appointment's exact time.
+   */
+  async resolveSlotStartTime(
+    startDate: Date,
+    tx?: PrismaTransactionClient
+  ): Promise<string | null> {
+    const timeHHMM = formatInTimeZone(startDate, "Europe/Madrid", "HH:mm");
+    const slot = await this.findSlotForTime(startDate, timeHHMM, tx);
+    return slot ? slot.startTime : null;
   }
 
   async findAvailableSlots(

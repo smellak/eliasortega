@@ -23,10 +23,9 @@ import {
   changePasswordSchema,
 } from "../shared/types";
 import { authenticateToken, requireRole, generateToken, generateRefreshToken, saveRefreshToken, validateRefreshToken, clearRefreshToken, authenticateJwtOrApiKey, AuthRequest } from "./middleware/auth";
-import { capacityValidator } from "./services/capacity-validator";
 import { slotCapacityValidator } from "./services/slot-validator";
 import { logAudit, computeChanges } from "./services/audit-service";
-import { sendAppointmentAlert, sendTestEmail } from "./services/email-service";
+import { sendAppointmentAlert, sendTestEmail, sendDailySummary } from "./services/email-service";
 import { prisma } from "./db/client";
 import { formatInTimeZone } from 'date-fns-tz';
 import { addMinutes, setHours, setMinutes, setSeconds, setMilliseconds, isWeekend, addDays } from 'date-fns';
@@ -90,26 +89,36 @@ async function upsertAppointmentInternal(data: {
       where: { externalRef: data.externalRef },
     });
 
-    const size = slotCapacityValidator.determineSizeFromDuration(data.workMinutesNeeded);
-    const pointsUsed = slotCapacityValidator.getPointsForSize(size);
+    const { size, points: pointsUsed } = slotCapacityValidator.determineSizeAndPoints(data.workMinutesNeeded);
     const startDate = new Date(data.start);
     const slotDate = new Date(startDate);
     slotDate.setHours(0, 0, 0, 0);
-    const slotStartTime = formatInTimeZone(startDate, 'Europe/Madrid', 'HH:mm');
+    const resolvedSlotStart = await slotCapacityValidator.resolveSlotStartTime(startDate, tx);
+    const slotStartTime = resolvedSlotStart || formatInTimeZone(startDate, 'Europe/Madrid', 'HH:mm');
+
+    const slotValidation = await slotCapacityValidator.validateSlotCapacity(
+      slotDate,
+      slotStartTime,
+      pointsUsed,
+      existing?.id,
+      tx
+    );
+
+    if (!slotValidation.valid) {
+      return {
+        success: false as const,
+        conflict: {
+          slotStartTime: slotValidation.slotStartTime,
+          slotEndTime: slotValidation.slotEndTime || "",
+          maxPoints: slotValidation.maxPoints,
+          pointsUsed: slotValidation.pointsUsed,
+          pointsNeeded: pointsUsed,
+          message: slotValidation.error || "Slot sin capacidad disponible",
+        },
+      };
+    }
 
     if (existing) {
-      const conflict = await capacityValidator.validateAppointment({
-        id: existing.id,
-        startUtc: new Date(data.start),
-        endUtc: new Date(data.end),
-        workMinutesNeeded: data.workMinutesNeeded,
-        forkliftsNeeded: data.forkliftsNeeded,
-      }, tx);
-
-      if (conflict) {
-        return { success: false as const, conflict };
-      }
-
       const appointment = await tx.appointment.update({
         where: { id: existing.id },
         data: {
@@ -126,22 +135,11 @@ async function upsertAppointmentInternal(data: {
           size,
           pointsUsed,
           slotDate,
-          slotStartTime,
+          slotStartTime: slotValidation.slotStartTime,
         },
       });
 
       return { success: true as const, action: "updated" as const, appointment };
-    }
-
-    const conflict = await capacityValidator.validateAppointment({
-      startUtc: new Date(data.start),
-      endUtc: new Date(data.end),
-      workMinutesNeeded: data.workMinutesNeeded,
-      forkliftsNeeded: data.forkliftsNeeded,
-    }, tx);
-
-    if (conflict) {
-      return { success: false as const, conflict };
     }
 
     const appointment = await tx.appointment.create({
@@ -160,7 +158,7 @@ async function upsertAppointmentInternal(data: {
         size,
         pointsUsed,
         slotDate,
-        slotStartTime,
+        slotStartTime: slotValidation.slotStartTime,
       },
     });
 
@@ -210,17 +208,15 @@ router.post("/api/chat/message", async (req, res) => {
     res.end();
   } catch (error: any) {
     console.error("[CHAT] Error:", error.message);
-    
-    if (!res.headersSent) {
-      res.status(500).json({ error: "Internal server error" });
-    } else {
-      const errorChunk = JSON.stringify({
-        type: "error",
-        content: "Lo siento, ha ocurrido un error. Por favor, inténtalo de nuevo.",
-      });
-      res.write(`data: ${errorChunk}\n\n`);
-      res.end();
-    }
+
+    // After flushHeaders(), headers are always sent — respond via SSE chunks
+    const errorChunk = JSON.stringify({
+      type: "error",
+      content: "Lo siento, ha ocurrido un error. Inténtalo de nuevo.",
+    });
+    res.write(`data: ${errorChunk}\n\n`);
+    res.write("data: [DONE]\n\n");
+    res.end();
   }
 });
 
@@ -865,23 +861,34 @@ router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNE
   try {
     const data = createAppointmentSchema.parse(req.body);
 
-    const size = slotCapacityValidator.determineSizeFromDuration(data.workMinutesNeeded);
-    const pointsUsed = slotCapacityValidator.getPointsForSize(size);
+    const { size, points: pointsUsed } = slotCapacityValidator.determineSizeAndPoints(data.workMinutesNeeded);
     const startDate = new Date(data.start);
     const slotDate = new Date(startDate);
     slotDate.setHours(0, 0, 0, 0);
-    const slotStartTime = formatInTimeZone(startDate, 'Europe/Madrid', 'HH:mm');
-    
-    const result = await prisma.$transaction(async (tx) => {
-      const conflict = await capacityValidator.validateAppointment({
-        startUtc: new Date(data.start),
-        endUtc: new Date(data.end),
-        workMinutesNeeded: data.workMinutesNeeded,
-        forkliftsNeeded: data.forkliftsNeeded,
-      }, tx);
 
-      if (conflict) {
-        return { conflict };
+    const result = await prisma.$transaction(async (tx) => {
+      const resolvedSlotStart = await slotCapacityValidator.resolveSlotStartTime(startDate, tx);
+      const slotStartTime = resolvedSlotStart || formatInTimeZone(startDate, 'Europe/Madrid', 'HH:mm');
+
+      const slotValidation = await slotCapacityValidator.validateSlotCapacity(
+        slotDate,
+        slotStartTime,
+        pointsUsed,
+        undefined,
+        tx
+      );
+
+      if (!slotValidation.valid) {
+        return {
+          conflict: {
+            slotStartTime: slotValidation.slotStartTime,
+            slotEndTime: slotValidation.slotEndTime || "",
+            maxPoints: slotValidation.maxPoints,
+            pointsUsed: slotValidation.pointsUsed,
+            pointsNeeded: pointsUsed,
+            message: slotValidation.error || "Slot sin capacidad disponible",
+          },
+        };
       }
 
       const appointment = await tx.appointment.create({
@@ -900,7 +907,7 @@ router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNE
           size,
           pointsUsed,
           slotDate,
-          slotStartTime,
+          slotStartTime: slotValidation.slotStartTime,
         },
       });
 
@@ -908,7 +915,7 @@ router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNE
     }, { isolationLevel: "Serializable" });
 
     if ("conflict" in result) {
-      return res.status(409).json({ error: "Capacity conflict", conflict: result.conflict });
+      return res.status(409).json({ error: "Slot capacity conflict", conflict: result.conflict });
     }
 
     logAudit({
@@ -972,28 +979,37 @@ router.put("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "PLA
       const effectiveWorkMinutes = updateData.workMinutesNeeded ?? current.workMinutesNeeded;
       const effectiveStart = updateData.startUtc || current.startUtc;
 
-      const size = slotCapacityValidator.determineSizeFromDuration(effectiveWorkMinutes);
-      const pointsUsed = slotCapacityValidator.getPointsForSize(size);
+      const { size, points: pointsUsed } = slotCapacityValidator.determineSizeAndPoints(effectiveWorkMinutes);
       const slotDate = new Date(effectiveStart);
       slotDate.setHours(0, 0, 0, 0);
-      const slotStartTime = formatInTimeZone(effectiveStart, 'Europe/Madrid', 'HH:mm');
+      const resolvedSlotStart = await slotCapacityValidator.resolveSlotStartTime(effectiveStart, tx);
+      const slotStartTime = resolvedSlotStart || formatInTimeZone(effectiveStart, 'Europe/Madrid', 'HH:mm');
+
+      const slotValidation = await slotCapacityValidator.validateSlotCapacity(
+        slotDate,
+        slotStartTime,
+        pointsUsed,
+        req.params.id,
+        tx
+      );
+
+      if (!slotValidation.valid) {
+        return {
+          conflict: {
+            slotStartTime: slotValidation.slotStartTime,
+            slotEndTime: slotValidation.slotEndTime || "",
+            maxPoints: slotValidation.maxPoints,
+            pointsUsed: slotValidation.pointsUsed,
+            pointsNeeded: pointsUsed,
+            message: slotValidation.error || "Slot sin capacidad disponible",
+          },
+        };
+      }
 
       updateData.size = size;
       updateData.pointsUsed = pointsUsed;
       updateData.slotDate = slotDate;
-      updateData.slotStartTime = slotStartTime;
-
-      const conflict = await capacityValidator.validateAppointment({
-        id: req.params.id,
-        startUtc: updateData.startUtc || current.startUtc,
-        endUtc: updateData.endUtc || current.endUtc,
-        workMinutesNeeded: updateData.workMinutesNeeded ?? current.workMinutesNeeded,
-        forkliftsNeeded: updateData.forkliftsNeeded ?? current.forkliftsNeeded,
-      }, tx);
-
-      if (conflict) {
-        return { conflict };
-      }
+      updateData.slotStartTime = slotValidation.slotStartTime;
 
       const appointment = await tx.appointment.update({
         where: { id: req.params.id },
@@ -1007,7 +1023,7 @@ router.put("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "PLA
       return res.status(404).json({ error: "Appointment not found" });
     }
     if ("conflict" in result) {
-      return res.status(409).json({ error: "Capacity conflict", conflict: result.conflict });
+      return res.status(409).json({ error: "Slot capacity conflict", conflict: result.conflict });
     }
 
     logAudit({
@@ -1088,38 +1104,125 @@ router.delete("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "
   }
 });
 
-// Get real-time capacity for a specific minute
+// Get slot capacity for a specific time
 router.get("/api/capacity/at-minute", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const { minute } = req.query;
-    
+
     if (!minute) {
       return res.status(400).json({ error: "Minute parameter required" });
     }
 
-    const capacity = await capacityValidator.getCapacityAtMinute(new Date(minute as string));
-    res.json(capacity);
+    const date = new Date(minute as string);
+    const timeHHMM = formatInTimeZone(date, 'Europe/Madrid', 'HH:mm');
+    const slot = await slotCapacityValidator.findSlotForTime(date, timeHHMM);
+
+    if (!slot) {
+      return res.json({ slotStartTime: null, slotEndTime: null, maxPoints: 0, pointsUsed: 0, pointsAvailable: 0 });
+    }
+
+    const pointsUsed = await slotCapacityValidator.getSlotUsage(date, slot.startTime);
+    res.json({
+      slotStartTime: slot.startTime,
+      slotEndTime: slot.endTime,
+      maxPoints: slot.maxPoints,
+      pointsUsed,
+      pointsAvailable: slot.maxPoints - pointsUsed,
+    });
   } catch (error) {
     console.error("Get capacity at minute error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// Get warehouse capacity utilization for a date range
+// Get warehouse capacity utilization for a date range (slot-based)
 router.get("/api/capacity/utilization", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const { startDate, endDate } = req.query;
-    
+
     if (!startDate || !endDate) {
       return res.status(400).json({ error: "startDate and endDate parameters required" });
     }
 
-    const utilization = await capacityValidator.calculateUtilization(
-      new Date(startDate as string),
-      new Date(endDate as string)
-    );
-    
-    res.json(utilization);
+    const from = new Date(startDate as string);
+    const to = new Date(endDate as string);
+
+    const current = new Date(from);
+    current.setHours(0, 0, 0, 0);
+    const end = new Date(to);
+    end.setHours(23, 59, 59, 999);
+
+    const allSlots: Array<{
+      date: string;
+      startTime: string;
+      endTime: string;
+      maxPoints: number;
+      pointsUsed: number;
+      pointsAvailable: number;
+    }> = [];
+
+    let totalMaxPoints = 0;
+    let totalPointsUsed = 0;
+    let peakSlot: { date: string; startTime: string; percentage: number } | null = null;
+
+    while (current <= end) {
+      const dateStr = current.toISOString().split("T")[0];
+      const slots = await slotCapacityValidator.getSlotsForDate(current);
+
+      for (const slot of slots) {
+        const pointsUsed = await slotCapacityValidator.getSlotUsage(current, slot.startTime);
+        const pointsAvailable = slot.maxPoints - pointsUsed;
+
+        allSlots.push({
+          date: dateStr,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          maxPoints: slot.maxPoints,
+          pointsUsed,
+          pointsAvailable,
+        });
+
+        totalMaxPoints += slot.maxPoints;
+        totalPointsUsed += pointsUsed;
+
+        if (slot.maxPoints > 0) {
+          const pct = (pointsUsed / slot.maxPoints) * 100;
+          if (!peakSlot || pct > peakSlot.percentage) {
+            peakSlot = { date: dateStr, startTime: slot.startTime, percentage: parseFloat(pct.toFixed(1)) };
+          }
+        }
+      }
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    // Count appointments in range
+    const fromStart = new Date(from);
+    fromStart.setHours(0, 0, 0, 0);
+    const toEnd = new Date(to);
+    toEnd.setHours(23, 59, 59, 999);
+
+    const appointmentCount = await prisma.appointment.count({
+      where: {
+        AND: [
+          { startUtc: { lt: toEnd } },
+          { endUtc: { gt: fromStart } },
+        ],
+      },
+    });
+
+    const utilizationPercentage = totalMaxPoints > 0
+      ? parseFloat(((totalPointsUsed / totalMaxPoints) * 100).toFixed(1))
+      : 0;
+
+    res.json({
+      appointmentCount,
+      slots: allSlots,
+      totalMaxPoints,
+      totalPointsUsed,
+      utilizationPercentage,
+      peakSlot,
+    });
   } catch (error: any) {
     console.error("Capacity utilization error:", error.message);
     res.status(500).json({ error: "Internal server error" });
@@ -1722,6 +1825,24 @@ router.post("/api/email/test", authenticateToken, requireRole("ADMIN"), async (r
     }
   } catch (error: any) {
     console.error("Send test email error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Send daily summary email — defaults to tomorrow, optionally pass a date
+router.post("/api/email/send-summary", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
+  try {
+    const { date } = req.body;
+    const targetDate = date ? new Date(date) : undefined;
+
+    if (date && isNaN(new Date(date).getTime())) {
+      return res.status(400).json({ error: "Invalid date format. Use YYYY-MM-DD." });
+    }
+
+    const sent = await sendDailySummary(targetDate);
+    res.json({ success: true, recipientsSent: sent });
+  } catch (error: any) {
+    console.error("Send summary error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

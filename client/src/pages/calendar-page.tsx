@@ -9,7 +9,7 @@ import { Plus, Calendar } from "lucide-react";
 import { appointmentsApi, providersApi, capacityApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Appointment, Provider, CreateAppointmentInput, UpdateAppointmentInput, CapacityConflictError, UserRole, CapacityUtilization } from "@shared/types";
+import type { Appointment, Provider, CreateAppointmentInput, UpdateAppointmentInput, UserRole, SlotUtilization } from "@shared/types";
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 
 interface CalendarPageProps {
@@ -20,7 +20,7 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
   const { toast } = useToast();
   const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
   const [conflictErrorOpen, setConflictErrorOpen] = useState(false);
-  const [conflictError, setConflictError] = useState<CapacityConflictError | null>(null);
+  const [conflictError, setConflictError] = useState<any>(null);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [currentView, setCurrentView] = useState<"dayGridMonth" | "timeGridWeek" | "timeGridDay">("timeGridWeek");
@@ -53,8 +53,8 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
     queryFn: () => providersApi.list(),
   });
 
-  // Fetch capacity utilization for current date range
-  const { data: capacityUtilization } = useQuery<CapacityUtilization>({
+  // Fetch capacity utilization for current date range (slot-based)
+  const { data: capacityUtilization } = useQuery<SlotUtilization>({
     queryKey: ["/api/capacity/utilization", startDate.toISOString(), endDate.toISOString()],
     queryFn: () => capacityApi.getUtilization({
       startDate: startDate.toISOString(),
@@ -254,14 +254,11 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
       {capacityUtilization && (
         <CapacityIndicators
           appointmentCount={capacityUtilization.appointmentCount}
-          capacityPercentage={capacityUtilization.capacityPercentage}
-          workersPercentage={capacityUtilization.workersPercentage}
-          forkliftsPercentage={capacityUtilization.forkliftsPercentage}
-          docksPercentage={capacityUtilization.docksPercentage}
-          peakDay={capacityUtilization.peakDay}
-          peakPercentage={capacityUtilization.peakPercentage}
-          daysUsingDefaults={capacityUtilization.daysUsingDefaults}
-          defaultDaysBreakdown={capacityUtilization.defaultDaysBreakdown}
+          slots={capacityUtilization.slots}
+          totalMaxPoints={capacityUtilization.totalMaxPoints}
+          totalPointsUsed={capacityUtilization.totalPointsUsed}
+          utilizationPercentage={capacityUtilization.utilizationPercentage}
+          peakSlot={capacityUtilization.peakSlot}
         />
       )}
 

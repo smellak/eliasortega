@@ -248,6 +248,7 @@ export interface AuditLog {
 }
 
 // Capacity validation error
+/** @deprecated Use SlotConflictError instead */
 export interface CapacityConflictError {
   minute: string; // ISO string in UTC
   minuteMadrid: string; // formatted for Europe/Madrid
@@ -260,7 +261,18 @@ export interface CapacityConflictError {
   failedRule: "work" | "forklifts" | "docks";
 }
 
+// Slot-based capacity conflict error (v2.0)
+export interface SlotConflictError {
+  slotStartTime: string;
+  slotEndTime: string;
+  maxPoints: number;
+  pointsUsed: number;
+  pointsNeeded: number;
+  message: string; // human-readable Spanish error
+}
+
 // Capacity utilization
+/** @deprecated Use SlotUtilization instead */
 export interface CapacityUtilization {
   appointmentCount: number;
   capacityPercentage: number;
@@ -280,6 +292,23 @@ export interface CapacityUtilization {
     forklifts: { used: number; available: number };
     docks: { used: number; available: number };
   };
+}
+
+// Slot-based capacity utilization (v2.0)
+export interface SlotUtilization {
+  appointmentCount: number;
+  slots: Array<{
+    date: string;
+    startTime: string;
+    endTime: string;
+    maxPoints: number;
+    pointsUsed: number;
+    pointsAvailable: number;
+  }>;
+  totalMaxPoints: number;
+  totalPointsUsed: number;
+  utilizationPercentage: number;
+  peakSlot: { date: string; startTime: string; percentage: number } | null;
 }
 
 // Integration types

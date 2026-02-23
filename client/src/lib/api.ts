@@ -11,7 +11,7 @@ import type {
   CreateAppointmentInput,
   UpdateAppointmentInput,
   UserResponse,
-  CapacityUtilization,
+  SlotUtilization,
   SlotTemplate,
   CreateSlotTemplateInput,
   UpdateSlotTemplateInput,
@@ -299,7 +299,7 @@ export const appointmentsApi = {
 };
 
 export const capacityApi = {
-  getUtilization: async (params: { startDate: string; endDate: string }): Promise<CapacityUtilization> => {
+  getUtilization: async (params: { startDate: string; endDate: string }): Promise<SlotUtilization> => {
     const query = new URLSearchParams();
     query.append("startDate", params.startDate);
     query.append("endDate", params.endDate);
@@ -307,7 +307,7 @@ export const capacityApi = {
     const response = await fetch(`${API_BASE}/capacity/utilization?${query}`, {
       headers: getHeaders(),
     });
-    return handleResponse<CapacityUtilization>(response);
+    return handleResponse<SlotUtilization>(response);
   },
 };
 

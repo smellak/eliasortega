@@ -54,10 +54,11 @@ export class AgentOrchestrator {
         iterationCount++;
         shouldContinue = false;
 
+        const systemPrompt = await getMainAgentPrompt(new Date());
         const stream = await anthropic.messages.stream({
           model: "claude-haiku-4-5-20250514",
           max_tokens: 2048,
-          system: getMainAgentPrompt(new Date()),
+          system: systemPrompt,
           messages: anthropicMessages,
           tools: AGENT_TOOLS,
         });

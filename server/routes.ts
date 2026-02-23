@@ -20,9 +20,9 @@ import {
   updateSlotOverrideSchema,
   createEmailRecipientSchema,
   updateEmailRecipientSchema,
+  changePasswordSchema,
 } from "../shared/types";
-// TODO: usar clearRefreshToken en endpoint de logout (Fase 2)
-import { authenticateToken, requireRole, generateToken, generateRefreshToken, saveRefreshToken, validateRefreshToken, clearRefreshToken, AuthRequest } from "./middleware/auth";
+import { authenticateToken, requireRole, generateToken, generateRefreshToken, saveRefreshToken, validateRefreshToken, clearRefreshToken, authenticateJwtOrApiKey, AuthRequest } from "./middleware/auth";
 import { capacityValidator } from "./services/capacity-validator";
 import { slotCapacityValidator } from "./services/slot-validator";
 import { logAudit, computeChanges } from "./services/audit-service";
@@ -293,6 +293,50 @@ router.post("/api/auth/refresh", async (req, res) => {
     res.json({ token: newToken, refreshToken: newRefreshToken });
   } catch (error) {
     console.error("Refresh token error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/api/auth/logout", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    await clearRefreshToken(req.user!.id);
+    res.json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/api/auth/change-password", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+
+    const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) {
+      return res.status(401).json({ error: "Current password is incorrect" });
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: newHash,
+        refreshToken: null,
+        refreshTokenExpires: null,
+      },
+    });
+
+    res.json({ message: "Password changed successfully" });
+  } catch (error: any) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({ error: "Invalid input", details: error.errors });
+    }
+    console.error("Change password error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -1083,7 +1127,7 @@ router.get("/api/capacity/utilization", authenticateToken, async (req: AuthReque
 });
 
 // Integration endpoints (for n8n, etc.)
-router.post("/api/integration/appointments/upsert", authenticateToken, async (req: AuthRequest, res) => {
+router.post("/api/integration/appointments/upsert", integrationRateLimiter, authenticateJwtOrApiKey, async (req: AuthRequest, res) => {
   try {
     const data = upsertAppointmentSchema.parse(req.body);
     
@@ -1577,21 +1621,21 @@ router.get("/api/email-recipients", authenticateToken, requireRole("ADMIN"), asy
 
 router.post("/api/email-recipients", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
   try {
-    const { email, name, receivesDailySummary, receivesAlerts, receivesUrgent } = req.body;
-    if (!email || !name) {
-      return res.status(400).json({ error: "email and name are required" });
-    }
+    const data = createEmailRecipientSchema.parse(req.body);
     const recipient = await prisma.emailRecipient.create({
       data: {
-        email,
-        name,
-        receivesDailySummary: receivesDailySummary ?? true,
-        receivesAlerts: receivesAlerts ?? true,
-        receivesUrgent: receivesUrgent ?? true,
+        email: data.email,
+        name: data.name,
+        receivesDailySummary: data.receivesDailySummary,
+        receivesAlerts: data.receivesAlerts,
+        receivesUrgent: data.receivesUrgent,
       },
     });
     res.status(201).json(recipient);
   } catch (error: any) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({ error: "Invalid input", details: error.errors });
+    }
     if (error.code === "P2002") {
       return res.status(409).json({ error: "Email already exists" });
     }
@@ -1602,21 +1646,16 @@ router.post("/api/email-recipients", authenticateToken, requireRole("ADMIN"), as
 
 router.put("/api/email-recipients/:id", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
   try {
-    const { email, name, receivesDailySummary, receivesAlerts, receivesUrgent, active } = req.body;
-    const updateData: any = {};
-    if (email !== undefined) updateData.email = email;
-    if (name !== undefined) updateData.name = name;
-    if (receivesDailySummary !== undefined) updateData.receivesDailySummary = receivesDailySummary;
-    if (receivesAlerts !== undefined) updateData.receivesAlerts = receivesAlerts;
-    if (receivesUrgent !== undefined) updateData.receivesUrgent = receivesUrgent;
-    if (active !== undefined) updateData.active = active;
-
+    const data = updateEmailRecipientSchema.parse(req.body);
     const recipient = await prisma.emailRecipient.update({
       where: { id: req.params.id },
-      data: updateData,
+      data,
     });
     res.json(recipient);
   } catch (error: any) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({ error: "Invalid input", details: error.errors });
+    }
     if (error.code === "P2025") {
       return res.status(404).json({ error: "Recipient not found" });
     }

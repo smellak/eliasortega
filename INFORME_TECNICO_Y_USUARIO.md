@@ -21,7 +21,7 @@ Toda la interfaz está en español y está diseñada para funcionar tanto en esc
 
 ### Panel de Gestión (Ruta: `/`)
 - Requiere inicio de sesión con email y contraseña
-- Credenciales de administrador por defecto: `admin@admin.com` / `admin123`
+- Credenciales de administrador por defecto: `admin@example.com` / `CHS-Admin-2026!` (CAMBIAR TRAS PRIMER LOGIN)
 - El token de sesión dura 7 días
 
 ### Chat Público (Ruta: `/chat`)

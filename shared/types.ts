@@ -10,6 +10,12 @@ export const loginSchema = z.object({
 });
 export type LoginInput = z.infer<typeof loginSchema>;
 
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+});
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
 export interface UserResponse {
   id: string;
   email: string;
@@ -183,11 +189,10 @@ export interface SlotCapacityConflict {
 // Email Recipient types
 export const createEmailRecipientSchema = z.object({
   email: z.string().email(),
-  name: z.string().min(1),
-  receivesDailySummary: z.boolean().default(true),
-  receivesAlerts: z.boolean().default(true),
-  receivesUrgent: z.boolean().default(true),
-  active: z.boolean().default(true),
+  name: z.string().min(1).max(100),
+  receivesDailySummary: z.boolean().optional().default(true),
+  receivesAlerts: z.boolean().optional().default(true),
+  receivesUrgent: z.boolean().optional().default(true),
 });
 export type CreateEmailRecipientInput = z.infer<typeof createEmailRecipientSchema>;
 

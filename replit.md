@@ -148,5 +148,5 @@ Container runs: `npx prisma db push --skip-generate && node dist/index.js`
 - No Replit-specific code in server or client source
 
 ## Dev Credentials
-- Admin: admin@admin.com / admin123
+- Admin: admin@example.com / CHS-Admin-2026! (CAMBIAR TRAS PRIMER LOGIN)
 - Port: 5000

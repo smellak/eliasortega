@@ -138,8 +138,31 @@ export const authApi = {
     );
   },
 
-  logout: () => {
+  logout: async () => {
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        headers: getHeaders(),
+      });
+    } catch {
+      // Best-effort: server-side invalidation may fail if token expired
+    }
     clearAuth();
+  },
+
+  changePassword: async (input: { currentPassword: string; newPassword: string }): Promise<{ message: string }> => {
+    const response = await fetch(`${API_BASE}/auth/change-password`, {
+      method: "PUT",
+      headers: getHeaders(),
+      body: JSON.stringify(input),
+    });
+    return handleResponse(response, () =>
+      fetch(`${API_BASE}/auth/change-password`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(input),
+      })
+    );
   },
 };
 

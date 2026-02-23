@@ -6,8 +6,8 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("Starting seed...");
 
-  // Create admin user
-  const adminPassword = await bcrypt.hash("admin123", 10);
+  // CAMBIAR EN PRODUCCION — estas son credenciales por defecto solo para desarrollo
+  const adminPassword = await bcrypt.hash("CHS-Admin-2026!", 10);
   const admin = await prisma.user.upsert({
     where: { email: "admin@example.com" },
     update: { passwordHash: adminPassword },
@@ -19,8 +19,8 @@ async function main() {
   });
   console.log("Created admin user:", admin.email);
 
-  // Create planner user
-  const plannerPassword = await bcrypt.hash("planner123", 10);
+  // CAMBIAR EN PRODUCCION
+  const plannerPassword = await bcrypt.hash("CHS-Planner-2026!", 10);
   const planner = await prisma.user.upsert({
     where: { email: "planner@example.com" },
     update: { passwordHash: plannerPassword },
@@ -32,8 +32,8 @@ async function main() {
   });
   console.log("Created planner user:", planner.email);
 
-  // Create read-only user
-  const viewerPassword = await bcrypt.hash("viewer123", 10);
+  // CAMBIAR EN PRODUCCION
+  const viewerPassword = await bcrypt.hash("CHS-Viewer-2026!", 10);
   const viewer = await prisma.user.upsert({
     where: { email: "viewer@example.com" },
     update: { passwordHash: viewerPassword },
@@ -66,11 +66,11 @@ async function main() {
   // Using a recent date in October 2025 (UTC+2)
   const shifts: any[] = [];
   const baseDate = new Date("2025-10-27"); // Monday
-  
+
   for (let i = 0; i < 5; i++) {
     const date = new Date(baseDate);
     date.setDate(date.getDate() + i);
-    
+
     // 08:00 Europe/Madrid = 06:00 UTC (in summer time UTC+2)
     const startUtc = new Date(date.toISOString().split("T")[0] + "T06:00:00.000Z");
     // 16:00 Europe/Madrid = 14:00 UTC

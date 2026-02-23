@@ -107,3 +107,42 @@ export async function clearRefreshToken(userId: string): Promise<void> {
     },
   });
 }
+
+/**
+ * Hybrid middleware: accepts either JWT (Authorization: Bearer) or API Key (X-API-Key).
+ * Use for integration endpoints that need to work with both auth methods.
+ */
+export function authenticateJwtOrApiKey(req: AuthRequest, res: Response, next: NextFunction) {
+  const authHeader = req.headers["authorization"];
+  const apiKey = req.headers["x-api-key"] as string | undefined;
+  const INTEGRATION_API_KEY = process.env.INTEGRATION_API_KEY || "";
+
+  // Try JWT first
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.split(" ")[1];
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as {
+        id: string;
+        email: string;
+        role: UserRole;
+      };
+      req.user = decoded;
+      return next();
+    } catch {
+      // JWT invalid — fall through to API key check
+    }
+  }
+
+  // Try API key
+  if (apiKey) {
+    if (!INTEGRATION_API_KEY) {
+      return res.status(503).json({ error: "Integration API is disabled. Set INTEGRATION_API_KEY to enable." });
+    }
+    if (apiKey === INTEGRATION_API_KEY) {
+      return next();
+    }
+    return res.status(401).json({ error: "Invalid API key" });
+  }
+
+  return res.status(401).json({ error: "Authentication required. Provide Bearer token or X-API-Key header." });
+}

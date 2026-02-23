@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { UserRole } from "../../shared/types";
+import { prisma } from "../db/client";
 
-// Require JWT_SECRET in environment - fail if not provided
 if (!process.env.JWT_SECRET) {
   console.error("FATAL: JWT_SECRET environment variable is required but not set");
   console.error("Please set a strong random secret in your .env file:");
@@ -11,6 +12,8 @@ if (!process.env.JWT_SECRET) {
 }
 
 const JWT_SECRET = process.env.JWT_SECRET;
+const ACCESS_TOKEN_EXPIRY = "24h";
+const REFRESH_TOKEN_EXPIRY_DAYS = 7;
 
 export interface AuthRequest extends Request {
   user?: {
@@ -56,5 +59,51 @@ export function requireRole(...allowedRoles: UserRole[]) {
 }
 
 export function generateToken(user: { id: string; email: string; role: UserRole }): string {
-  return jwt.sign(user, JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign(user, JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRY });
+}
+
+export function generateRefreshToken(): string {
+  return crypto.randomBytes(40).toString("hex");
+}
+
+export async function saveRefreshToken(userId: string, refreshToken: string): Promise<void> {
+  const expires = new Date();
+  expires.setDate(expires.getDate() + REFRESH_TOKEN_EXPIRY_DAYS);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      refreshToken,
+      refreshTokenExpires: expires,
+    },
+  });
+}
+
+export async function validateRefreshToken(
+  refreshToken: string
+): Promise<{ id: string; email: string; role: UserRole } | null> {
+  const user = await prisma.user.findFirst({
+    where: {
+      refreshToken,
+      refreshTokenExpires: { gt: new Date() },
+    },
+  });
+
+  if (!user) return null;
+
+  return {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+  };
+}
+
+export async function clearRefreshToken(userId: string): Promise<void> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      refreshToken: null,
+      refreshTokenExpires: null,
+    },
+  });
 }

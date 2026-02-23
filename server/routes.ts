@@ -14,9 +14,18 @@ import {
   AuthResponse,
   UserResponse,
   NormalizedCalendarQuery,
+  createSlotTemplateSchema,
+  updateSlotTemplateSchema,
+  createSlotOverrideSchema,
+  updateSlotOverrideSchema,
+  createEmailRecipientSchema,
+  updateEmailRecipientSchema,
 } from "../shared/types";
-import { authenticateToken, requireRole, generateToken, AuthRequest } from "./middleware/auth";
+import { authenticateToken, requireRole, generateToken, generateRefreshToken, saveRefreshToken, validateRefreshToken, clearRefreshToken, AuthRequest } from "./middleware/auth";
 import { capacityValidator } from "./services/capacity-validator";
+import { slotCapacityValidator } from "./services/slot-validator";
+import { logAudit, computeChanges } from "./services/audit-service";
+import { sendAppointmentAlert, sendTestEmail } from "./services/email-service";
 import { prisma } from "./db/client";
 import { formatInTimeZone } from 'date-fns-tz';
 import { addMinutes, setHours, setMinutes, setSeconds, setMilliseconds, isWeekend, addDays } from 'date-fns';
@@ -26,7 +35,7 @@ const INTEGRATION_API_KEY = process.env.INTEGRATION_API_KEY || "";
 
 function authenticateIntegration(req: Request, res: Response, next: NextFunction) {
   if (!INTEGRATION_API_KEY) {
-    return next();
+    return res.status(403).json({ error: "Integration API is disabled. Set INTEGRATION_API_KEY to enable." });
   }
   const apiKey = req.headers["x-api-key"] as string;
   if (!apiKey || apiKey !== INTEGRATION_API_KEY) {
@@ -35,7 +44,29 @@ function authenticateIntegration(req: Request, res: Response, next: NextFunction
   next();
 }
 
-// Helper: Format date to Europe/Madrid local string
+const integrationRateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function integrationRateLimiter(req: Request, res: Response, next: NextFunction) {
+  const key = (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
+  const now = Date.now();
+  const windowMs = 60 * 1000;
+  const maxRequests = 50;
+
+  let entry = integrationRateLimitMap.get(key);
+  if (!entry || now > entry.resetAt) {
+    entry = { count: 0, resetAt: now + windowMs };
+    integrationRateLimitMap.set(key, entry);
+  }
+
+  entry.count++;
+
+  if (entry.count > maxRequests) {
+    return res.status(429).json({ error: "Too many requests. Limit: 50 req/min for integration endpoints." });
+  }
+
+  next();
+}
+
 function formatToMadridLocal(date: Date): string {
   return formatInTimeZone(date, 'Europe/Madrid', 'dd/MM/yyyy, HH:mm');
 }
@@ -57,6 +88,13 @@ async function upsertAppointmentInternal(data: {
     const existing = await tx.appointment.findUnique({
       where: { externalRef: data.externalRef },
     });
+
+    const size = slotCapacityValidator.determineSizeFromDuration(data.workMinutesNeeded);
+    const pointsUsed = slotCapacityValidator.getPointsForSize(size);
+    const startDate = new Date(data.start);
+    const slotDate = new Date(startDate);
+    slotDate.setHours(0, 0, 0, 0);
+    const slotStartTime = formatInTimeZone(startDate, 'Europe/Madrid', 'HH:mm');
 
     if (existing) {
       const conflict = await capacityValidator.validateAppointment({
@@ -84,6 +122,10 @@ async function upsertAppointmentInternal(data: {
           units: data.units,
           lines: data.lines,
           deliveryNotesCount: data.deliveryNotesCount,
+          size,
+          pointsUsed,
+          slotDate,
+          slotStartTime,
         },
       });
 
@@ -114,6 +156,10 @@ async function upsertAppointmentInternal(data: {
         lines: data.lines,
         deliveryNotesCount: data.deliveryNotesCount,
         externalRef: data.externalRef,
+        size,
+        pointsUsed,
+        slotDate,
+        slotStartTime,
       },
     });
 
@@ -122,8 +168,6 @@ async function upsertAppointmentInternal(data: {
 }
 const router = Router();
 
-// Public routes - NO authentication required
-// Serve logo (keep for legacy n8n chat.html if needed)
 router.get("/logo-sanchez.png", (req, res) => {
   res.sendFile(path.join(process.cwd(), "client/public/logo-sanchez.png"));
 });
@@ -137,7 +181,6 @@ router.get("/api/health", async (req, res) => {
   }
 });
 
-// Chat API - Public endpoint with SSE streaming
 router.post("/api/chat/message", async (req, res) => {
   try {
     const { sessionId, message } = req.body;
@@ -203,6 +246,9 @@ router.post("/api/auth/login", async (req, res) => {
       role: user.role,
     });
 
+    const refreshTk = generateRefreshToken();
+    await saveRefreshToken(user.id, refreshTk);
+
     const response: AuthResponse = {
       token,
       user: {
@@ -212,7 +258,7 @@ router.post("/api/auth/login", async (req, res) => {
       },
     };
 
-    res.json(response);
+    res.json({ ...response, refreshToken: refreshTk });
   } catch (error: any) {
     if (error.name === "ZodError") {
       return res.status(400).json({ error: "Invalid input", details: error.errors });
@@ -222,9 +268,31 @@ router.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// Get current user
 router.get("/api/auth/me", authenticateToken, (req: AuthRequest, res) => {
   res.json(req.user);
+});
+
+router.post("/api/auth/refresh", async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({ error: "Refresh token required" });
+    }
+
+    const user = await validateRefreshToken(refreshToken);
+    if (!user) {
+      return res.status(401).json({ error: "Invalid or expired refresh token" });
+    }
+
+    const newToken = generateToken(user);
+    const newRefreshToken = generateRefreshToken();
+    await saveRefreshToken(user.id, newRefreshToken);
+
+    res.json({ token: newToken, refreshToken: newRefreshToken });
+  } catch (error) {
+    console.error("Refresh token error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // Providers
@@ -248,6 +316,15 @@ router.post("/api/providers", authenticateToken, requireRole("ADMIN", "PLANNER")
       data,
     });
 
+    logAudit({
+      entityType: "PROVIDER",
+      entityId: provider.id,
+      action: "CREATE",
+      actorType: "USER",
+      actorId: req.user?.id,
+      changes: data as Record<string, unknown>,
+    }).catch(() => {});
+
     res.status(201).json(provider);
   } catch (error: any) {
     if (error.name === "ZodError") {
@@ -264,11 +341,22 @@ router.post("/api/providers", authenticateToken, requireRole("ADMIN", "PLANNER")
 router.put("/api/providers/:id", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
   try {
     const data = updateProviderSchema.parse(req.body);
+
+    const before = await prisma.provider.findUnique({ where: { id: req.params.id } });
     
     const provider = await prisma.provider.update({
       where: { id: req.params.id },
       data,
     });
+
+    logAudit({
+      entityType: "PROVIDER",
+      entityId: provider.id,
+      action: "UPDATE",
+      actorType: "USER",
+      actorId: req.user?.id,
+      changes: before ? computeChanges(before as any, provider as any) : (data as Record<string, unknown>),
+    }).catch(() => {});
 
     res.json(provider);
   } catch (error: any) {
@@ -291,6 +379,14 @@ router.delete("/api/providers/:id", authenticateToken, requireRole("ADMIN", "PLA
     await prisma.provider.delete({
       where: { id: req.params.id },
     });
+
+    logAudit({
+      entityType: "PROVIDER",
+      entityId: req.params.id,
+      action: "DELETE",
+      actorType: "USER",
+      actorId: req.user?.id,
+    }).catch(() => {});
 
     res.status(204).send();
   } catch (error: any) {
@@ -395,6 +491,303 @@ router.delete("/api/capacity-shifts/:id", authenticateToken, requireRole("ADMIN"
   }
 });
 
+// Slot Templates CRUD (ADMIN/PLANNER)
+router.get("/api/slot-templates", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const templates = await prisma.slotTemplate.findMany({
+      orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
+    });
+    res.json(templates);
+  } catch (error) {
+    console.error("Get slot templates error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/api/slot-templates", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
+  try {
+    const data = createSlotTemplateSchema.parse(req.body);
+
+    const template = await prisma.slotTemplate.create({ data });
+
+    logAudit({
+      entityType: "SLOT_TEMPLATE",
+      entityId: template.id,
+      action: "CREATE",
+      actorType: "USER",
+      actorId: req.user?.id,
+      changes: data as Record<string, unknown>,
+    }).catch(() => {});
+
+    res.status(201).json(template);
+  } catch (error: any) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({ error: "Invalid input", details: error.errors });
+    }
+    console.error("Create slot template error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/api/slot-templates/:id", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
+  try {
+    const data = updateSlotTemplateSchema.parse(req.body);
+
+    const before = await prisma.slotTemplate.findUnique({ where: { id: req.params.id } });
+
+    const template = await prisma.slotTemplate.update({
+      where: { id: req.params.id },
+      data,
+    });
+
+    logAudit({
+      entityType: "SLOT_TEMPLATE",
+      entityId: template.id,
+      action: "UPDATE",
+      actorType: "USER",
+      actorId: req.user?.id,
+      changes: before ? computeChanges(before as any, template as any) : (data as Record<string, unknown>),
+    }).catch(() => {});
+
+    res.json(template);
+  } catch (error: any) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({ error: "Invalid input", details: error.errors });
+    }
+    if (error.code === "P2025") {
+      return res.status(404).json({ error: "Slot template not found" });
+    }
+    console.error("Update slot template error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/api/slot-templates/:id", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
+  try {
+    await prisma.slotTemplate.delete({
+      where: { id: req.params.id },
+    });
+
+    logAudit({
+      entityType: "SLOT_TEMPLATE",
+      entityId: req.params.id,
+      action: "DELETE",
+      actorType: "USER",
+      actorId: req.user?.id,
+    }).catch(() => {});
+
+    res.status(204).send();
+  } catch (error: any) {
+    if (error.code === "P2025") {
+      return res.status(404).json({ error: "Slot template not found" });
+    }
+    console.error("Delete slot template error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Slot Overrides CRUD (ADMIN/PLANNER)
+router.get("/api/slot-overrides", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const { from, to } = req.query;
+    const where: any = {};
+    if (from || to) {
+      where.AND = [];
+      if (from) where.AND.push({ date: { gte: new Date(from as string) } });
+      if (to) where.AND.push({ date: { lte: new Date(to as string) } });
+    }
+
+    const overrides = await prisma.slotOverride.findMany({
+      where,
+      orderBy: { date: "asc" },
+    });
+    res.json(overrides);
+  } catch (error) {
+    console.error("Get slot overrides error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/api/slot-overrides", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
+  try {
+    const data = createSlotOverrideSchema.parse(req.body);
+
+    const override = await prisma.slotOverride.create({
+      data: {
+        date: new Date(data.date),
+        startTime: data.startTime,
+        endTime: data.endTime,
+        maxPoints: data.maxPoints,
+        reason: data.reason,
+      },
+    });
+
+    logAudit({
+      entityType: "SLOT_OVERRIDE",
+      entityId: override.id,
+      action: "CREATE",
+      actorType: "USER",
+      actorId: req.user?.id,
+      changes: data as Record<string, unknown>,
+    }).catch(() => {});
+
+    res.status(201).json(override);
+  } catch (error: any) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({ error: "Invalid input", details: error.errors });
+    }
+    console.error("Create slot override error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/api/slot-overrides/:id", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
+  try {
+    const data = updateSlotOverrideSchema.parse(req.body);
+
+    const before = await prisma.slotOverride.findUnique({ where: { id: req.params.id } });
+
+    const updateData: any = {};
+    if (data.date !== undefined) updateData.date = new Date(data.date);
+    if (data.startTime !== undefined) updateData.startTime = data.startTime;
+    if (data.endTime !== undefined) updateData.endTime = data.endTime;
+    if (data.maxPoints !== undefined) updateData.maxPoints = data.maxPoints;
+    if (data.reason !== undefined) updateData.reason = data.reason;
+
+    const override = await prisma.slotOverride.update({
+      where: { id: req.params.id },
+      data: updateData,
+    });
+
+    logAudit({
+      entityType: "SLOT_OVERRIDE",
+      entityId: override.id,
+      action: "UPDATE",
+      actorType: "USER",
+      actorId: req.user?.id,
+      changes: before ? computeChanges(before as any, override as any) : (data as Record<string, unknown>),
+    }).catch(() => {});
+
+    res.json(override);
+  } catch (error: any) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({ error: "Invalid input", details: error.errors });
+    }
+    if (error.code === "P2025") {
+      return res.status(404).json({ error: "Slot override not found" });
+    }
+    console.error("Update slot override error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/api/slot-overrides/:id", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
+  try {
+    await prisma.slotOverride.delete({
+      where: { id: req.params.id },
+    });
+
+    logAudit({
+      entityType: "SLOT_OVERRIDE",
+      entityId: req.params.id,
+      action: "DELETE",
+      actorType: "USER",
+      actorId: req.user?.id,
+    }).catch(() => {});
+
+    res.status(204).send();
+  } catch (error: any) {
+    if (error.code === "P2025") {
+      return res.status(404).json({ error: "Slot override not found" });
+    }
+    console.error("Delete slot override error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Slot availability for a date
+router.get("/api/slots/availability", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const { date, points } = req.query;
+    if (!date) {
+      return res.status(400).json({ error: "date parameter is required" });
+    }
+
+    const targetDate = new Date(date as string);
+    const pointsNeeded = parseInt(points as string) || 1;
+
+    const slots = await slotCapacityValidator.getSlotsForDate(targetDate);
+    const result = [];
+
+    for (const slot of slots) {
+      const usage = await slotCapacityValidator.getSlotUsage(targetDate, slot.startTime);
+      const available = slot.maxPoints - usage;
+      result.push({
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        maxPoints: slot.maxPoints,
+        pointsUsed: usage,
+        pointsAvailable: available,
+        isOverride: slot.isOverride,
+        reason: slot.reason || null,
+        hasCapacity: available >= pointsNeeded,
+      });
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error("Get slot availability error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Slot usage per day for calendar
+router.get("/api/slots/usage", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const { from, to } = req.query;
+    if (!from || !to) {
+      return res.status(400).json({ error: "from and to parameters are required" });
+    }
+
+    const startDate = new Date(from as string);
+    const endDate = new Date(to as string);
+    const results: Array<{ date: string; slots: Array<{ startTime: string; endTime: string; maxPoints: number; pointsUsed: number; pointsAvailable: number }> }> = [];
+
+    const current = new Date(startDate);
+    current.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    while (current <= end) {
+      const slots = await slotCapacityValidator.getSlotsForDate(current);
+      const daySlots = [];
+
+      for (const slot of slots) {
+        const pointsUsed = await slotCapacityValidator.getSlotUsage(current, slot.startTime);
+        daySlots.push({
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          maxPoints: slot.maxPoints,
+          pointsUsed,
+          pointsAvailable: slot.maxPoints - pointsUsed,
+        });
+      }
+
+      results.push({
+        date: current.toISOString().split("T")[0],
+        slots: daySlots,
+      });
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    res.json(results);
+  } catch (error) {
+    console.error("Get slot usage error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Appointments
 router.get("/api/appointments", authenticateToken, async (req: AuthRequest, res) => {
   try {
@@ -425,6 +818,13 @@ router.get("/api/appointments", authenticateToken, async (req: AuthRequest, res)
 router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
   try {
     const data = createAppointmentSchema.parse(req.body);
+
+    const size = slotCapacityValidator.determineSizeFromDuration(data.workMinutesNeeded);
+    const pointsUsed = slotCapacityValidator.getPointsForSize(size);
+    const startDate = new Date(data.start);
+    const slotDate = new Date(startDate);
+    slotDate.setHours(0, 0, 0, 0);
+    const slotStartTime = formatInTimeZone(startDate, 'Europe/Madrid', 'HH:mm');
     
     const result = await prisma.$transaction(async (tx) => {
       const conflict = await capacityValidator.validateAppointment({
@@ -451,6 +851,10 @@ router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNE
           lines: data.lines,
           deliveryNotesCount: data.deliveryNotesCount,
           externalRef: data.externalRef,
+          size,
+          pointsUsed,
+          slotDate,
+          slotStartTime,
         },
       });
 
@@ -460,6 +864,25 @@ router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNE
     if ("conflict" in result) {
       return res.status(409).json({ error: "Capacity conflict", conflict: result.conflict });
     }
+
+    logAudit({
+      entityType: "APPOINTMENT",
+      entityId: result.appointment.id,
+      action: "CREATE",
+      actorType: "USER",
+      actorId: req.user?.id,
+      changes: { providerName: data.providerName, start: data.start, end: data.end, size, pointsUsed },
+    }).catch(() => {});
+
+    sendAppointmentAlert("new_appointment", {
+      providerName: result.appointment.providerName,
+      startUtc: result.appointment.startUtc,
+      endUtc: result.appointment.endUtc,
+      size: result.appointment.size,
+      pointsUsed: result.appointment.pointsUsed,
+      goodsType: result.appointment.goodsType,
+      workMinutesNeeded: result.appointment.workMinutesNeeded,
+    }).catch((e) => console.error("[EMAIL] Alert error:", e));
 
     res.status(201).json(result.appointment);
   } catch (error: any) {
@@ -500,6 +923,20 @@ router.put("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "PLA
         return { notFound: true };
       }
 
+      const effectiveWorkMinutes = updateData.workMinutesNeeded ?? current.workMinutesNeeded;
+      const effectiveStart = updateData.startUtc || current.startUtc;
+
+      const size = slotCapacityValidator.determineSizeFromDuration(effectiveWorkMinutes);
+      const pointsUsed = slotCapacityValidator.getPointsForSize(size);
+      const slotDate = new Date(effectiveStart);
+      slotDate.setHours(0, 0, 0, 0);
+      const slotStartTime = formatInTimeZone(effectiveStart, 'Europe/Madrid', 'HH:mm');
+
+      updateData.size = size;
+      updateData.pointsUsed = pointsUsed;
+      updateData.slotDate = slotDate;
+      updateData.slotStartTime = slotStartTime;
+
       const conflict = await capacityValidator.validateAppointment({
         id: req.params.id,
         startUtc: updateData.startUtc || current.startUtc,
@@ -517,7 +954,7 @@ router.put("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "PLA
         data: updateData,
       });
 
-      return { appointment };
+      return { appointment, before: current };
     }, { isolationLevel: "Serializable" });
 
     if ("notFound" in result) {
@@ -526,6 +963,25 @@ router.put("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "PLA
     if ("conflict" in result) {
       return res.status(409).json({ error: "Capacity conflict", conflict: result.conflict });
     }
+
+    logAudit({
+      entityType: "APPOINTMENT",
+      entityId: result.appointment.id,
+      action: "UPDATE",
+      actorType: "USER",
+      actorId: req.user?.id,
+      changes: result.before ? computeChanges(result.before as any, result.appointment as any) : null,
+    }).catch(() => {});
+
+    sendAppointmentAlert("updated_appointment", {
+      providerName: result.appointment.providerName,
+      startUtc: result.appointment.startUtc,
+      endUtc: result.appointment.endUtc,
+      size: result.appointment.size,
+      pointsUsed: result.appointment.pointsUsed,
+      goodsType: result.appointment.goodsType,
+      workMinutesNeeded: result.appointment.workMinutesNeeded,
+    }).catch((e) => console.error("[EMAIL] Alert error:", e));
 
     res.json(result.appointment);
   } catch (error: any) {
@@ -545,9 +1001,36 @@ router.put("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "PLA
 
 router.delete("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
   try {
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: req.params.id },
+    });
+
+    if (!appointment) {
+      return res.status(404).json({ error: "Appointment not found" });
+    }
+
     await prisma.appointment.delete({
       where: { id: req.params.id },
     });
+
+    logAudit({
+      entityType: "APPOINTMENT",
+      entityId: req.params.id,
+      action: "DELETE",
+      actorType: "USER",
+      actorId: req.user?.id,
+      changes: { providerName: appointment.providerName, start: appointment.startUtc.toISOString() },
+    }).catch(() => {});
+
+    sendAppointmentAlert("deleted_appointment", {
+      providerName: appointment.providerName,
+      startUtc: appointment.startUtc,
+      endUtc: appointment.endUtc,
+      size: appointment.size,
+      pointsUsed: appointment.pointsUsed,
+      goodsType: appointment.goodsType,
+      workMinutesNeeded: appointment.workMinutesNeeded,
+    }).catch((e) => console.error("[EMAIL] Alert error:", e));
 
     res.status(204).send();
   } catch (error: any) {
@@ -626,15 +1109,12 @@ router.post("/api/integration/appointments/upsert", authenticateToken, async (re
   }
 });
 
-router.post("/api/integration/calendar/parse", authenticateIntegration, async (req, res) => {
+router.post("/api/integration/calendar/parse", integrationRateLimiter, authenticateIntegration, async (req, res) => {
   try {
-    // Parse the incoming body - handle both query wrapper and direct object
     let rawQuery: any;
 
     if (req.body.query !== undefined) {
-      // Case 1: { query: "..." } or { query: {...} }
       if (typeof req.body.query === "string") {
-        // String JSON - parse it
         try {
           rawQuery = JSON.parse(req.body.query);
         } catch (e) {
@@ -645,18 +1125,14 @@ router.post("/api/integration/calendar/parse", authenticateIntegration, async (r
           });
         }
       } else {
-        // Already an object
         rawQuery = req.body.query;
       }
     } else {
-      // Case 2: Direct object without query wrapper
       rawQuery = req.body;
     }
 
-    // Validate with Zod
     const parsed = rawCalendarQuerySchema.parse(rawQuery);
 
-    // Normalize the data
     const action = parsed.action.toLowerCase() === "availability" ? "availability" : "book";
 
     const normalized: NormalizedCalendarQuery = {
@@ -696,7 +1172,7 @@ router.post("/api/integration/calendar/parse", authenticateIntegration, async (r
   }
 });
 
-router.post("/api/integration/calendar/availability", authenticateIntegration, async (req, res) => {
+router.post("/api/integration/calendar/availability", integrationRateLimiter, authenticateIntegration, async (req, res) => {
   try {
     let rawQuery: any;
     if (req.body.query !== undefined) {
@@ -709,7 +1185,6 @@ router.post("/api/integration/calendar/availability", authenticateIntegration, a
       rawQuery = req.body;
     }
 
-    // Ensure action field is present
     if (!rawQuery.action) {
       rawQuery.action = "availability";
     }
@@ -743,56 +1218,12 @@ router.post("/api/integration/calendar/availability", authenticateIntegration, a
     const toDate = new Date(normalized.to);
     const durationMinutes = normalized.duration_minutes;
 
-    const slots: Array<{
-      start: string;
-      end: string;
-      startLocal: string;
-      endLocal: string;
-    }> = [];
+    const size = slotCapacityValidator.determineSizeFromDuration(durationMinutes);
+    const pointsNeeded = slotCapacityValidator.getPointsForSize(size);
 
-    let currentDate = new Date(fromDate);
+    const availableSlots = await slotCapacityValidator.findAvailableSlots(fromDate, toDate, pointsNeeded);
 
-    // Search for slots up to 3 days from fromDate
-    const maxSearchDays = 3;
-    let daysSearched = 0;
-
-    while (slots.length < 3 && daysSearched < maxSearchDays) {
-      if (!isWeekend(currentDate)) {
-        // Operating hours: 08:00-14:00 Europe/Madrid
-        let workDayStart = setMilliseconds(setSeconds(setMinutes(setHours(currentDate, 8), 0), 0), 0);
-        const workDayEnd = setMilliseconds(setSeconds(setMinutes(setHours(currentDate, 14), 0), 0), 0);
-
-        while (workDayStart.getTime() + durationMinutes * 60 * 1000 <= workDayEnd.getTime()) {
-          const slotEnd = addMinutes(workDayStart, durationMinutes);
-
-          // Check capacity for this slot
-          const conflict = await capacityValidator.validateAppointment({
-            startUtc: workDayStart,
-            endUtc: slotEnd,
-            workMinutesNeeded: normalized.workMinutesNeeded || durationMinutes,
-            forkliftsNeeded: normalized.forkliftsNeeded || 1,
-          });
-
-          if (!conflict) {
-            slots.push({
-              start: workDayStart.toISOString(),
-              end: slotEnd.toISOString(),
-              startLocal: formatToMadridLocal(workDayStart),
-              endLocal: formatToMadridLocal(slotEnd),
-            });
-
-            if (slots.length >= 3) break;
-          }
-
-          workDayStart = addMinutes(workDayStart, 15);
-        }
-      }
-
-      currentDate = addDays(currentDate, 1);
-      daysSearched++;
-    }
-
-    if (slots.length === 0) {
+    if (availableSlots.length === 0) {
       return res.json({
         success: false,
         error: "No availability",
@@ -800,10 +1231,23 @@ router.post("/api/integration/calendar/availability", authenticateIntegration, a
       });
     }
 
+    const formattedSlots: Array<{ date: string; slotStartTime: string; slotEndTime: string; pointsAvailable: number; size: string }> = [];
+    for (const day of availableSlots) {
+      for (const slot of day.slots) {
+        formattedSlots.push({
+          date: day.date,
+          slotStartTime: slot.startTime,
+          slotEndTime: slot.endTime,
+          pointsAvailable: slot.pointsAvailable,
+          size,
+        });
+      }
+    }
+
     res.json({
       success: true,
-      slotsFound: slots.length,
-      slots
+      slotsFound: formattedSlots.length,
+      slots: formattedSlots,
     });
   } catch (error: any) {
     if (error.name === "ZodError") {
@@ -822,8 +1266,7 @@ router.post("/api/integration/calendar/availability", authenticateIntegration, a
   }
 });
 
-// Calendar book endpoint - PUBLIC, no auth required
-router.post("/api/integration/calendar/book", authenticateIntegration, async (req, res) => {
+router.post("/api/integration/calendar/book", integrationRateLimiter, authenticateIntegration, async (req, res) => {
   try {
     let rawQuery: any;
     if (req.body.query !== undefined) {
@@ -836,7 +1279,6 @@ router.post("/api/integration/calendar/book", authenticateIntegration, async (re
       rawQuery = req.body;
     }
 
-    // Ensure action field is present
     if (!rawQuery.action) {
       rawQuery.action = "book";
     }
@@ -866,10 +1308,24 @@ router.post("/api/integration/calendar/book", authenticateIntegration, async (re
       });
     }
 
-    // Generate deterministic externalRef
+    let provider = await prisma.provider.findFirst({
+      where: { name: normalized.providerName },
+    });
+    if (!provider) {
+      provider = await prisma.provider.create({
+        data: { name: normalized.providerName },
+      });
+      logAudit({
+        entityType: "PROVIDER",
+        entityId: provider.id,
+        action: "CREATE",
+        actorType: "INTEGRATION",
+        changes: { name: normalized.providerName, source: "calendar-book" },
+      }).catch(() => {});
+    }
+
     const externalRef = `n8n-${normalized.providerName}-${normalized.start}-${normalized.units}-${normalized.lines}`;
 
-    // Retry logic: 3 attempts with 30-minute increments
     const maxAttempts = 3;
     let currentStart = new Date(normalized.start);
     let currentEnd = new Date(normalized.end);
@@ -878,7 +1334,7 @@ router.post("/api/integration/calendar/book", authenticateIntegration, async (re
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const result = await upsertAppointmentInternal({
         externalRef,
-        providerId: null,
+        providerId: provider.id,
         providerName: normalized.providerName,
         start: currentStart.toISOString(),
         end: currentEnd.toISOString(),
@@ -892,11 +1348,20 @@ router.post("/api/integration/calendar/book", authenticateIntegration, async (re
 
       if (result.success) {
         const appointment = result.appointment!;
+
+        logAudit({
+          entityType: "APPOINTMENT",
+          entityId: appointment.id,
+          action: result.action === "created" ? "CREATE" : "UPDATE",
+          actorType: "INTEGRATION",
+          changes: { providerName: normalized.providerName, start: currentStart.toISOString(), end: currentEnd.toISOString() },
+        }).catch(() => {});
+
         const startLocal = formatToMadridLocal(currentStart);
         const endLocal = formatToMadridLocal(currentEnd);
         const duration = Math.round((currentEnd.getTime() - currentStart.getTime()) / 60000);
 
-        const confirmationHtml = `<b>Cita confirmada</b><br>Proveedor: ${normalized.providerName}<br>Tipo: ${normalized.goodsType}<br>Fecha: ${startLocal.split(',')[0]}<br>Hora: ${startLocal.split(', ')[1]}–${endLocal.split(', ')[1]} (duración: ${duration} min)<br>Muelles/Carretillas: validado ✅`;
+        const confirmationHtml = `<b>Cita confirmada</b><br>Proveedor: ${normalized.providerName}<br>Tipo: ${normalized.goodsType}<br>Fecha: ${startLocal.split(',')[0]}<br>Hora: ${startLocal.split(', ')[1]}–${endLocal.split(', ')[1]} (duración: ${duration} min)<br>Muelles/Carretillas: validado`;
 
         return res.json({
           success: true,
@@ -909,6 +1374,8 @@ router.post("/api/integration/calendar/book", authenticateIntegration, async (re
           forkliftsNeeded: normalized.forkliftsNeeded,
           externalRef,
           id: appointment.id,
+          size: appointment.size,
+          pointsUsed: appointment.pointsUsed,
         });
       }
 
@@ -1003,6 +1470,15 @@ router.post("/api/users", authenticateToken, requireRole("ADMIN"), async (req: A
       },
     });
 
+    logAudit({
+      entityType: "USER",
+      entityId: user.id,
+      action: "CREATE",
+      actorType: "USER",
+      actorId: req.user?.id,
+      changes: { email, role },
+    }).catch(() => {});
+
     res.status(201).json(user);
   } catch (error: any) {
     if (error.code === "P2002") {
@@ -1021,6 +1497,11 @@ router.put("/api/users/:id", authenticateToken, requireRole("ADMIN"), async (req
     if (email) updateData.email = email;
     if (role) updateData.role = role;
 
+    const before = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, email: true, role: true },
+    });
+
     const user = await prisma.user.update({
       where: { id: req.params.id },
       data: updateData,
@@ -1032,6 +1513,15 @@ router.put("/api/users/:id", authenticateToken, requireRole("ADMIN"), async (req
         updatedAt: true,
       },
     });
+
+    logAudit({
+      entityType: "USER",
+      entityId: user.id,
+      action: "UPDATE",
+      actorType: "USER",
+      actorId: req.user?.id,
+      changes: before ? computeChanges(before as any, user as any) : updateData,
+    }).catch(() => {});
 
     res.json(user);
   } catch (error: any) {
@@ -1052,12 +1542,179 @@ router.delete("/api/users/:id", authenticateToken, requireRole("ADMIN"), async (
       where: { id: req.params.id },
     });
 
+    logAudit({
+      entityType: "USER",
+      entityId: req.params.id,
+      action: "DELETE",
+      actorType: "USER",
+      actorId: req.user?.id,
+    }).catch(() => {});
+
     res.status(204).send();
   } catch (error: any) {
     if (error.code === "P2025") {
       return res.status(404).json({ error: "User not found" });
     }
     console.error("Delete user error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Email Recipients CRUD (ADMIN only)
+router.get("/api/email-recipients", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
+  try {
+    const recipients = await prisma.emailRecipient.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(recipients);
+  } catch (error) {
+    console.error("Get email recipients error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/api/email-recipients", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
+  try {
+    const { email, name, receivesDailySummary, receivesAlerts, receivesUrgent } = req.body;
+    if (!email || !name) {
+      return res.status(400).json({ error: "email and name are required" });
+    }
+    const recipient = await prisma.emailRecipient.create({
+      data: {
+        email,
+        name,
+        receivesDailySummary: receivesDailySummary ?? true,
+        receivesAlerts: receivesAlerts ?? true,
+        receivesUrgent: receivesUrgent ?? true,
+      },
+    });
+    res.status(201).json(recipient);
+  } catch (error: any) {
+    if (error.code === "P2002") {
+      return res.status(409).json({ error: "Email already exists" });
+    }
+    console.error("Create email recipient error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/api/email-recipients/:id", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
+  try {
+    const { email, name, receivesDailySummary, receivesAlerts, receivesUrgent, active } = req.body;
+    const updateData: any = {};
+    if (email !== undefined) updateData.email = email;
+    if (name !== undefined) updateData.name = name;
+    if (receivesDailySummary !== undefined) updateData.receivesDailySummary = receivesDailySummary;
+    if (receivesAlerts !== undefined) updateData.receivesAlerts = receivesAlerts;
+    if (receivesUrgent !== undefined) updateData.receivesUrgent = receivesUrgent;
+    if (active !== undefined) updateData.active = active;
+
+    const recipient = await prisma.emailRecipient.update({
+      where: { id: req.params.id },
+      data: updateData,
+    });
+    res.json(recipient);
+  } catch (error: any) {
+    if (error.code === "P2025") {
+      return res.status(404).json({ error: "Recipient not found" });
+    }
+    if (error.code === "P2002") {
+      return res.status(409).json({ error: "Email already exists" });
+    }
+    console.error("Update email recipient error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/api/email-recipients/:id", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
+  try {
+    await prisma.emailRecipient.delete({
+      where: { id: req.params.id },
+    });
+    res.status(204).send();
+  } catch (error: any) {
+    if (error.code === "P2025") {
+      return res.status(404).json({ error: "Recipient not found" });
+    }
+    console.error("Delete email recipient error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Email Log (ADMIN only)
+router.get("/api/email-log", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
+  try {
+    const { limit, offset } = req.query;
+    const take = Math.min(parseInt(limit as string) || 50, 200);
+    const skip = parseInt(offset as string) || 0;
+
+    const [logs, total] = await Promise.all([
+      prisma.emailLog.findMany({
+        orderBy: { createdAt: "desc" },
+        take,
+        skip,
+      }),
+      prisma.emailLog.count(),
+    ]);
+
+    res.json({ logs, total, limit: take, offset: skip });
+  } catch (error) {
+    console.error("Get email log error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Send test email (ADMIN only)
+router.post("/api/email/test", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
+  try {
+    const { to } = req.body;
+    if (!to) {
+      return res.status(400).json({ error: "Recipient email (to) is required" });
+    }
+
+    const success = await sendTestEmail(to);
+
+    if (success) {
+      res.json({ success: true, message: "Test email sent successfully" });
+    } else {
+      res.status(500).json({ success: false, message: "Failed to send test email. Check SMTP configuration." });
+    }
+  } catch (error: any) {
+    console.error("Send test email error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Audit Log (ADMIN/PLANNER)
+router.get("/api/audit-log", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
+  try {
+    const { entityType, action, actorType, from, to, limit, offset } = req.query;
+    const take = Math.min(parseInt(limit as string) || 50, 200);
+    const skip = parseInt(offset as string) || 0;
+
+    const where: any = {};
+    if (entityType) where.entityType = entityType as string;
+    if (action) where.action = action as string;
+    if (actorType) where.actorType = actorType as string;
+    if (from || to) {
+      where.createdAt = {};
+      if (from) where.createdAt.gte = new Date(from as string);
+      if (to) where.createdAt.lte = new Date(to as string);
+    }
+
+    const [logs, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take,
+        skip,
+      }),
+      prisma.auditLog.count({ where }),
+    ]);
+
+    res.json({ logs, total, limit: take, offset: skip });
+  } catch (error) {
+    console.error("Get audit log error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

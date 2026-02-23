@@ -48,15 +48,15 @@ export class AgentOrchestrator {
       let fullAssistantResponse = "";
       let shouldContinue = true;
       let iterationCount = 0;
-      const maxIterations = 10;
+      const maxIterations = 5;
 
       while (shouldContinue && iterationCount < maxIterations) {
         iterationCount++;
         shouldContinue = false;
 
         const stream = await anthropic.messages.stream({
-          model: "claude-sonnet-4-5",
-          max_tokens: 4096,
+          model: "claude-haiku-4-5-20250514",
+          max_tokens: 2048,
           system: getMainAgentPrompt(new Date()),
           messages: anthropicMessages,
           tools: AGENT_TOOLS,

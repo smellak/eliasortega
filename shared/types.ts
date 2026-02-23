@@ -111,8 +111,135 @@ export interface Appointment {
   lines: number | null;
   deliveryNotesCount: number | null;
   externalRef: string | null;
+  size: AppointmentSize | null;
+  pointsUsed: number | null;
+  slotDate: string | null;
+  slotStartTime: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export const appointmentSizeSchema = z.enum(["S", "M", "L"]);
+export type AppointmentSize = z.infer<typeof appointmentSizeSchema>;
+
+// Slot Template types
+export const createSlotTemplateSchema = z.object({
+  dayOfWeek: z.number().int().min(0).max(6),
+  startTime: z.string().min(1),
+  endTime: z.string().min(1),
+  maxPoints: z.number().int().min(0).default(6),
+  active: z.boolean().default(true),
+});
+export type CreateSlotTemplateInput = z.infer<typeof createSlotTemplateSchema>;
+
+export const updateSlotTemplateSchema = createSlotTemplateSchema.partial();
+export type UpdateSlotTemplateInput = z.infer<typeof updateSlotTemplateSchema>;
+
+export interface SlotTemplate {
+  id: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  maxPoints: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Slot Override types
+export const createSlotOverrideSchema = z.object({
+  date: z.string().datetime(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+  maxPoints: z.number().int().min(0).default(0),
+  reason: z.string().optional(),
+});
+export type CreateSlotOverrideInput = z.infer<typeof createSlotOverrideSchema>;
+
+export const updateSlotOverrideSchema = createSlotOverrideSchema.partial();
+export type UpdateSlotOverrideInput = z.infer<typeof updateSlotOverrideSchema>;
+
+export interface SlotOverride {
+  id: string;
+  date: string;
+  startTime: string | null;
+  endTime: string | null;
+  maxPoints: number;
+  reason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Slot Capacity Conflict
+export interface SlotCapacityConflict {
+  slotDate: string;
+  slotStartTime: string;
+  slotEndTime: string;
+  pointsUsed: number;
+  maxPoints: number;
+  pointsRequested: number;
+}
+
+// Email Recipient types
+export const createEmailRecipientSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(1),
+  receivesDailySummary: z.boolean().default(true),
+  receivesAlerts: z.boolean().default(true),
+  receivesUrgent: z.boolean().default(true),
+  active: z.boolean().default(true),
+});
+export type CreateEmailRecipientInput = z.infer<typeof createEmailRecipientSchema>;
+
+export const updateEmailRecipientSchema = createEmailRecipientSchema.partial();
+export type UpdateEmailRecipientInput = z.infer<typeof updateEmailRecipientSchema>;
+
+export interface EmailRecipient {
+  id: string;
+  email: string;
+  name: string;
+  receivesDailySummary: boolean;
+  receivesAlerts: boolean;
+  receivesUrgent: boolean;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Email Log types
+export const emailTypeSchema = z.enum(["DAILY_SUMMARY", "ALERT"]);
+export type EmailType = z.infer<typeof emailTypeSchema>;
+
+export const emailStatusSchema = z.enum(["SENT", "FAILED", "RETRYING"]);
+export type EmailStatus = z.infer<typeof emailStatusSchema>;
+
+export interface EmailLog {
+  id: string;
+  recipientEmail: string;
+  type: EmailType;
+  subject: string;
+  status: EmailStatus;
+  sentAt: string | null;
+  error: string | null;
+  createdAt: string;
+}
+
+// Audit Log types
+export const auditActionSchema = z.enum(["CREATE", "UPDATE", "DELETE"]);
+export type AuditAction = z.infer<typeof auditActionSchema>;
+
+export const actorTypeSchema = z.enum(["USER", "CHAT_AGENT", "INTEGRATION", "SYSTEM"]);
+export type ActorType = z.infer<typeof actorTypeSchema>;
+
+export interface AuditLog {
+  id: string;
+  entityType: string;
+  entityId: string;
+  action: AuditAction;
+  actorType: ActorType;
+  actorId: string | null;
+  changes: Record<string, unknown> | null;
+  createdAt: string;
 }
 
 // Capacity validation error

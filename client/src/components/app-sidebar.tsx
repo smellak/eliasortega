@@ -1,4 +1,4 @@
-import { Calendar, List, Gauge, Package, Users, LogOut } from "lucide-react";
+import { Calendar, List, Gauge, Package, Users, LogOut, Bell, Shield } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -32,7 +32,9 @@ export function AppSidebar({ userRole, userEmail, onLogout }: AppSidebarProps) {
   const managementItems = [
     { title: "Capacidad", url: "/capacity", icon: Gauge, roles: ["ADMIN", "PLANNER"] },
     { title: "Proveedores", url: "/providers", icon: Package, roles: ["ADMIN", "PLANNER"] },
+    { title: "Notificaciones", url: "/notifications", icon: Bell, roles: ["ADMIN"] },
     { title: "Usuarios", url: "/users", icon: Users, roles: ["ADMIN"] },
+    { title: "Auditoría", url: "/audit", icon: Shield, roles: ["ADMIN", "PLANNER"] },
   ];
 
   const filteredManagementItems = managementItems.filter(

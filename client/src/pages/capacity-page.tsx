@@ -1,193 +1,618 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { CapacityWindowsTable } from "@/components/capacity-windows-table";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { capacityShiftsApi } from "@/lib/api";
+import { slotTemplatesApi, slotOverridesApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { CapacityShift, CreateCapacityShiftInput, UpdateCapacityShiftInput } from "@shared/types";
+import type {
+  SlotTemplate,
+  CreateSlotTemplateInput,
+  SlotOverride,
+  CreateSlotOverrideInput,
+} from "@shared/types";
 import { Card } from "@/components/ui/card";
-import { Gauge, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Gauge, AlertCircle, Plus, Trash2 } from "lucide-react";
 
 interface CapacityPageProps {
   userRole: "ADMIN" | "PLANNER" | "BASIC_READONLY";
 }
 
-export default function CapacityPage({ userRole }: CapacityPageProps) {
-  const { toast } = useToast();
-  const isReadOnly = userRole === "BASIC_READONLY";
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [shiftToDelete, setShiftToDelete] = useState<string | null>(null);
+const DAY_NAMES = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const DAY_INDICES = [1, 2, 3, 4, 5, 6];
 
-  const { data: windows = [], isLoading, error } = useQuery<CapacityShift[]>({
-    queryKey: ["/api/capacity-shifts"],
-    queryFn: () => capacityShiftsApi.list(),
+function PageHeader() {
+  return (
+    <div className="flex items-center gap-3 flex-wrap">
+      <div className="page-icon">
+        <Gauge />
+      </div>
+      <div>
+        <h1 className="text-3xl font-semibold">Gestión de Franjas</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Define plantillas semanales de franjas y excepciones por fecha
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function SlotTemplatesTab({ isReadOnly }: { isReadOnly: boolean }) {
+  const { toast } = useToast();
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [newStartTime, setNewStartTime] = useState("08:00");
+  const [newEndTime, setNewEndTime] = useState("10:00");
+  const [newMaxPoints, setNewMaxPoints] = useState(6);
+
+  const { data: templates = [], isLoading } = useQuery<SlotTemplate[]>({
+    queryKey: ["/api/slot-templates"],
+    queryFn: () => slotTemplatesApi.list(),
   });
 
   const createMutation = useMutation({
-    mutationFn: (input: CreateCapacityShiftInput) => capacityShiftsApi.create(input),
+    mutationFn: (input: CreateSlotTemplateInput) => slotTemplatesApi.create(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/capacity-shifts"] });
-      toast({
-        title: "Éxito",
-        description: "Turno de capacidad creado correctamente",
-      });
+      queryClient.invalidateQueries({ queryKey: ["/api/slot-templates"] });
+      toast({ title: "Éxito", description: "Plantilla creada correctamente" });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Error al crear el turno de capacidad",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message || "Error al crear la plantilla", variant: "destructive" });
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: UpdateCapacityShiftInput }) =>
-      capacityShiftsApi.update(id, input),
+    mutationFn: ({ id, input }: { id: string; input: { maxPoints?: number; active?: boolean } }) =>
+      slotTemplatesApi.update(id, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/capacity-shifts"] });
-      toast({
-        title: "Éxito",
-        description: "Turno de capacidad actualizado correctamente",
-      });
+      queryClient.invalidateQueries({ queryKey: ["/api/slot-templates"] });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Error al actualizar el turno de capacidad",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message || "Error al actualizar", variant: "destructive" });
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => capacityShiftsApi.delete(id),
+    mutationFn: (id: string) => slotTemplatesApi.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/capacity-shifts"] });
-      toast({
-        title: "Éxito",
-        description: "Turno de capacidad eliminado correctamente",
-      });
+      queryClient.invalidateQueries({ queryKey: ["/api/slot-templates"] });
+      toast({ title: "Éxito", description: "Plantilla eliminada correctamente" });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Error al eliminar el turno de capacidad",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message || "Error al eliminar", variant: "destructive" });
     },
   });
 
-  const handleAdd = (window: any) => {
-    createMutation.mutate(window);
+  const timeSlots = Array.from(
+    new Set(templates.map((t) => `${t.startTime}-${t.endTime}`))
+  ).sort();
+
+  const getTemplate = (timeKey: string, dayOfWeek: number) => {
+    const [startTime, endTime] = timeKey.split("-");
+    return templates.find(
+      (t) => t.startTime === startTime && t.endTime === endTime && t.dayOfWeek === dayOfWeek
+    );
   };
 
-  const handleEdit = (id: string, window: any) => {
-    updateMutation.mutate({ id, input: window });
+  const handleMaxPointsChange = (templateId: string, value: string) => {
+    const maxPoints = parseInt(value, 10);
+    if (!isNaN(maxPoints) && maxPoints >= 0) {
+      updateMutation.mutate({ id: templateId, input: { maxPoints } });
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setShiftToDelete(id);
-    setDeleteConfirmOpen(true);
+  const handleToggleActive = (templateId: string, active: boolean) => {
+    updateMutation.mutate({ id: templateId, input: { active } });
+  };
+
+  const handleAddTemplates = () => {
+    DAY_INDICES.forEach((day) => {
+      createMutation.mutate({
+        dayOfWeek: day,
+        startTime: newStartTime,
+        endTime: newEndTime,
+        maxPoints: newMaxPoints,
+        active: true,
+      });
+    });
+    setAddDialogOpen(false);
+    setNewStartTime("08:00");
+    setNewEndTime("10:00");
+    setNewMaxPoints(6);
+  };
+
+  const handleDeleteTimeSlot = (timeKey: string) => {
+    const [startTime, endTime] = timeKey.split("-");
+    const toDelete = templates.filter(
+      (t) => t.startTime === startTime && t.endTime === endTime
+    );
+    toDelete.forEach((t) => deleteMutation.mutate(t.id));
   };
 
   const confirmDelete = () => {
-    if (shiftToDelete) {
-      deleteMutation.mutate(shiftToDelete);
+    if (templateToDelete) {
+      handleDeleteTimeSlot(templateToDelete);
       setDeleteConfirmOpen(false);
-      setShiftToDelete(null);
+      setTemplateToDelete(null);
     }
   };
 
   if (isLoading) {
     return (
-      <div className="space-y-6 animate-fadeIn">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="page-icon">
-            <Gauge />
-          </div>
-          <div>
-            <h1 className="text-3xl font-semibold">Turnos de Capacidad</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Define la capacidad del almacén para diferentes periodos de tiempo
-            </p>
-          </div>
-        </div>
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="p-4">
-              <div className="space-y-3">
-                <div className="h-5 rounded w-1/3 skeleton-shimmer" />
-                <div className="h-4 rounded w-2/3 skeleton-shimmer" />
-                <div className="h-4 rounded w-1/2 skeleton-shimmer" />
-              </div>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-6 animate-fadeIn">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="page-icon">
-            <Gauge />
-          </div>
-          <div>
-            <h1 className="text-3xl font-semibold">Turnos de Capacidad</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Define la capacidad del almacén para diferentes periodos de tiempo
-            </p>
-          </div>
-        </div>
-        <Card className="p-8 border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20">
-          <div className="flex flex-col items-center gap-3 text-center">
-            <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-              <AlertCircle className="h-6 w-6 text-destructive" />
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="p-4">
+            <div className="space-y-3">
+              <div className="h-5 rounded w-1/3 skeleton-shimmer" />
+              <div className="h-4 rounded w-2/3 skeleton-shimmer" />
             </div>
-            <div className="text-destructive font-medium">
-              Error al cargar los turnos de capacidad
-            </div>
-            <p className="text-sm text-muted-foreground">{(error as Error).message}</p>
-          </div>
-        </Card>
+          </Card>
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="page-icon">
-          <Gauge />
+    <div className="space-y-4">
+      {!isReadOnly && (
+        <div className="flex justify-end">
+          <Button
+            onClick={() => setAddDialogOpen(true)}
+            data-testid="button-add-template"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Añadir Franja
+          </Button>
         </div>
-        <div>
-          <h1 className="text-3xl font-semibold">Turnos de Capacidad</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Define la capacidad del almacén para diferentes periodos de tiempo
-          </p>
-        </div>
-      </div>
+      )}
 
-      <CapacityWindowsTable
-        windows={windows}
-        onAdd={handleAdd}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        readOnly={isReadOnly}
-      />
+      {timeSlots.length === 0 ? (
+        <Card className="p-8">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <p className="text-muted-foreground">No hay plantillas de franja definidas.</p>
+          </div>
+        </Card>
+      ) : (
+        <Card className="overflow-x-auto">
+          <Table data-testid="table-slot-templates">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[120px]">Franja</TableHead>
+                {DAY_NAMES.map((day, i) => (
+                  <TableHead key={day} className="text-center min-w-[90px]" data-testid={`header-day-${DAY_INDICES[i]}`}>
+                    {day}
+                  </TableHead>
+                ))}
+                {!isReadOnly && <TableHead className="w-[60px]" />}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {timeSlots.map((timeKey) => {
+                const [startTime, endTime] = timeKey.split("-");
+                return (
+                  <TableRow key={timeKey} data-testid={`row-template-${timeKey}`}>
+                    <TableCell className="font-medium whitespace-nowrap">
+                      {startTime} - {endTime}
+                    </TableCell>
+                    {DAY_INDICES.map((day) => {
+                      const template = getTemplate(timeKey, day);
+                      return (
+                        <TableCell key={day} className="text-center">
+                          {template ? (
+                            <div className="flex flex-col items-center gap-1">
+                              <Input
+                                type="number"
+                                min={0}
+                                value={template.maxPoints}
+                                onChange={(e) => handleMaxPointsChange(template.id, e.target.value)}
+                                disabled={isReadOnly}
+                                className="w-16 text-center"
+                                data-testid={`input-maxpoints-${template.id}`}
+                              />
+                              <Switch
+                                checked={template.active}
+                                onCheckedChange={(checked) => handleToggleActive(template.id, checked)}
+                                disabled={isReadOnly}
+                                data-testid={`switch-active-${template.id}`}
+                              />
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      );
+                    })}
+                    {!isReadOnly && (
+                      <TableCell>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => {
+                            setTemplateToDelete(timeKey);
+                            setDeleteConfirmOpen(true);
+                          }}
+                          data-testid={`button-delete-template-${timeKey}`}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
+
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent data-testid="dialog-add-template">
+          <DialogHeader>
+            <DialogTitle>Añadir Franja Horaria</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startTime">Hora inicio</Label>
+                <Input
+                  id="startTime"
+                  type="time"
+                  value={newStartTime}
+                  onChange={(e) => setNewStartTime(e.target.value)}
+                  data-testid="input-new-start-time"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="endTime">Hora fin</Label>
+                <Input
+                  id="endTime"
+                  type="time"
+                  value={newEndTime}
+                  onChange={(e) => setNewEndTime(e.target.value)}
+                  data-testid="input-new-end-time"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="maxPoints">Puntos máximos (por defecto)</Label>
+              <Input
+                id="maxPoints"
+                type="number"
+                min={0}
+                value={newMaxPoints}
+                onChange={(e) => setNewMaxPoints(parseInt(e.target.value, 10) || 0)}
+                data-testid="input-new-max-points"
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Se creará una plantilla para cada día (Lun-Sáb) con estos valores.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddDialogOpen(false)} data-testid="button-cancel-add-template">
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleAddTemplates}
+              disabled={createMutation.isPending}
+              data-testid="button-confirm-add-template"
+            >
+              Crear
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={deleteConfirmOpen}
         onOpenChange={setDeleteConfirmOpen}
-        title="Eliminar turno de capacidad"
-        description="¿Estás seguro de que quieres eliminar este turno de capacidad? Esta acción no se puede deshacer."
+        title="Eliminar franja horaria"
+        description="¿Estás seguro de que quieres eliminar esta franja horaria de todos los días? Esta acción no se puede deshacer."
         confirmLabel="Eliminar"
         onConfirm={confirmDelete}
       />
+    </div>
+  );
+}
+
+function SlotOverridesTab({ isReadOnly }: { isReadOnly: boolean }) {
+  const { toast } = useToast();
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [overrideToDelete, setOverrideToDelete] = useState<string | null>(null);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [newDate, setNewDate] = useState("");
+  const [newStartTime, setNewStartTime] = useState("");
+  const [newEndTime, setNewEndTime] = useState("");
+  const [newMaxPoints, setNewMaxPoints] = useState(0);
+  const [newReason, setNewReason] = useState("");
+
+  const { data: overrides = [], isLoading } = useQuery<SlotOverride[]>({
+    queryKey: ["/api/slot-overrides"],
+    queryFn: () => slotOverridesApi.list(),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (input: CreateSlotOverrideInput) => slotOverridesApi.create(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/slot-overrides"] });
+      toast({ title: "Éxito", description: "Excepción creada correctamente" });
+      setAddDialogOpen(false);
+      resetForm();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message || "Error al crear la excepción", variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => slotOverridesApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/slot-overrides"] });
+      toast({ title: "Éxito", description: "Excepción eliminada correctamente" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message || "Error al eliminar", variant: "destructive" });
+    },
+  });
+
+  const resetForm = () => {
+    setNewDate("");
+    setNewStartTime("");
+    setNewEndTime("");
+    setNewMaxPoints(0);
+    setNewReason("");
+  };
+
+  const handleAdd = () => {
+    if (!newDate) {
+      toast({ title: "Error", description: "La fecha es obligatoria", variant: "destructive" });
+      return;
+    }
+    const dateValue = new Date(newDate);
+    dateValue.setUTCHours(0, 0, 0, 0);
+
+    createMutation.mutate({
+      date: dateValue.toISOString(),
+      startTime: newStartTime || undefined,
+      endTime: newEndTime || undefined,
+      maxPoints: newMaxPoints,
+      reason: newReason || undefined,
+    });
+  };
+
+  const confirmDelete = () => {
+    if (overrideToDelete) {
+      deleteMutation.mutate(overrideToDelete);
+      setDeleteConfirmOpen(false);
+      setOverrideToDelete(null);
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("es-ES", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2].map((i) => (
+          <Card key={i} className="p-4">
+            <div className="space-y-3">
+              <div className="h-5 rounded w-1/3 skeleton-shimmer" />
+              <div className="h-4 rounded w-2/3 skeleton-shimmer" />
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {!isReadOnly && (
+        <div className="flex justify-end">
+          <Button
+            onClick={() => setAddDialogOpen(true)}
+            data-testid="button-add-override"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Añadir Excepción
+          </Button>
+        </div>
+      )}
+
+      {overrides.length === 0 ? (
+        <Card className="p-8">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <p className="text-muted-foreground">No hay excepciones definidas.</p>
+          </div>
+        </Card>
+      ) : (
+        <Card className="overflow-x-auto">
+          <Table data-testid="table-slot-overrides">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Fecha</TableHead>
+                <TableHead>Hora inicio</TableHead>
+                <TableHead>Hora fin</TableHead>
+                <TableHead className="text-center">Max Puntos</TableHead>
+                <TableHead>Motivo</TableHead>
+                {!isReadOnly && <TableHead className="w-[60px]" />}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {overrides.map((override) => (
+                <TableRow key={override.id} data-testid={`row-override-${override.id}`}>
+                  <TableCell className="whitespace-nowrap" data-testid={`text-override-date-${override.id}`}>
+                    {formatDate(override.date)}
+                  </TableCell>
+                  <TableCell data-testid={`text-override-start-${override.id}`}>
+                    {override.startTime || "—"}
+                  </TableCell>
+                  <TableCell data-testid={`text-override-end-${override.id}`}>
+                    {override.endTime || "—"}
+                  </TableCell>
+                  <TableCell className="text-center" data-testid={`text-override-points-${override.id}`}>
+                    {override.maxPoints}
+                  </TableCell>
+                  <TableCell data-testid={`text-override-reason-${override.id}`}>
+                    {override.reason || "—"}
+                  </TableCell>
+                  {!isReadOnly && (
+                    <TableCell>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => {
+                          setOverrideToDelete(override.id);
+                          setDeleteConfirmOpen(true);
+                        }}
+                        data-testid={`button-delete-override-${override.id}`}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
+
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent data-testid="dialog-add-override">
+          <DialogHeader>
+            <DialogTitle>Añadir Excepción</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="overrideDate">Fecha</Label>
+              <Input
+                id="overrideDate"
+                type="date"
+                value={newDate}
+                onChange={(e) => setNewDate(e.target.value)}
+                data-testid="input-override-date"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="overrideStartTime">Hora inicio (opcional)</Label>
+                <Input
+                  id="overrideStartTime"
+                  type="time"
+                  value={newStartTime}
+                  onChange={(e) => setNewStartTime(e.target.value)}
+                  data-testid="input-override-start-time"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="overrideEndTime">Hora fin (opcional)</Label>
+                <Input
+                  id="overrideEndTime"
+                  type="time"
+                  value={newEndTime}
+                  onChange={(e) => setNewEndTime(e.target.value)}
+                  data-testid="input-override-end-time"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="overrideMaxPoints">Puntos máximos</Label>
+              <Input
+                id="overrideMaxPoints"
+                type="number"
+                min={0}
+                value={newMaxPoints}
+                onChange={(e) => setNewMaxPoints(parseInt(e.target.value, 10) || 0)}
+                data-testid="input-override-max-points"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="overrideReason">Motivo (opcional)</Label>
+              <Input
+                id="overrideReason"
+                value={newReason}
+                onChange={(e) => setNewReason(e.target.value)}
+                placeholder="Ej: Festivo, inventario..."
+                data-testid="input-override-reason"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setAddDialogOpen(false); resetForm(); }} data-testid="button-cancel-add-override">
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleAdd}
+              disabled={createMutation.isPending}
+              data-testid="button-confirm-add-override"
+            >
+              Crear
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Eliminar excepción"
+        description="¿Estás seguro de que quieres eliminar esta excepción? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={confirmDelete}
+      />
+    </div>
+  );
+}
+
+export default function CapacityPage({ userRole }: CapacityPageProps) {
+  const isReadOnly = userRole === "BASIC_READONLY";
+
+  return (
+    <div className="space-y-6 animate-fadeIn">
+      <PageHeader />
+
+      <Tabs defaultValue="templates" data-testid="tabs-capacity">
+        <TabsList data-testid="tabs-list-capacity">
+          <TabsTrigger value="templates" data-testid="tab-templates">
+            Plantillas de Franja
+          </TabsTrigger>
+          <TabsTrigger value="overrides" data-testid="tab-overrides">
+            Excepciones
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="templates" className="mt-4">
+          <SlotTemplatesTab isReadOnly={isReadOnly} />
+        </TabsContent>
+
+        <TabsContent value="overrides" className="mt-4">
+          <SlotOverridesTab isReadOnly={isReadOnly} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

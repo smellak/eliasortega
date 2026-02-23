@@ -73,6 +73,7 @@ model SlotOverride {
   endTime   String?  @map("end_time")
   maxPoints Int      @default(0) @map("max_points")
   reason    String?
+  source    String   @default("manual")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

@@ -298,6 +298,29 @@ export const appointmentsApi = {
   },
 };
 
+export interface TodayStatusResponse {
+  date: string;
+  quickAdjustLevel: "normal" | "slightly_less" | "much_less" | "minimum" | "slightly_more";
+  slots: Array<{
+    startTime: string;
+    endTime: string;
+    maxPoints: number;
+    usedPoints: number;
+    availablePoints: number;
+  }>;
+}
+
+export interface QuickAdjustResponse {
+  date: string;
+  level: string;
+  adjustedSlots: Array<{
+    startTime: string;
+    endTime: string;
+    originalPoints: number;
+    newPoints: number;
+  }>;
+}
+
 export const capacityApi = {
   getUtilization: async (params: { startDate: string; endDate: string }): Promise<SlotUtilization> => {
     const query = new URLSearchParams();
@@ -308,6 +331,36 @@ export const capacityApi = {
       headers: getHeaders(),
     });
     return handleResponse<SlotUtilization>(response);
+  },
+
+  getTodayStatus: async (date?: string): Promise<TodayStatusResponse> => {
+    const query = new URLSearchParams();
+    if (date) query.append("date", date);
+
+    const response = await fetch(`${API_BASE}/capacity/today-status?${query}`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<TodayStatusResponse>(response, () =>
+      fetch(`${API_BASE}/capacity/today-status?${query}`, { headers: getHeaders() })
+    );
+  },
+
+  quickAdjust: async (params: {
+    date?: string;
+    level: "slightly_less" | "much_less" | "minimum" | "slightly_more" | "reset";
+  }): Promise<QuickAdjustResponse> => {
+    const response = await fetch(`${API_BASE}/capacity/quick-adjust`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify(params),
+    });
+    return handleResponse<QuickAdjustResponse>(response, () =>
+      fetch(`${API_BASE}/capacity/quick-adjust`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(params),
+      })
+    );
   },
 };
 

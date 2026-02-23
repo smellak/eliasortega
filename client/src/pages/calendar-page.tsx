@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { CalendarView } from "@/components/calendar-view";
 import { CapacityIndicators } from "@/components/capacity-indicators";
+import { QuickCapacityAdjust } from "@/components/quick-capacity-adjust";
 import { AppointmentDialog } from "@/components/appointment-dialog";
 import { ConflictErrorDialog } from "@/components/conflict-error-dialog";
 import { Button } from "@/components/ui/button";
@@ -240,15 +241,20 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
             </p>
           </div>
         </div>
-        {!isReadOnly && (
-          <Button className="gradient-btn text-white border-0 no-default-hover-elevate no-default-active-elevate" onClick={() => {
-            setSelectedEvent(null);
-            setAppointmentDialogOpen(true);
-          }} data-testid="button-new-appointment">
-            <Plus className="h-4 w-4 mr-2" />
-            Nueva Cita
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {!isReadOnly && (
+            <QuickCapacityAdjust date={currentDate} />
+          )}
+          {!isReadOnly && (
+            <Button className="gradient-btn text-white border-0 no-default-hover-elevate no-default-active-elevate" onClick={() => {
+              setSelectedEvent(null);
+              setAppointmentDialogOpen(true);
+            }} data-testid="button-new-appointment">
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva Cita
+            </Button>
+          )}
+        </div>
       </div>
 
       {capacityUtilization && (

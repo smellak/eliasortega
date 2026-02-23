@@ -1,7 +1,6 @@
-import { db } from "../db/client";
-import { conversations, messages, type MessageRole } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
-import { randomUUID } from "crypto";
+import { prisma } from "../db/client";
+
+export type MessageRole = "user" | "assistant" | "system" | "tool";
 
 export interface ConversationMessage {
   role: MessageRole;
@@ -19,22 +18,20 @@ export class ConversationMemory {
   }
 
   async getOrCreateConversation(): Promise<string> {
-    const existing = await db.query.conversations.findFirst({
-      where: eq(conversations.sessionId, this.sessionId),
+    const existing = await prisma.conversation.findUnique({
+      where: { sessionId: this.sessionId },
     });
 
     if (existing) {
       return existing.id;
     }
 
-    const [newConversation] = await db
-      .insert(conversations)
-      .values({
-        id: randomUUID(),
+    const newConversation = await prisma.conversation.create({
+      data: {
         sessionId: this.sessionId,
         metadata: {},
-      })
-      .returning();
+      },
+    });
 
     return newConversation.id;
   }
@@ -42,16 +39,16 @@ export class ConversationMemory {
   async getHistory(): Promise<ConversationMessage[]> {
     const conversationId = await this.getOrCreateConversation();
 
-    const history = await db.query.messages.findMany({
-      where: eq(messages.conversationId, conversationId),
-      orderBy: [desc(messages.createdAt)],
-      limit: this.maxMessages,
+    const history = await prisma.message.findMany({
+      where: { conversationId },
+      orderBy: { createdAt: "desc" },
+      take: this.maxMessages,
     });
 
     return history
       .reverse()
       .map((msg) => ({
-        role: msg.role,
+        role: msg.role as MessageRole,
         content: msg.content,
         createdAt: new Date(msg.createdAt),
       }));
@@ -60,12 +57,13 @@ export class ConversationMemory {
   async addMessage(role: MessageRole, content: string): Promise<void> {
     const conversationId = await this.getOrCreateConversation();
 
-    await db.insert(messages).values({
-      id: randomUUID(),
-      conversationId,
-      role,
-      content,
-      metadata: {},
+    await prisma.message.create({
+      data: {
+        conversationId,
+        role,
+        content,
+        metadata: {},
+      },
     });
   }
 
@@ -79,6 +77,8 @@ export class ConversationMemory {
 
   async clear(): Promise<void> {
     const conversationId = await this.getOrCreateConversation();
-    await db.delete(messages).where(eq(messages.conversationId, conversationId));
+    await prisma.message.deleteMany({
+      where: { conversationId },
+    });
   }
 }

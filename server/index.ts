@@ -3,9 +3,12 @@ import { createServer } from "http";
 import { setupVite, serveStatic, log } from "./vite";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./swagger";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import routes from "./routes";
 
 const app = express();
+app.set("trust proxy", 1);
 
 declare module 'http' {
   interface IncomingMessage {
@@ -13,7 +16,40 @@ declare module 'http' {
   }
 }
 
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: "Demasiados intentos de inicio de sesión. Inténtalo de nuevo en 15 minutos." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: { error: "Demasiadas solicitudes. Por favor, espera un momento." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use("/api/auth/login", loginLimiter);
+app.use("/api/chat/message", chatLimiter);
+app.use("/api/", apiLimiter);
+
 app.use(express.json({
+  limit: "1mb",
   verify: (req, _res, buf) => {
     req.rawBody = buf;
   }

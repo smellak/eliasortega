@@ -39,10 +39,12 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
   // Use the date range from FullCalendar
   const { startDate, endDate } = dateRange;
 
-  // Fetch appointments
   const { data: appointments = [] } = useQuery<Appointment[]>({
-    queryKey: ["/api/appointments"],
-    queryFn: () => appointmentsApi.list(),
+    queryKey: ["/api/appointments", startDate.toISOString(), endDate.toISOString()],
+    queryFn: () => appointmentsApi.list({
+      from: startDate.toISOString(),
+      to: endDate.toISOString(),
+    }),
   });
 
   // Fetch providers

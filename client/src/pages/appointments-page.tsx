@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { AppointmentDialog } from "@/components/appointment-dialog";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Search, Pencil, Trash2, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
@@ -24,6 +25,8 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
   const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [appointmentToDelete, setAppointmentToDelete] = useState<string | null>(null);
 
   const isReadOnly = userRole === "BASIC_READONLY";
 
@@ -111,8 +114,15 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm("¿Estás seguro de que quieres eliminar esta cita?")) {
-      deleteMutation.mutate(id);
+    setAppointmentToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (appointmentToDelete) {
+      deleteMutation.mutate(appointmentToDelete);
+      setDeleteConfirmOpen(false);
+      setAppointmentToDelete(null);
     }
   };
 
@@ -233,6 +243,15 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
         appointment={selectedAppointment as any}
         providers={providers}
         onSave={handleSave}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Eliminar cita"
+        description="¿Estás seguro de que quieres eliminar esta cita? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={confirmDelete}
       />
     </div>
   );

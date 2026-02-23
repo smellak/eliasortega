@@ -26,6 +26,17 @@ interface AppointmentDialogProps {
   onSave: (data: any) => void;
 }
 
+interface FormErrors {
+  providerId?: string;
+  startDate?: string;
+  startTime?: string;
+  endDate?: string;
+  endTime?: string;
+  dateRange?: string;
+  workMinutesNeeded?: string;
+  forkliftsNeeded?: string;
+}
+
 export function AppointmentDialog({
   open,
   onOpenChange,
@@ -34,6 +45,7 @@ export function AppointmentDialog({
   onSave,
 }: AppointmentDialogProps) {
   const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
   const [formData, setFormData] = useState({
     providerId: "",
     startDate: "",
@@ -48,11 +60,10 @@ export function AppointmentDialog({
     deliveryNotesCount: "",
   });
 
-  // Reset form when dialog opens/closes or appointment changes
   useEffect(() => {
     if (open) {
+      setErrors({});
       if (appointment) {
-        // Editing existing appointment
         setFormData({
           providerId: appointment.providerId,
           startDate: appointment.startUtc ? appointment.startUtc.split("T")[0] : "",
@@ -67,7 +78,6 @@ export function AppointmentDialog({
           deliveryNotesCount: appointment.deliveryNotesCount?.toString() || "",
         });
       } else {
-        // New appointment - reset to defaults
         const now = new Date();
         const today = now.toISOString().split("T")[0];
         setFormData({
@@ -87,34 +97,74 @@ export function AppointmentDialog({
     }
   }, [open, appointment]);
 
+  const validate = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!formData.providerId) {
+      newErrors.providerId = "Selecciona un proveedor";
+    }
+
+    if (!formData.startDate) {
+      newErrors.startDate = "Fecha de inicio requerida";
+    }
+
+    if (!formData.startTime) {
+      newErrors.startTime = "Hora de inicio requerida";
+    }
+
+    if (!formData.endDate) {
+      newErrors.endDate = "Fecha de fin requerida";
+    }
+
+    if (!formData.endTime) {
+      newErrors.endTime = "Hora de fin requerida";
+    }
+
+    if (formData.startDate && formData.startTime && formData.endDate && formData.endTime) {
+      const startDate = new Date(`${formData.startDate}T${formData.startTime}:00`);
+      const endDate = new Date(`${formData.endDate}T${formData.endTime}:00`);
+      if (endDate <= startDate) {
+        newErrors.dateRange = "La hora de fin debe ser posterior a la hora de inicio";
+      }
+    }
+
+    const workMin = parseInt(formData.workMinutesNeeded, 10);
+    if (isNaN(workMin) || workMin <= 0) {
+      newErrors.workMinutesNeeded = "Los minutos de trabajo deben ser mayor que 0";
+    }
+
+    const forklifts = parseInt(formData.forkliftsNeeded, 10);
+    if (isNaN(forklifts) || forklifts < 0) {
+      newErrors.forkliftsNeeded = "Las carretillas no pueden ser negativas";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSave = async () => {
+    if (!validate()) return;
+
     setIsSaving(true);
 
-    console.log("Form data before save:", formData);
-
-    // Combine date and time into Date objects, then convert to ISO string with timezone
-    // This creates proper ISO 8601 format that Zod's .datetime() expects
     const startDate = new Date(`${formData.startDate}T${formData.startTime}:00`);
     const endDate = new Date(`${formData.endDate}T${formData.endTime}:00`);
     
     const startISO = startDate.toISOString();
     const endISO = endDate.toISOString();
 
-    // Find the provider name from the ID
     const selectedProvider = providers.find(p => p.id === formData.providerId);
     const providerName = selectedProvider?.name || "";
 
-    // Build the payload in the format the API expects
     const payload: any = {
       providerId: formData.providerId,
-      providerName: providerName,  // API requires this field
+      providerName: providerName,
       start: startISO,
       end: endISO,
       workMinutesNeeded: parseInt(formData.workMinutesNeeded, 10) || 0,
       forkliftsNeeded: parseInt(formData.forkliftsNeeded, 10) || 0,
     };
 
-    // Add optional fields only if they have values
     if (formData.goodsType && formData.goodsType.trim()) {
       payload.goodsType = formData.goodsType.trim();
     }
@@ -127,8 +177,6 @@ export function AppointmentDialog({
     if (formData.deliveryNotesCount && formData.deliveryNotesCount !== "") {
       payload.deliveryNotesCount = parseInt(formData.deliveryNotesCount, 10);
     }
-
-    console.log("Saving appointment with payload:", payload);
     
     try {
       await onSave(payload);
@@ -136,6 +184,11 @@ export function AppointmentDialog({
     } catch (error) {
       setIsSaving(false);
     }
+  };
+
+  const fieldError = (field: keyof FormErrors) => {
+    if (!errors[field]) return null;
+    return <p className="text-xs text-destructive mt-1" data-testid={`error-${field}`}>{errors[field]}</p>;
   };
 
   return (
@@ -148,12 +201,15 @@ export function AppointmentDialog({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div>
-              <Label htmlFor="provider">Proveedor</Label>
+              <Label htmlFor="provider">Proveedor *</Label>
               <Select
                 value={formData.providerId}
-                onValueChange={(value) => setFormData({ ...formData, providerId: value })}
+                onValueChange={(value) => {
+                  setFormData({ ...formData, providerId: value });
+                  if (errors.providerId) setErrors({ ...errors, providerId: undefined });
+                }}
               >
-                <SelectTrigger id="provider" data-testid="select-provider">
+                <SelectTrigger id="provider" data-testid="select-provider" className={errors.providerId ? "border-destructive" : ""}>
                   <SelectValue placeholder="Seleccionar proveedor" />
                 </SelectTrigger>
                 <SelectContent>
@@ -164,80 +220,112 @@ export function AppointmentDialog({
                   ))}
                 </SelectContent>
               </Select>
+              {fieldError("providerId")}
             </div>
 
             <div>
-              <Label htmlFor="start-date">Fecha Inicio</Label>
+              <Label htmlFor="start-date">Fecha Inicio *</Label>
               <Input
                 id="start-date"
                 type="date"
                 value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, startDate: e.target.value });
+                  if (errors.startDate || errors.dateRange) setErrors({ ...errors, startDate: undefined, dateRange: undefined });
+                }}
+                className={errors.startDate ? "border-destructive" : ""}
                 data-testid="input-start-date"
               />
+              {fieldError("startDate")}
             </div>
 
             <div>
-              <Label htmlFor="start-time">Hora Inicio</Label>
+              <Label htmlFor="start-time">Hora Inicio *</Label>
               <Input
                 id="start-time"
                 type="time"
                 value={formData.startTime}
-                onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, startTime: e.target.value });
+                  if (errors.startTime || errors.dateRange) setErrors({ ...errors, startTime: undefined, dateRange: undefined });
+                }}
+                className={errors.startTime ? "border-destructive" : ""}
                 data-testid="input-start-time"
               />
+              {fieldError("startTime")}
             </div>
 
             <div>
-              <Label htmlFor="end-date">Fecha Fin</Label>
+              <Label htmlFor="end-date">Fecha Fin *</Label>
               <Input
                 id="end-date"
                 type="date"
                 value={formData.endDate}
-                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, endDate: e.target.value });
+                  if (errors.endDate || errors.dateRange) setErrors({ ...errors, endDate: undefined, dateRange: undefined });
+                }}
+                className={errors.endDate ? "border-destructive" : ""}
                 data-testid="input-end-date"
               />
+              {fieldError("endDate")}
             </div>
 
             <div>
-              <Label htmlFor="end-time">Hora Fin</Label>
+              <Label htmlFor="end-time">Hora Fin *</Label>
               <Input
                 id="end-time"
                 type="time"
                 value={formData.endTime}
-                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, endTime: e.target.value });
+                  if (errors.endTime || errors.dateRange) setErrors({ ...errors, endTime: undefined, dateRange: undefined });
+                }}
+                className={errors.endTime ? "border-destructive" : ""}
                 data-testid="input-end-time"
               />
+              {fieldError("endTime")}
+              {fieldError("dateRange")}
             </div>
           </div>
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="work-minutes">Minutos de Trabajo Necesarios</Label>
+              <Label htmlFor="work-minutes">Minutos de Trabajo Necesarios *</Label>
               <Input
                 id="work-minutes"
                 type="number"
-                min="0"
+                min="1"
                 value={formData.workMinutesNeeded}
-                onChange={(e) => setFormData({ ...formData, workMinutesNeeded: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, workMinutesNeeded: e.target.value });
+                  if (errors.workMinutesNeeded) setErrors({ ...errors, workMinutesNeeded: undefined });
+                }}
+                className={errors.workMinutesNeeded ? "border-destructive" : ""}
                 data-testid="input-work-minutes"
               />
+              {fieldError("workMinutesNeeded")}
             </div>
 
             <div>
-              <Label htmlFor="forklifts">Carretillas Necesarias</Label>
+              <Label htmlFor="forklifts">Carretillas Necesarias *</Label>
               <Input
                 id="forklifts"
                 type="number"
                 min="0"
                 value={formData.forkliftsNeeded}
-                onChange={(e) => setFormData({ ...formData, forkliftsNeeded: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, forkliftsNeeded: e.target.value });
+                  if (errors.forkliftsNeeded) setErrors({ ...errors, forkliftsNeeded: undefined });
+                }}
+                className={errors.forkliftsNeeded ? "border-destructive" : ""}
                 data-testid="input-forklifts"
               />
+              {fieldError("forkliftsNeeded")}
             </div>
 
             <div>
-              <Label htmlFor="goods-type">Tipo de Mercancía (Opcional)</Label>
+              <Label htmlFor="goods-type">Tipo de Mercancía</Label>
               <Input
                 id="goods-type"
                 value={formData.goodsType}
@@ -248,7 +336,7 @@ export function AppointmentDialog({
             </div>
 
             <div>
-              <Label htmlFor="units">Unidades (Opcional)</Label>
+              <Label htmlFor="units">Unidades</Label>
               <Input
                 id="units"
                 type="number"
@@ -260,7 +348,7 @@ export function AppointmentDialog({
             </div>
 
             <div>
-              <Label htmlFor="lines">Líneas (Opcional)</Label>
+              <Label htmlFor="lines">Líneas</Label>
               <Input
                 id="lines"
                 type="number"

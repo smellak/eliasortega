@@ -1,8 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../db/client";
 import { CapacityConflictError } from "../../shared/types";
 import { toMadrid } from "../utils/timezone";
-
-const prisma = new PrismaClient();
+import type { PrismaClient, Prisma } from "@prisma/client";
 
 const DEFAULT_WORKERS = parseInt(process.env.DEFAULT_WORKERS || "3");
 const DEFAULT_FORKLIFTS = parseInt(process.env.DEFAULT_FORKLIFTS || "2");
@@ -73,7 +72,16 @@ interface MinuteCapacity {
   docks: number;
 }
 
+type PrismaTransactionClient = Omit<
+  typeof prisma,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
+>;
+
 export class CapacityValidator {
+  private getClient(tx?: PrismaTransactionClient): PrismaTransactionClient {
+    return tx || prisma;
+  }
+
   /**
    * Find the capacity shift that applies to a specific minute
    * If multiple shifts overlap, use the most specific one (shortest duration)
@@ -113,19 +121,18 @@ export class CapacityValidator {
    * Returns null if valid, or CapacityConflictError if there's a conflict
    */
   async validateAppointment(
-    appointment: AppointmentToValidate
+    appointment: AppointmentToValidate,
+    tx?: PrismaTransactionClient
   ): Promise<CapacityConflictError | null> {
+    const client = this.getClient(tx);
     const { startUtc, endUtc, workMinutesNeeded, forkliftsNeeded, id } = appointment;
 
-    // Calculate duration in minutes
     const durationMs = endUtc.getTime() - startUtc.getTime();
     const durationMinutes = Math.ceil(durationMs / (60 * 1000));
 
-    // Calculate work rate (min/min)
     const workRate = workMinutesNeeded / durationMinutes;
 
-    // Fetch all capacity shifts that might overlap with this appointment
-    const shifts = await prisma.capacityShift.findMany({
+    const shifts = await client.capacityShift.findMany({
       where: {
         AND: [
           { startUtc: { lte: endUtc } },
@@ -135,7 +142,6 @@ export class CapacityValidator {
       orderBy: { startUtc: "asc" },
     });
 
-    // Fetch all appointments that overlap with this time range (excluding the current one if updating)
     const whereClause: any = {
       AND: [
         { startUtc: { lt: endUtc } },
@@ -147,7 +153,7 @@ export class CapacityValidator {
       whereClause.NOT = { id };
     }
 
-    const overlappingAppointments = await prisma.appointment.findMany({
+    const overlappingAppointments = await client.appointment.findMany({
       where: whereClause,
     });
 
@@ -314,8 +320,6 @@ export class CapacityValidator {
       },
     });
     
-    console.log("[CAPACITY] Found appointments:", appointments.length);
-
     // Fetch all capacity shifts in range
     const shifts = await prisma.capacityShift.findMany({
       where: {

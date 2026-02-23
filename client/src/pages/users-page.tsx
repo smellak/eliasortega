@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { UsersTable } from "@/components/users-table";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { usersApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -8,14 +10,14 @@ import { Card } from "@/components/ui/card";
 
 export default function UsersPage() {
   const { toast } = useToast();
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
-  // Fetch users
   const { data: users = [], isLoading, error } = useQuery<UserResponse[]>({
     queryKey: ["/api/users"],
     queryFn: () => usersApi.list(),
   });
 
-  // Create user mutation
   const createMutation = useMutation({
     mutationFn: (input: { email: string; password: string; role: "ADMIN" | "PLANNER" | "BASIC_READONLY" }) =>
       usersApi.create(input),
@@ -35,7 +37,6 @@ export default function UsersPage() {
     },
   });
 
-  // Update user mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: { email?: string; role?: string } }) =>
       usersApi.update(id, input),
@@ -55,7 +56,6 @@ export default function UsersPage() {
     },
   });
 
-  // Delete user mutation
   const deleteMutation = useMutation({
     mutationFn: (id: string) => usersApi.delete(id),
     onSuccess: () => {
@@ -83,8 +83,15 @@ export default function UsersPage() {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm("¿Estás seguro de que quieres eliminar este usuario?")) {
-      deleteMutation.mutate(id);
+    setUserToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (userToDelete) {
+      deleteMutation.mutate(userToDelete);
+      setDeleteConfirmOpen(false);
+      setUserToDelete(null);
     }
   };
 
@@ -136,6 +143,15 @@ export default function UsersPage() {
         onAdd={handleAdd}
         onEdit={handleEdit}
         onDelete={handleDelete}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Eliminar usuario"
+        description="¿Estás seguro de que quieres eliminar este usuario? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={confirmDelete}
       />
     </div>
   );

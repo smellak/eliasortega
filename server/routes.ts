@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import path from "path";
 import {
@@ -18,17 +17,29 @@ import {
 } from "../shared/types";
 import { authenticateToken, requireRole, generateToken, AuthRequest } from "./middleware/auth";
 import { capacityValidator } from "./services/capacity-validator";
+import { prisma } from "./db/client";
 import { formatInTimeZone } from 'date-fns-tz';
 import { addMinutes, setHours, setMinutes, setSeconds, setMilliseconds, isWeekend, addDays } from 'date-fns';
+import type { Request, Response, NextFunction } from "express";
 
-const prisma = new PrismaClient();
+const INTEGRATION_API_KEY = process.env.INTEGRATION_API_KEY || "";
+
+function authenticateIntegration(req: Request, res: Response, next: NextFunction) {
+  if (!INTEGRATION_API_KEY) {
+    return next();
+  }
+  const apiKey = req.headers["x-api-key"] as string;
+  if (!apiKey || apiKey !== INTEGRATION_API_KEY) {
+    return res.status(401).json({ error: "Invalid or missing API key" });
+  }
+  next();
+}
 
 // Helper: Format date to Europe/Madrid local string
 function formatToMadridLocal(date: Date): string {
   return formatInTimeZone(date, 'Europe/Madrid', 'dd/MM/yyyy, HH:mm');
 }
 
-// Helper: Internal upsert logic (reusable)
 async function upsertAppointmentInternal(data: {
   externalRef: string;
   providerId: string | null;
@@ -42,25 +53,55 @@ async function upsertAppointmentInternal(data: {
   lines: number | null;
   deliveryNotesCount: number | null;
 }) {
-  const existing = await prisma.appointment.findUnique({
-    where: { externalRef: data.externalRef },
-  });
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.appointment.findUnique({
+      where: { externalRef: data.externalRef },
+    });
 
-  if (existing) {
+    if (existing) {
+      const conflict = await capacityValidator.validateAppointment({
+        id: existing.id,
+        startUtc: new Date(data.start),
+        endUtc: new Date(data.end),
+        workMinutesNeeded: data.workMinutesNeeded,
+        forkliftsNeeded: data.forkliftsNeeded,
+      }, tx);
+
+      if (conflict) {
+        return { success: false as const, conflict };
+      }
+
+      const appointment = await tx.appointment.update({
+        where: { id: existing.id },
+        data: {
+          providerId: data.providerId,
+          providerName: data.providerName,
+          startUtc: new Date(data.start),
+          endUtc: new Date(data.end),
+          workMinutesNeeded: data.workMinutesNeeded,
+          forkliftsNeeded: data.forkliftsNeeded,
+          goodsType: data.goodsType,
+          units: data.units,
+          lines: data.lines,
+          deliveryNotesCount: data.deliveryNotesCount,
+        },
+      });
+
+      return { success: true as const, action: "updated" as const, appointment };
+    }
+
     const conflict = await capacityValidator.validateAppointment({
-      id: existing.id,
       startUtc: new Date(data.start),
       endUtc: new Date(data.end),
       workMinutesNeeded: data.workMinutesNeeded,
       forkliftsNeeded: data.forkliftsNeeded,
-    });
+    }, tx);
 
     if (conflict) {
-      return { success: false, conflict };
+      return { success: false as const, conflict };
     }
 
-    const appointment = await prisma.appointment.update({
-      where: { id: existing.id },
+    const appointment = await tx.appointment.create({
       data: {
         providerId: data.providerId,
         providerName: data.providerName,
@@ -72,40 +113,12 @@ async function upsertAppointmentInternal(data: {
         units: data.units,
         lines: data.lines,
         deliveryNotesCount: data.deliveryNotesCount,
+        externalRef: data.externalRef,
       },
     });
 
-    return { success: true, action: "updated", appointment };
-  }
-
-  const conflict = await capacityValidator.validateAppointment({
-    startUtc: new Date(data.start),
-    endUtc: new Date(data.end),
-    workMinutesNeeded: data.workMinutesNeeded,
-    forkliftsNeeded: data.forkliftsNeeded,
-  });
-
-  if (conflict) {
-    return { success: false, conflict };
-  }
-
-  const appointment = await prisma.appointment.create({
-    data: {
-      providerId: data.providerId,
-      providerName: data.providerName,
-      startUtc: new Date(data.start),
-      endUtc: new Date(data.end),
-      workMinutesNeeded: data.workMinutesNeeded,
-      forkliftsNeeded: data.forkliftsNeeded,
-      goodsType: data.goodsType,
-      units: data.units,
-      lines: data.lines,
-      deliveryNotesCount: data.deliveryNotesCount,
-      externalRef: data.externalRef,
-    },
-  });
-
-  return { success: true, action: "created", appointment };
+    return { success: true as const, action: "created" as const, appointment };
+  }, { isolationLevel: "Serializable" });
 }
 const router = Router();
 
@@ -115,30 +128,27 @@ router.get("/logo-sanchez.png", (req, res) => {
   res.sendFile(path.join(process.cwd(), "client/public/logo-sanchez.png"));
 });
 
-// Health check
-router.get("/api/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+router.get("/api/health", async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ok", database: "connected", timestamp: new Date().toISOString() });
+  } catch {
+    res.status(503).json({ status: "degraded", database: "disconnected", timestamp: new Date().toISOString() });
+  }
 });
 
 // Chat API - Public endpoint with SSE streaming
 router.post("/api/chat/message", async (req, res) => {
-  console.log("[CHAT API] Received request:", { sessionId: req.body.sessionId, hasMessage: !!req.body.message });
-  
   try {
     const { sessionId, message } = req.body;
     
     if (!sessionId || !message) {
-      console.log("[CHAT API] Missing required fields");
       return res.status(400).json({ error: "sessionId and message are required" });
     }
 
-    // Always use localhost for internal API calls to avoid routing issues
-    const baseUrl = "http://localhost:5000";
-    console.log("[CHAT API] Base URL:", baseUrl);
+    const baseUrl = `http://localhost:${process.env.PORT || 5000}`;
     
-    console.log("[CHAT API] Importing AgentOrchestrator...");
     const { AgentOrchestrator } = await import("./agent/orchestrator");
-    console.log("[CHAT API] Creating orchestrator instance...");
     const orchestrator = new AgentOrchestrator(sessionId, baseUrl);
 
     res.setHeader("Content-Type", "text/event-stream");
@@ -146,31 +156,22 @@ router.post("/api/chat/message", async (req, res) => {
     res.setHeader("Connection", "keep-alive");
     res.flushHeaders();
 
-    console.log("[CHAT API] Starting chat stream...");
-    let chunkCount = 0;
     for await (const chunk of orchestrator.chat(message)) {
-      chunkCount++;
-      console.log(`[CHAT API] Chunk ${chunkCount}:`, chunk.type);
       const data = JSON.stringify(chunk);
       res.write(`data: ${data}\n\n`);
     }
 
-    console.log(`[CHAT API] Chat completed. Total chunks: ${chunkCount}`);
     res.write("data: [DONE]\n\n");
     res.end();
   } catch (error: any) {
-    console.error("[CHAT API] Error details:", {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-    });
+    console.error("[CHAT] Error:", error.message);
     
     if (!res.headersSent) {
-      res.status(500).json({ error: "Internal server error", details: error.message });
+      res.status(500).json({ error: "Internal server error" });
     } else {
       const errorChunk = JSON.stringify({
         type: "error",
-        content: `Error: ${error.message}`,
+        content: "Lo siento, ha ocurrido un error. Por favor, inténtalo de nuevo.",
       });
       res.write(`data: ${errorChunk}\n\n`);
       res.end();
@@ -200,14 +201,6 @@ router.post("/api/auth/login", async (req, res) => {
       id: user.id,
       email: user.email,
       role: user.role,
-    });
-
-    // Debug logging for production troubleshooting
-    console.log("[LOGIN] Token generated successfully for user:", {
-      email: user.email,
-      role: user.role,
-      tokenPreview: token.substring(0, 20) + "...",
-      tokenLength: token.length,
     });
 
     const response: AuthResponse = {
@@ -335,9 +328,7 @@ router.get("/api/capacity-shifts", authenticateToken, async (req: AuthRequest, r
 
 router.post("/api/capacity-shifts", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
   try {
-    console.log("[DEBUG] Received capacity-shift request body:", JSON.stringify(req.body, null, 2));
     const data = createCapacityShiftSchema.parse(req.body);
-    console.log("[DEBUG] Parsed successfully:", JSON.stringify(data, null, 2));
     
     const shift = await prisma.capacityShift.create({
       data: {
@@ -352,7 +343,6 @@ router.post("/api/capacity-shifts", authenticateToken, requireRole("ADMIN", "PLA
     res.status(201).json(shift);
   } catch (error: any) {
     if (error.name === "ZodError") {
-      console.log("[DEBUG] Zod validation error:", JSON.stringify(error.errors, null, 2));
       return res.status(400).json({ error: "Invalid input", details: error.errors });
     }
     console.error("Create capacity shift error:", error);
@@ -434,42 +424,46 @@ router.get("/api/appointments", authenticateToken, async (req: AuthRequest, res)
 
 router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
   try {
-    console.log("[DEBUG] Received appointment request body:", JSON.stringify(req.body, null, 2));
     const data = createAppointmentSchema.parse(req.body);
-    console.log("[DEBUG] Parsed successfully:", JSON.stringify(data, null, 2));
     
-    // Validate capacity
-    const conflict = await capacityValidator.validateAppointment({
-      startUtc: new Date(data.start),
-      endUtc: new Date(data.end),
-      workMinutesNeeded: data.workMinutesNeeded,
-      forkliftsNeeded: data.forkliftsNeeded,
-    });
-
-    if (conflict) {
-      return res.status(409).json({ error: "Capacity conflict", conflict });
-    }
-
-    const appointment = await prisma.appointment.create({
-      data: {
-        providerId: data.providerId,
-        providerName: data.providerName,
+    const result = await prisma.$transaction(async (tx) => {
+      const conflict = await capacityValidator.validateAppointment({
         startUtc: new Date(data.start),
         endUtc: new Date(data.end),
         workMinutesNeeded: data.workMinutesNeeded,
         forkliftsNeeded: data.forkliftsNeeded,
-        goodsType: data.goodsType,
-        units: data.units,
-        lines: data.lines,
-        deliveryNotesCount: data.deliveryNotesCount,
-        externalRef: data.externalRef,
-      },
-    });
+      }, tx);
 
-    res.status(201).json(appointment);
+      if (conflict) {
+        return { conflict };
+      }
+
+      const appointment = await tx.appointment.create({
+        data: {
+          providerId: data.providerId,
+          providerName: data.providerName,
+          startUtc: new Date(data.start),
+          endUtc: new Date(data.end),
+          workMinutesNeeded: data.workMinutesNeeded,
+          forkliftsNeeded: data.forkliftsNeeded,
+          goodsType: data.goodsType,
+          units: data.units,
+          lines: data.lines,
+          deliveryNotesCount: data.deliveryNotesCount,
+          externalRef: data.externalRef,
+        },
+      });
+
+      return { appointment };
+    }, { isolationLevel: "Serializable" });
+
+    if ("conflict" in result) {
+      return res.status(409).json({ error: "Capacity conflict", conflict: result.conflict });
+    }
+
+    res.status(201).json(result.appointment);
   } catch (error: any) {
     if (error.name === "ZodError") {
-      console.log("[DEBUG] Zod validation error:", JSON.stringify(error.errors, null, 2));
       return res.status(400).json({ error: "Invalid input", details: error.errors });
     }
     if (error.code === "P2002") {
@@ -484,10 +478,9 @@ router.put("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "PLA
   try {
     const data = updateAppointmentSchema.parse(req.body);
     
-    // Build update data
     const updateData: any = {};
     if (data.providerId !== undefined) updateData.providerId = data.providerId;
-    if (data.providerName) updateData.providerName = data.providerName;
+    if (data.providerName !== undefined) updateData.providerName = data.providerName;
     if (data.start) updateData.startUtc = new Date(data.start);
     if (data.end) updateData.endUtc = new Date(data.end);
     if (data.workMinutesNeeded !== undefined) updateData.workMinutesNeeded = data.workMinutesNeeded;
@@ -498,34 +491,43 @@ router.put("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "PLA
     if (data.deliveryNotesCount !== undefined) updateData.deliveryNotesCount = data.deliveryNotesCount;
     if (data.externalRef !== undefined) updateData.externalRef = data.externalRef;
 
-    // Get current appointment to merge with updates for validation
-    const current = await prisma.appointment.findUnique({
-      where: { id: req.params.id },
-    });
+    const result = await prisma.$transaction(async (tx) => {
+      const current = await tx.appointment.findUnique({
+        where: { id: req.params.id },
+      });
 
-    if (!current) {
+      if (!current) {
+        return { notFound: true };
+      }
+
+      const conflict = await capacityValidator.validateAppointment({
+        id: req.params.id,
+        startUtc: updateData.startUtc || current.startUtc,
+        endUtc: updateData.endUtc || current.endUtc,
+        workMinutesNeeded: updateData.workMinutesNeeded ?? current.workMinutesNeeded,
+        forkliftsNeeded: updateData.forkliftsNeeded ?? current.forkliftsNeeded,
+      }, tx);
+
+      if (conflict) {
+        return { conflict };
+      }
+
+      const appointment = await tx.appointment.update({
+        where: { id: req.params.id },
+        data: updateData,
+      });
+
+      return { appointment };
+    }, { isolationLevel: "Serializable" });
+
+    if ("notFound" in result) {
       return res.status(404).json({ error: "Appointment not found" });
     }
-
-    // Validate capacity with updated values
-    const conflict = await capacityValidator.validateAppointment({
-      id: req.params.id,
-      startUtc: updateData.startUtc || current.startUtc,
-      endUtc: updateData.endUtc || current.endUtc,
-      workMinutesNeeded: updateData.workMinutesNeeded ?? current.workMinutesNeeded,
-      forkliftsNeeded: updateData.forkliftsNeeded ?? current.forkliftsNeeded,
-    });
-
-    if (conflict) {
-      return res.status(409).json({ error: "Capacity conflict", conflict });
+    if ("conflict" in result) {
+      return res.status(409).json({ error: "Capacity conflict", conflict: result.conflict });
     }
 
-    const appointment = await prisma.appointment.update({
-      where: { id: req.params.id },
-      data: updateData,
-    });
-
-    res.json(appointment);
+    res.json(result.appointment);
   } catch (error: any) {
     if (error.name === "ZodError") {
       return res.status(400).json({ error: "Invalid input", details: error.errors });
@@ -583,28 +585,14 @@ router.get("/api/capacity/utilization", authenticateToken, async (req: AuthReque
       return res.status(400).json({ error: "startDate and endDate parameters required" });
     }
 
-    console.log("[CAPACITY] Calculating utilization:", {
-      startDate: startDate as string,
-      endDate: endDate as string
-    });
-
     const utilization = await capacityValidator.calculateUtilization(
       new Date(startDate as string),
       new Date(endDate as string)
     );
     
-    console.log("[CAPACITY] Calculated successfully:", {
-      count: utilization.appointmentCount,
-      percentage: utilization.capacityPercentage
-    });
-    
     res.json(utilization);
   } catch (error: any) {
-    console.error("[CAPACITY] Error calculating utilization:", {
-      message: error.message,
-      stack: error.stack,
-      query: req.query
-    });
+    console.error("Capacity utilization error:", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -612,9 +600,7 @@ router.get("/api/capacity/utilization", authenticateToken, async (req: AuthReque
 // Integration endpoints (for n8n, etc.)
 router.post("/api/integration/appointments/upsert", authenticateToken, async (req: AuthRequest, res) => {
   try {
-    console.log("[UPSERT] Received request body:", JSON.stringify(req.body, null, 2));
     const data = upsertAppointmentSchema.parse(req.body);
-    console.log("[UPSERT] Parsed successfully:", JSON.stringify(data, null, 2));
     
     const result = await upsertAppointmentInternal({
       ...data,
@@ -633,7 +619,6 @@ router.post("/api/integration/appointments/upsert", authenticateToken, async (re
     res.status(statusCode).json({ action: result.action, appointment: result.appointment });
   } catch (error: any) {
     if (error.name === "ZodError") {
-      console.log("[UPSERT] Zod validation error:", JSON.stringify(error.errors, null, 2));
       return res.status(400).json({ error: "Invalid input", details: error.errors });
     }
     console.error("Upsert appointment error:", error);
@@ -641,8 +626,7 @@ router.post("/api/integration/appointments/upsert", authenticateToken, async (re
   }
 });
 
-// Calendar parse endpoint (for n8n calendar subagent) - PUBLIC, no auth required
-router.post("/api/integration/calendar/parse", async (req, res) => {
+router.post("/api/integration/calendar/parse", authenticateIntegration, async (req, res) => {
   try {
     // Parse the incoming body - handle both query wrapper and direct object
     let rawQuery: any;
@@ -712,8 +696,7 @@ router.post("/api/integration/calendar/parse", async (req, res) => {
   }
 });
 
-// Calendar availability endpoint - PUBLIC, no auth required
-router.post("/api/integration/calendar/availability", async (req, res) => {
+router.post("/api/integration/calendar/availability", authenticateIntegration, async (req, res) => {
   try {
     let rawQuery: any;
     if (req.body.query !== undefined) {
@@ -840,7 +823,7 @@ router.post("/api/integration/calendar/availability", async (req, res) => {
 });
 
 // Calendar book endpoint - PUBLIC, no auth required
-router.post("/api/integration/calendar/book", async (req, res) => {
+router.post("/api/integration/calendar/book", authenticateIntegration, async (req, res) => {
   try {
     let rawQuery: any;
     if (req.body.query !== undefined) {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Component, type ReactNode } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -15,10 +15,49 @@ import ProvidersPage from "@/pages/providers-page";
 import UsersPage from "@/pages/users-page";
 import ChatPublic from "@/pages/chat-public";
 import NotFound from "@/pages/not-found";
-import { authApi, getAuthToken } from "@/lib/api";
+import { authApi, getAuthToken, clearAuth } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle } from "lucide-react";
 import type { UserResponse } from "@shared/types";
 
 type UserRole = "ADMIN" | "PLANNER" | "BASIC_READONLY";
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center justify-center h-screen bg-background" data-testid="error-boundary">
+          <div className="text-center space-y-4 max-w-md p-8">
+            <AlertTriangle className="h-12 w-12 text-destructive mx-auto" />
+            <h2 className="text-xl font-semibold">Algo salió mal</h2>
+            <p className="text-muted-foreground text-sm">
+              Ha ocurrido un error inesperado. Por favor, recarga la página.
+            </p>
+            <Button onClick={() => window.location.reload()} data-testid="button-reload">
+              Recargar página
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 function Router({ user }: { user: UserResponse }) {
   return (
@@ -44,23 +83,28 @@ function App() {
       return;
     }
 
-    const storedUser = localStorage.getItem("currentUser");
     const token = getAuthToken();
-    
-    if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
+    if (!token) {
+      setIsLoading(false);
+      return;
     }
-    setIsLoading(false);
+
+    authApi.me()
+      .then((userData) => {
+        setUser(userData);
+      })
+      .catch(() => {
+        clearAuth();
+        setUser(null);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, [location]);
 
   const handleLogin = async (email: string, password: string) => {
-    try {
-      const response = await authApi.login({ email, password });
-      setUser(response.user);
-    } catch (error) {
-      console.error("Login failed:", error);
-      throw error;
-    }
+    const response = await authApi.login({ email, password });
+    setUser(response.user);
   };
 
   const handleLogout = () => {
@@ -72,7 +116,9 @@ function App() {
     return (
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <ChatPublic />
+          <ErrorBoundary>
+            <ChatPublic />
+          </ErrorBoundary>
           <Toaster />
         </TooltipProvider>
       </QueryClientProvider>
@@ -82,7 +128,7 @@ function App() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-muted-foreground">Loading...</div>
+        <div className="text-muted-foreground">Cargando...</div>
       </div>
     );
   }
@@ -105,32 +151,34 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <SidebarProvider style={sidebarStyle as React.CSSProperties}>
-          <div className="flex h-screen w-full">
-            <AppSidebar userRole={user.role} userEmail={user.email} onLogout={handleLogout} />
-            <div className="flex flex-col flex-1 overflow-hidden">
-              <header className="flex items-center justify-between p-4 border-b border-border bg-background">
-                <SidebarTrigger data-testid="button-sidebar-toggle" />
-                <div className="flex items-center gap-4">
-                  <div className="text-sm font-mono text-muted-foreground hidden sm:block">
-                    {new Date().toLocaleDateString("es-ES", { 
-                      timeZone: "Europe/Madrid",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric"
-                    })}
+        <ErrorBoundary>
+          <SidebarProvider style={sidebarStyle as React.CSSProperties}>
+            <div className="flex h-screen w-full">
+              <AppSidebar userRole={user.role} userEmail={user.email} onLogout={handleLogout} />
+              <div className="flex flex-col flex-1 overflow-hidden">
+                <header className="flex items-center justify-between p-4 border-b border-border bg-background">
+                  <SidebarTrigger data-testid="button-sidebar-toggle" />
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm font-mono text-muted-foreground hidden sm:block">
+                      {new Date().toLocaleDateString("es-ES", { 
+                        timeZone: "Europe/Madrid",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric"
+                      })}
+                    </div>
+                    <ThemeToggle />
                   </div>
-                  <ThemeToggle />
-                </div>
-              </header>
-              <main className="flex-1 overflow-auto p-6 lg:p-8">
-                <div className="max-w-7xl mx-auto">
-                  <Router user={user} />
-                </div>
-              </main>
+                </header>
+                <main className="flex-1 overflow-auto p-6 lg:p-8">
+                  <div className="max-w-7xl mx-auto">
+                    <Router user={user} />
+                  </div>
+                </main>
+              </div>
             </div>
-          </div>
-        </SidebarProvider>
+          </SidebarProvider>
+        </ErrorBoundary>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

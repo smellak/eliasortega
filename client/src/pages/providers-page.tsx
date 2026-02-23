@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ProvidersTable } from "@/components/providers-table";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { providersApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -13,14 +15,14 @@ interface ProvidersPageProps {
 export default function ProvidersPage({ userRole }: ProvidersPageProps) {
   const { toast } = useToast();
   const isReadOnly = userRole === "BASIC_READONLY";
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [providerToDelete, setProviderToDelete] = useState<string | null>(null);
 
-  // Fetch providers
   const { data: providers = [], isLoading, error } = useQuery<Provider[]>({
     queryKey: ["/api/providers"],
     queryFn: () => providersApi.list(),
   });
 
-  // Create provider mutation
   const createMutation = useMutation({
     mutationFn: (input: CreateProviderInput) => providersApi.create(input),
     onSuccess: () => {
@@ -39,7 +41,6 @@ export default function ProvidersPage({ userRole }: ProvidersPageProps) {
     },
   });
 
-  // Update provider mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateProviderInput }) =>
       providersApi.update(id, input),
@@ -59,7 +60,6 @@ export default function ProvidersPage({ userRole }: ProvidersPageProps) {
     },
   });
 
-  // Delete provider mutation
   const deleteMutation = useMutation({
     mutationFn: (id: string) => providersApi.delete(id),
     onSuccess: () => {
@@ -87,8 +87,15 @@ export default function ProvidersPage({ userRole }: ProvidersPageProps) {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm("¿Estás seguro de que quieres eliminar este proveedor?")) {
-      deleteMutation.mutate(id);
+    setProviderToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (providerToDelete) {
+      deleteMutation.mutate(providerToDelete);
+      setDeleteConfirmOpen(false);
+      setProviderToDelete(null);
     }
   };
 
@@ -141,6 +148,15 @@ export default function ProvidersPage({ userRole }: ProvidersPageProps) {
         onEdit={handleEdit}
         onDelete={handleDelete}
         readOnly={isReadOnly}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Eliminar proveedor"
+        description="¿Estás seguro de que quieres eliminar este proveedor? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={confirmDelete}
       />
     </div>
   );

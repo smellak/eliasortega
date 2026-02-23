@@ -4,24 +4,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Package, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface LoginPageProps {
-  onLogin: (email: string, password: string) => void;
+  onLogin: (email: string, password: string) => Promise<void>;
 }
 
 export default function LoginPage({ onLogin }: LoginPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
       await onLogin(email, password);
-    } catch (error) {
-      console.error("Login error:", error);
-      alert("Error de inicio de sesión. Por favor, verifica tus credenciales.");
+    } catch (error: any) {
+      toast({
+        title: "Error de inicio de sesión",
+        description: error.message || "Credenciales incorrectas. Por favor, verifica tu email y contraseña.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

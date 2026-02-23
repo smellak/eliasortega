@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { CapacityWindowsTable } from "@/components/capacity-windows-table";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { capacityShiftsApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -13,14 +15,14 @@ interface CapacityPageProps {
 export default function CapacityPage({ userRole }: CapacityPageProps) {
   const { toast } = useToast();
   const isReadOnly = userRole === "BASIC_READONLY";
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [shiftToDelete, setShiftToDelete] = useState<string | null>(null);
 
-  // Fetch capacity shifts
   const { data: windows = [], isLoading, error } = useQuery<CapacityShift[]>({
     queryKey: ["/api/capacity-shifts"],
     queryFn: () => capacityShiftsApi.list(),
   });
 
-  // Create capacity shift mutation
   const createMutation = useMutation({
     mutationFn: (input: CreateCapacityShiftInput) => capacityShiftsApi.create(input),
     onSuccess: () => {
@@ -39,7 +41,6 @@ export default function CapacityPage({ userRole }: CapacityPageProps) {
     },
   });
 
-  // Update capacity shift mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateCapacityShiftInput }) =>
       capacityShiftsApi.update(id, input),
@@ -59,7 +60,6 @@ export default function CapacityPage({ userRole }: CapacityPageProps) {
     },
   });
 
-  // Delete capacity shift mutation
   const deleteMutation = useMutation({
     mutationFn: (id: string) => capacityShiftsApi.delete(id),
     onSuccess: () => {
@@ -87,8 +87,15 @@ export default function CapacityPage({ userRole }: CapacityPageProps) {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm("¿Estás seguro de que quieres eliminar este turno de capacidad?")) {
-      deleteMutation.mutate(id);
+    setShiftToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (shiftToDelete) {
+      deleteMutation.mutate(shiftToDelete);
+      setDeleteConfirmOpen(false);
+      setShiftToDelete(null);
     }
   };
 
@@ -141,6 +148,15 @@ export default function CapacityPage({ userRole }: CapacityPageProps) {
         onEdit={handleEdit}
         onDelete={handleDelete}
         readOnly={isReadOnly}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Eliminar turno de capacidad"
+        description="¿Estás seguro de que quieres eliminar este turno de capacidad? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={confirmDelete}
       />
     </div>
   );

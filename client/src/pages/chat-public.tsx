@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
   id: string;
@@ -20,6 +21,46 @@ interface StreamChunk {
   toolName?: string;
   toolInput?: Record<string, any>;
   toolResult?: string;
+}
+
+function MarkdownContent({ content, isUser }: { content: string; isUser: boolean }) {
+  return (
+    <ReactMarkdown
+      components={{
+        p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed text-sm sm:text-base">{children}</p>,
+        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+        em: ({ children }) => <em className="italic">{children}</em>,
+        ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-1">{children}</ul>,
+        ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-1">{children}</ol>,
+        li: ({ children }) => <li className="text-sm sm:text-base">{children}</li>,
+        h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+        h2: ({ children }) => <h2 className="text-base font-bold mb-2">{children}</h2>,
+        h3: ({ children }) => <h3 className="text-sm font-bold mb-1">{children}</h3>,
+        code: ({ children, className }) => {
+          const isBlock = className?.includes("language-");
+          if (isBlock) {
+            return (
+              <pre className={`rounded-lg p-3 my-2 text-xs overflow-x-auto ${isUser ? "bg-blue-700/50" : "bg-muted"}`}>
+                <code>{children}</code>
+              </pre>
+            );
+          }
+          return (
+            <code className={`px-1.5 py-0.5 rounded text-xs font-mono ${isUser ? "bg-blue-700/50" : "bg-muted"}`}>
+              {children}
+            </code>
+          );
+        },
+        a: ({ href, children }) => (
+          <a href={href} target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80">
+            {children}
+          </a>
+        ),
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  );
 }
 
 export default function ChatPublic() {
@@ -131,18 +172,14 @@ export default function ChatPublic() {
                   )
                 );
               }
-            } catch (e) {
-              console.error("Error parsing SSE chunk:", e);
+            } catch {
             }
           }
         }
       }
     } catch (error) {
-      console.error("Chat error:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      console.error("Chat error details:", { errorMessage, errorName: (error as Error)?.name });
-      
       if ((error as Error).name !== "AbortError") {
+        const errorMessage = error instanceof Error ? error.message : "Error desconocido";
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === assistantMessageId
@@ -167,7 +204,6 @@ export default function ChatPublic() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 pb-6">
       <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-6 flex flex-col max-w-6xl gap-3 sm:gap-4">
-        {/* Hero Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl sm:rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 text-center">
           <img
             src="/logo-sanchez.png"
@@ -179,7 +215,6 @@ export default function ChatPublic() {
           <p className="text-blue-100 text-sm sm:text-base md:text-lg">Programa tu entrega con nuestro asistente virtual Elías</p>
         </div>
 
-        {/* Video Preview */}
         <div className="w-full">
           <div className="aspect-video rounded-xl sm:rounded-2xl overflow-hidden shadow-xl border-2 border-blue-200 bg-black">
             <video
@@ -194,7 +229,6 @@ export default function ChatPublic() {
           </div>
         </div>
 
-        {/* Chat Container */}
         <Card className="flex flex-col overflow-hidden shadow-xl border-blue-200 min-h-[500px] sm:min-h-[600px]">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-3 sm:p-4 border-b border-blue-700">
             <div className="flex items-center gap-2 sm:gap-3">
@@ -235,7 +269,11 @@ export default function ChatPublic() {
                         : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-tl-sm"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap break-words leading-relaxed text-sm sm:text-base">{msg.content}</p>
+                    {msg.role === "assistant" ? (
+                      <MarkdownContent content={msg.content} isUser={false} />
+                    ) : (
+                      <p className="whitespace-pre-wrap break-words leading-relaxed text-sm sm:text-base">{msg.content}</p>
+                    )}
                     <p className={`text-xs mt-1 sm:mt-2 ${msg.role === "user" ? "text-blue-100" : "text-muted-foreground"}`}>
                       {msg.timestamp.toLocaleTimeString("es-ES", {
                         hour: "2-digit",
@@ -252,7 +290,7 @@ export default function ChatPublic() {
                   )}
                 </div>
               ))}
-              {isStreaming && (
+              {isStreaming && messages[messages.length - 1]?.content === "" && (
                 <div className="flex justify-start gap-2 sm:gap-3">
                   <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0 mt-1">
                     <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400">

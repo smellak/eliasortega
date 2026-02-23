@@ -63,20 +63,20 @@ export function ProvidersTable({
     <div className="space-y-4">
       {!readOnly && (
         <div className="flex justify-end">
-          <Button onClick={() => setIsAdding(true)} disabled={isAdding} data-testid="button-add-provider">
+          <Button onClick={() => setIsAdding(true)} disabled={isAdding} data-testid="button-add-provider" className="gradient-btn text-white border-0 no-default-hover-elevate no-default-active-elevate">
             <Plus className="h-4 w-4 mr-2" />
             Agregar Proveedor
           </Button>
         </div>
       )}
 
-      <div className="border border-border rounded-md">
+      <div className="premium-table">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Notas</TableHead>
-              {!readOnly && <TableHead className="text-right">Acciones</TableHead>}
+            <TableRow className="bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-950/50 dark:to-blue-900/30">
+              <TableHead className="font-semibold text-blue-900 dark:text-blue-100">Nombre</TableHead>
+              <TableHead className="font-semibold text-blue-900 dark:text-blue-100">Notas</TableHead>
+              {!readOnly && <TableHead className="text-right font-semibold text-blue-900 dark:text-blue-100">Acciones</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -112,7 +112,7 @@ export function ProvidersTable({
             )}
 
             {providers.map((provider) => (
-              <TableRow key={provider.id}>
+              <TableRow key={provider.id} className="hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-colors">
                 {editingId === provider.id ? (
                   <>
                     <TableCell>

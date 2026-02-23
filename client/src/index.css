@@ -326,3 +326,184 @@
     inset: -1px;
   }
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-10px) rotate(1deg); }
+  66% { transform: translateY(5px) rotate(-1deg); }
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.15); }
+  50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.3); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out both;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.6s ease-out both;
+}
+
+.animate-slideIn {
+  animation: slideIn 0.4s ease-out both;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-gradientShift {
+  background-size: 200% 200%;
+  animation: gradientShift 8s ease infinite;
+}
+
+.animate-pulseGlow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+.glass-card {
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass-card {
+  background: rgba(15, 15, 15, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-header {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.7);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.dark .glass-header {
+  background: rgba(15, 15, 15, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.4);
+}
+
+.gradient-border-b {
+  border-image: linear-gradient(to right, hsl(213 94% 46%), hsl(190 90% 50%)) 1;
+  border-image-slice: 1;
+}
+
+.page-icon {
+  @apply h-10 w-10 rounded-xl flex items-center justify-center shrink-0;
+  background: linear-gradient(135deg, hsl(213 94% 52%), hsl(213 94% 40%));
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.page-icon > svg {
+  @apply h-5 w-5 text-white;
+}
+
+.premium-table {
+  @apply rounded-xl overflow-hidden;
+  border: 1px solid hsl(var(--border) / 0.5);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.premium-table thead tr {
+  background: linear-gradient(135deg, hsl(213 94% 97%), hsl(213 40% 95%));
+}
+
+.dark .premium-table thead tr {
+  background: linear-gradient(135deg, hsl(213 30% 12%), hsl(213 20% 15%));
+}
+
+.premium-table thead th {
+  @apply font-semibold;
+  color: hsl(213 50% 25%);
+}
+
+.dark .premium-table thead th {
+  color: hsl(213 50% 80%);
+}
+
+.premium-table tbody tr {
+  @apply transition-colors duration-150;
+}
+
+.premium-table tbody tr:hover {
+  background: hsl(213 60% 97%);
+}
+
+.dark .premium-table tbody tr:hover {
+  background: hsl(213 20% 14%);
+}
+
+.gradient-btn {
+  background: linear-gradient(135deg, hsl(213 94% 52%), hsl(213 94% 42%));
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+  transition: all 0.2s ease;
+}
+
+.gradient-btn:hover {
+  background: linear-gradient(135deg, hsl(213 94% 48%), hsl(213 94% 38%));
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
+}
+
+.gradient-btn:active {
+  transform: translateY(0px);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted-foreground) / 0.08) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}

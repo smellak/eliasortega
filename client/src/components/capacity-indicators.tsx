@@ -37,9 +37,9 @@ export function CapacityIndicators({
   const [showDetails, setShowDetails] = useState(false);
 
   const getProgressClassName = (percentage: number) => {
-    if (percentage >= 90) return "h-2 [&>div]:bg-destructive";
-    if (percentage >= 75) return "h-2 [&>div]:bg-yellow-500";
-    return "h-2 [&>div]:bg-primary";
+    if (percentage >= 90) return "h-2.5 rounded-full [&>div]:bg-gradient-to-r [&>div]:from-red-400 [&>div]:to-red-600";
+    if (percentage >= 75) return "h-2.5 rounded-full [&>div]:bg-gradient-to-r [&>div]:from-yellow-400 [&>div]:to-yellow-600";
+    return "h-2.5 rounded-full [&>div]:bg-gradient-to-r [&>div]:from-blue-400 [&>div]:to-blue-600";
   };
 
   const getPercentageColor = (percentage: number) => {
@@ -59,14 +59,14 @@ export function CapacityIndicators({
       {/* Main Indicators */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Appointment Count */}
-        <Card className="p-4" data-testid="card-appointment-count">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Package className="h-5 w-5 text-primary" />
+        <Card className="p-5" data-testid="card-appointment-count">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 flex items-center justify-center flex-shrink-0">
+              <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm text-muted-foreground">Citas de Descarga</p>
-              <p className="text-2xl font-bold" data-testid="text-appointment-count">
+              <p className="text-3xl font-bold" data-testid="text-appointment-count">
                 {appointmentCount}
               </p>
             </div>
@@ -74,10 +74,10 @@ export function CapacityIndicators({
         </Card>
 
         {/* Capacity Percentage */}
-        <Card className="p-4" data-testid="card-capacity-percentage">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Gauge className="h-5 w-5 text-primary" />
+        <Card className="p-5" data-testid="card-capacity-percentage">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 flex items-center justify-center flex-shrink-0">
+              <Gauge className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
@@ -90,7 +90,7 @@ export function CapacityIndicators({
                 )}
               </div>
               <p 
-                className={`text-2xl font-bold ${getPercentageColor(capacityPercentage)}`}
+                className={`text-3xl font-bold ${getPercentageColor(capacityPercentage)}`}
                 data-testid="text-capacity-percentage"
               >
                 {capacityPercentage.toFixed(1)}%
@@ -111,7 +111,7 @@ export function CapacityIndicators({
       <Card className="p-4">
         <Button
           variant="ghost"
-          className="w-full justify-between hover-elevate"
+          className="w-full justify-between gap-2"
           onClick={() => setShowDetails(!showDetails)}
           data-testid="button-toggle-details"
         >
@@ -139,7 +139,10 @@ export function CapacityIndicators({
               {/* Workers */}
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm font-medium">Trabajadores</span>
+                  <span className="text-sm font-medium flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-500" />
+                    Trabajadores
+                  </span>
                   <span className={`text-sm font-mono ${getPercentageColor(workersPercentage)}`} data-testid="text-workers-percentage">
                     {workersPercentage.toFixed(1)}%
                   </span>
@@ -153,7 +156,10 @@ export function CapacityIndicators({
               {/* Forklifts */}
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm font-medium">Carretillas</span>
+                  <span className="text-sm font-medium flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-teal-500" />
+                    Carretillas
+                  </span>
                   <span className={`text-sm font-mono ${getPercentageColor(forkliftsPercentage)}`} data-testid="text-forklifts-percentage">
                     {forkliftsPercentage.toFixed(1)}%
                   </span>
@@ -167,7 +173,10 @@ export function CapacityIndicators({
               {/* Docks */}
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm font-medium">Muelles</span>
+                  <span className="text-sm font-medium flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    Muelles
+                  </span>
                   <span className={`text-sm font-mono ${getPercentageColor(docksPercentage)}`} data-testid="text-docks-percentage">
                     {docksPercentage.toFixed(1)}%
                   </span>

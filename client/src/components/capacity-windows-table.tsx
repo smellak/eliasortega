@@ -38,9 +38,6 @@ export function CapacityWindowsTable({
   });
 
   const handleSave = () => {
-    // Convert datetime-local values to proper ISO strings with timezone
-    // datetime-local gives us "YYYY-MM-DDTHH:mm" format
-    // We need to convert to ISO 8601 with timezone (e.g., "2025-10-29T09:00:00.000Z")
     const startDate = new Date(`${formData.startUtc}:00`);
     const endDate = new Date(`${formData.endUtc}:00`);
     
@@ -63,7 +60,6 @@ export function CapacityWindowsTable({
 
   const handleEdit = (window: CapacityShift) => {
     setEditingId(window.id);
-    // Convert ISO datetime strings back to datetime-local format (YYYY-MM-DDTHH:mm)
     const startLocal = new Date(window.startUtc).toISOString().slice(0, 16);
     const endLocal = new Date(window.endUtc).toISOString().slice(0, 16);
     
@@ -96,23 +92,23 @@ export function CapacityWindowsTable({
     <div className="space-y-4">
       {!readOnly && (
         <div className="flex justify-end">
-          <Button onClick={() => setIsAdding(true)} disabled={isAdding} data-testid="button-add-window">
+          <Button onClick={() => setIsAdding(true)} disabled={isAdding} data-testid="button-add-window" className="gradient-btn text-white border-0 no-default-hover-elevate no-default-active-elevate">
             <Plus className="h-4 w-4 mr-2" />
             Agregar Ventana
           </Button>
         </div>
       )}
 
-      <div className="border border-border rounded-md">
+      <div className="premium-table">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Hora Inicio</TableHead>
-              <TableHead>Hora Fin</TableHead>
-              <TableHead className="text-center">Trabajadores</TableHead>
-              <TableHead className="text-center">Carretillas</TableHead>
-              <TableHead className="text-center">Muelles</TableHead>
-              {!readOnly && <TableHead className="text-right">Acciones</TableHead>}
+            <TableRow className="bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-950/50 dark:to-blue-900/30">
+              <TableHead className="font-semibold text-blue-900 dark:text-blue-100">Hora Inicio</TableHead>
+              <TableHead className="font-semibold text-blue-900 dark:text-blue-100">Hora Fin</TableHead>
+              <TableHead className="text-center font-semibold text-blue-900 dark:text-blue-100">Trabajadores</TableHead>
+              <TableHead className="text-center font-semibold text-blue-900 dark:text-blue-100">Carretillas</TableHead>
+              <TableHead className="text-center font-semibold text-blue-900 dark:text-blue-100">Muelles</TableHead>
+              {!readOnly && <TableHead className="text-right font-semibold text-blue-900 dark:text-blue-100">Acciones</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -176,7 +172,7 @@ export function CapacityWindowsTable({
             )}
 
             {windows.map((window) => (
-              <TableRow key={window.id}>
+              <TableRow key={window.id} className="hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-colors">
                 {editingId === window.id ? (
                   <>
                     <TableCell>
@@ -231,19 +227,19 @@ export function CapacityWindowsTable({
                   </>
                 ) : (
                   <>
-                    <TableCell className="font-mono text-sm">
+                    <TableCell className="font-mono text-sm tabular-nums">
                       {format(new Date(window.startUtc), "yyyy-MM-dd HH:mm")}
                     </TableCell>
-                    <TableCell className="font-mono text-sm">
+                    <TableCell className="font-mono text-sm tabular-nums">
                       {format(new Date(window.endUtc), "yyyy-MM-dd HH:mm")}
                     </TableCell>
-                    <TableCell className="text-center font-mono font-semibold">
+                    <TableCell className="text-center font-mono font-semibold tabular-nums">
                       {window.workers}
                     </TableCell>
-                    <TableCell className="text-center font-mono font-semibold">
+                    <TableCell className="text-center font-mono font-semibold tabular-nums">
                       {window.forklifts}
                     </TableCell>
-                    <TableCell className="text-center font-mono font-semibold">
+                    <TableCell className="text-center font-mono font-semibold tabular-nums">
                       {window.docks ?? "-"}
                     </TableCell>
                     {!readOnly && (

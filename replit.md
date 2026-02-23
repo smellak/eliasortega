@@ -10,7 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend Architecture
 - **Framework**: React 18 + Vite + TypeScript
-- **UI**: shadcn/ui (Radix UI + Tailwind CSS), Microsoft Fluent Design, light/dark mode
+- **UI**: shadcn/ui (Radix UI + Tailwind CSS), premium blue gradient design system, glass-morphism effects, animations (fadeIn, slideUp, float, shimmer), light/dark mode
 - **Calendar**: FullCalendar with date-range-filtered data fetching
 - **State**: TanStack React Query v5 (object form only)
 - **Routing**: Wouter
@@ -70,6 +70,12 @@ Preferred communication style: Simple, everyday language.
 - `DEFAULT_WORKERS`, `DEFAULT_FORKLIFTS`, `DEFAULT_DOCKS` - Default capacity (optional, defaults: 3, 2, 3)
 - `NODE_ENV` - Environment mode
 
+## Design System
+- **Primary color**: Blue (hsl(213 94% 46%)) with gradient variations
+- **CSS utilities**: `.glass-card`, `.glass-header`, `.gradient-btn`, `.page-icon`, `.premium-table`, `.skeleton-shimmer`
+- **Animations**: `animate-fadeIn`, `animate-slideUp`, `animate-float`, `animate-shimmer` (defined in index.css + tailwind.config.ts)
+- **Pattern**: Gradient page icon headers on all management pages, glass-morphism login/header, premium table styling across all data tables
+
 ## Key Files
 - `server/index.ts` - Express app setup with security middleware
 - `server/routes.ts` - All API routes
@@ -79,8 +85,14 @@ Preferred communication style: Simple, everyday language.
 - `server/agent/tools.ts` - AI tool definitions and execution
 - `server/db/client.ts` - Singleton Prisma client
 - `server/middleware/auth.ts` - JWT authentication middleware
-- `client/src/App.tsx` - Main app with ErrorBoundary and token validation
-- `client/src/pages/chat-public.tsx` - Public AI chat with markdown rendering
+- `client/src/index.css` - CSS foundation with animations, gradients, glass-morphism utilities
+- `client/src/App.tsx` - Main app with ErrorBoundary, glass header, animated loading
+- `client/src/pages/login.tsx` - Animated gradient login with floating shapes
+- `client/src/pages/chat-public.tsx` - Public AI chat with animated typing dots, gradient bubbles
+- `client/src/components/app-sidebar.tsx` - Sidebar with company logo, gradient avatar
+- `client/src/components/capacity-indicators.tsx` - Premium capacity cards with gradient progress bars
+- `client/src/components/calendar-view.tsx` - Enhanced calendar with dark mode CSS
+- `client/src/components/role-badge.tsx` - Gradient role badges
 - `client/src/components/confirm-dialog.tsx` - Reusable confirmation dialog
 - `shared/types.ts` - Shared Zod schemas and TypeScript types
 - `prisma/schema.prisma` - Database schema

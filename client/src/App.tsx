@@ -17,7 +17,7 @@ import ChatPublic from "@/pages/chat-public";
 import NotFound from "@/pages/not-found";
 import { authApi, getAuthToken, clearAuth } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import type { UserResponse } from "@shared/types";
 
 type UserRole = "ADMIN" | "PLANNER" | "BASIC_READONLY";
@@ -40,14 +40,16 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex items-center justify-center h-screen bg-background" data-testid="error-boundary">
-          <div className="text-center space-y-4 max-w-md p-8">
-            <AlertTriangle className="h-12 w-12 text-destructive mx-auto" />
+        <div className="flex items-center justify-center h-screen bg-gradient-to-br from-background to-blue-50/30 dark:to-blue-950/10" data-testid="error-boundary">
+          <div className="text-center space-y-6 max-w-md p-10 animate-fadeIn">
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center mx-auto shadow-lg shadow-red-500/20">
+              <AlertTriangle className="h-8 w-8 text-white" />
+            </div>
             <h2 className="text-xl font-semibold">Algo salió mal</h2>
             <p className="text-muted-foreground text-sm">
               Ha ocurrido un error inesperado. Por favor, recarga la página.
             </p>
-            <Button onClick={() => window.location.reload()} data-testid="button-reload">
+            <Button onClick={() => window.location.reload()} data-testid="button-reload" className="gradient-btn text-white border-0">
               Recargar página
             </Button>
           </div>
@@ -127,8 +129,11 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-muted-foreground">Cargando...</div>
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-background to-blue-50/30 dark:to-blue-950/10">
+        <div className="flex flex-col items-center gap-4 animate-fadeIn">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Cargando...</p>
+        </div>
       </div>
     );
   }
@@ -156,7 +161,7 @@ function App() {
             <div className="flex h-screen w-full">
               <AppSidebar userRole={user.role} userEmail={user.email} onLogout={handleLogout} />
               <div className="flex flex-col flex-1 overflow-hidden">
-                <header className="flex items-center justify-between p-4 border-b border-border bg-background">
+                <header className="glass-header flex items-center justify-between p-4 sticky top-0 z-50">
                   <SidebarTrigger data-testid="button-sidebar-toggle" />
                   <div className="flex items-center gap-4">
                     <div className="text-sm font-mono text-muted-foreground hidden sm:block">

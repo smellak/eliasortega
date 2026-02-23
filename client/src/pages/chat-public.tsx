@@ -204,7 +204,7 @@ export default function ChatPublic() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 pb-6">
       <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-6 flex flex-col max-w-6xl gap-3 sm:gap-4">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl sm:rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 text-center">
+        <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 rounded-xl sm:rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 text-center">
           <img
             src="/logo-sanchez.png"
             alt="Centro Hogar Sanchez"
@@ -230,7 +230,7 @@ export default function ChatPublic() {
         </div>
 
         <Card className="flex flex-col overflow-hidden shadow-xl border-blue-200 min-h-[500px] sm:min-h-[600px]">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-3 sm:p-4 border-b border-blue-700">
+          <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 p-3 sm:p-4 border-b border-blue-700">
             <div className="flex items-center gap-2 sm:gap-3">
               <Avatar className="h-8 w-8 sm:h-10 sm:w-10 border-2 border-white">
                 <AvatarFallback className="bg-blue-500 text-white">
@@ -263,9 +263,9 @@ export default function ChatPublic() {
                     </Avatar>
                   )}
                   <div
-                    className={`max-w-[85%] sm:max-w-[75%] md:max-w-[70%] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-sm ${
+                    className={`max-w-[85%] sm:max-w-[75%] md:max-w-[70%] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-md ${
                       msg.role === "user"
-                        ? "bg-blue-600 text-white rounded-tr-sm"
+                        ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-tr-sm"
                         : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-tl-sm"
                     }`}
                   >
@@ -297,9 +297,13 @@ export default function ChatPublic() {
                       <Bot className="h-3 w-3 sm:h-4 sm:w-4" />
                     </AvatarFallback>
                   </Avatar>
-                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-sm px-3 sm:px-4 py-2 sm:py-3 shadow-sm">
+                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-sm px-3 sm:px-4 py-2 sm:py-3 shadow-md">
                     <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                      <div className="flex gap-1">
+                        <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: "0ms"}} />
+                        <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: "150ms"}} />
+                        <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: "300ms"}} />
+                      </div>
                       <span className="text-xs sm:text-sm text-muted-foreground">Elías está escribiendo...</span>
                     </div>
                   </div>
@@ -308,7 +312,7 @@ export default function ChatPublic() {
             </div>
           </ScrollArea>
 
-          <div className="p-3 sm:p-4 border-t bg-gray-50 dark:bg-gray-900">
+          <div className="p-3 sm:p-4 border-t bg-gray-50/80 dark:bg-gray-900/80 backdrop-blur-sm">
             <div className="flex gap-2 sm:gap-3 items-end">
               <Textarea
                 value={input}
@@ -323,7 +327,7 @@ export default function ChatPublic() {
                 onClick={sendMessage}
                 disabled={!input.trim() || isStreaming}
                 size="icon"
-                className="shrink-0 rounded-xl bg-blue-600 hover:bg-blue-700"
+                className="shrink-0 rounded-xl gradient-btn text-white"
                 aria-label="Enviar mensaje"
                 data-testid="button-send"
               >
@@ -335,7 +339,7 @@ export default function ChatPublic() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-2 text-center hidden sm:block">
-              Presiona Enter para enviar • Shift+Enter para nueva línea
+              Presiona Enter para enviar · Shift+Enter para nueva línea
             </p>
           </div>
         </Card>

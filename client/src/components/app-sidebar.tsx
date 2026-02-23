@@ -42,13 +42,11 @@ export function AppSidebar({ userRole, userEmail, onLogout }: AppSidebarProps) {
   return (
     <Sidebar>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
-            <Package className="h-5 w-5 text-primary-foreground" />
-          </div>
+        <div className="flex items-center gap-3">
+          <img src="/logo-sanchez.png" alt="Centro Hogar Sanchez" className="h-10 w-auto" />
           <div>
-            <h2 className="text-sm font-semibold">Almacén</h2>
-            <p className="text-xs text-muted-foreground">Citas</p>
+            <h2 className="text-sm font-semibold">Centro Hogar</h2>
+            <p className="text-xs text-muted-foreground">Gestión de Almacén</p>
           </div>
         </div>
       </SidebarHeader>
@@ -60,7 +58,11 @@ export function AppSidebar({ userRole, userEmail, onLogout }: AppSidebarProps) {
             <SidebarMenu>
               {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={location === item.url}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location === item.url}
+                    className="transition-all duration-200"
+                  >
                     <a href={item.url} data-testid={`link-sidebar-${item.title.toLowerCase()}`}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
@@ -79,7 +81,11 @@ export function AppSidebar({ userRole, userEmail, onLogout }: AppSidebarProps) {
               <SidebarMenu>
                 {filteredManagementItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={location === item.url}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location === item.url}
+                      className="transition-all duration-200"
+                    >
                       <a href={item.url} data-testid={`link-sidebar-${item.title.toLowerCase()}`}>
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
@@ -95,12 +101,17 @@ export function AppSidebar({ userRole, userEmail, onLogout }: AppSidebarProps) {
 
       <SidebarFooter className="p-4 border-t border-sidebar-border">
         <div className="flex items-center justify-between gap-2 mb-2">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{userEmail}</p>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm shrink-0">
+              {userEmail[0].toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{userEmail}</p>
+            </div>
           </div>
           <RoleBadge role={userRole} />
         </div>
-        <SidebarMenuButton onClick={onLogout} data-testid="button-logout">
+        <SidebarMenuButton onClick={onLogout} data-testid="button-logout" className="transition-all duration-200">
           <LogOut className="h-4 w-4" />
           <span>Cerrar sesión</span>
         </SidebarMenuButton>

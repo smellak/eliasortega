@@ -5,17 +5,17 @@ interface RoleBadgeProps {
   role: UserRole;
 }
 
-const roleConfig: Record<UserRole, { label: string; variant: "default" | "secondary" | "outline" }> = {
-  ADMIN: { label: "ADMINISTRADOR", variant: "default" },
-  PLANNER: { label: "PLANIFICADOR", variant: "secondary" },
-  BASIC_READONLY: { label: "SOLO LECTURA", variant: "outline" },
+const roleConfig: Record<UserRole, { label: string; variant: "default" | "secondary" | "outline"; className: string }> = {
+  ADMIN: { label: "ADMINISTRADOR", variant: "default", className: "bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 shadow-sm no-default-hover-elevate no-default-active-elevate" },
+  PLANNER: { label: "PLANIFICADOR", variant: "secondary", className: "bg-gradient-to-r from-teal-500 to-emerald-600 text-white border-0 shadow-sm no-default-hover-elevate no-default-active-elevate" },
+  BASIC_READONLY: { label: "SOLO LECTURA", variant: "outline", className: "bg-gradient-to-r from-gray-400 to-gray-500 text-white border-0 shadow-sm no-default-hover-elevate no-default-active-elevate" },
 };
 
 export function RoleBadge({ role }: RoleBadgeProps) {
   const config = roleConfig[role];
   
   return (
-    <Badge variant={config.variant} className="text-xs tracking-wide" data-testid={`badge-role-${role}`}>
+    <Badge variant={config.variant} className={`text-xs tracking-wide ${config.className}`} data-testid={`badge-role-${role}`}>
       {config.label}
     </Badge>
   );

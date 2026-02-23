@@ -7,6 +7,7 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { CapacityShift, CreateCapacityShiftInput, UpdateCapacityShiftInput } from "@shared/types";
 import { Card } from "@/components/ui/card";
+import { Gauge, AlertCircle } from "lucide-react";
 
 interface CapacityPageProps {
   userRole: "ADMIN" | "PLANNER" | "BASIC_READONLY";
@@ -101,32 +102,56 @@ export default function CapacityPage({ userRole }: CapacityPageProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-semibold">Turnos de Capacidad</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Define la capacidad del almacén para diferentes periodos de tiempo
-          </p>
+      <div className="space-y-6 animate-fadeIn">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="page-icon">
+            <Gauge />
+          </div>
+          <div>
+            <h1 className="text-3xl font-semibold">Turnos de Capacidad</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Define la capacidad del almacén para diferentes periodos de tiempo
+            </p>
+          </div>
         </div>
-        <Card className="p-12">
-          <div className="text-center text-muted-foreground">Cargando turnos de capacidad...</div>
-        </Card>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="p-4">
+              <div className="space-y-3">
+                <div className="h-5 rounded w-1/3 skeleton-shimmer" />
+                <div className="h-4 rounded w-2/3 skeleton-shimmer" />
+                <div className="h-4 rounded w-1/2 skeleton-shimmer" />
+              </div>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-semibold">Turnos de Capacidad</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Define la capacidad del almacén para diferentes periodos de tiempo
-          </p>
+      <div className="space-y-6 animate-fadeIn">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="page-icon">
+            <Gauge />
+          </div>
+          <div>
+            <h1 className="text-3xl font-semibold">Turnos de Capacidad</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Define la capacidad del almacén para diferentes periodos de tiempo
+            </p>
+          </div>
         </div>
-        <Card className="p-12">
-          <div className="text-center text-destructive">
-            Error al cargar los turnos de capacidad: {(error as Error).message}
+        <Card className="p-8 border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+              <AlertCircle className="h-6 w-6 text-destructive" />
+            </div>
+            <div className="text-destructive font-medium">
+              Error al cargar los turnos de capacidad
+            </div>
+            <p className="text-sm text-muted-foreground">{(error as Error).message}</p>
           </div>
         </Card>
       </div>
@@ -134,12 +159,17 @@ export default function CapacityPage({ userRole }: CapacityPageProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold">Turnos de Capacidad</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Define la capacidad del almacén para diferentes periodos de tiempo
-        </p>
+    <div className="space-y-6 animate-fadeIn">
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="page-icon">
+          <Gauge />
+        </div>
+        <div>
+          <h1 className="text-3xl font-semibold">Turnos de Capacidad</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Define la capacidad del almacén para diferentes periodos de tiempo
+          </p>
+        </div>
       </div>
 
       <CapacityWindowsTable

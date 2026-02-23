@@ -5,7 +5,7 @@ import { CapacityIndicators } from "@/components/capacity-indicators";
 import { AppointmentDialog } from "@/components/appointment-dialog";
 import { ConflictErrorDialog } from "@/components/conflict-error-dialog";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Calendar } from "lucide-react";
 import { appointmentsApi, providersApi, capacityApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -227,16 +227,21 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold">Calendario</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gestiona las citas y la capacidad del almacén
-          </p>
+    <div className="space-y-6 animate-fadeIn">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-3">
+          <div className="page-icon">
+            <Calendar />
+          </div>
+          <div>
+            <h1 className="text-3xl font-semibold">Calendario</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Gestiona las citas y la capacidad del almacén
+            </p>
+          </div>
         </div>
         {!isReadOnly && (
-          <Button onClick={() => {
+          <Button className="gradient-btn text-white border-0 no-default-hover-elevate no-default-active-elevate" onClick={() => {
             setSelectedEvent(null);
             setAppointmentDialogOpen(true);
           }} data-testid="button-new-appointment">

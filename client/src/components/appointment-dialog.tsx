@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, CalendarPlus } from "lucide-react";
 
 interface AppointmentDialogProps {
   open: boolean;
@@ -188,18 +188,24 @@ export function AppointmentDialog({
 
   const fieldError = (field: keyof FormErrors) => {
     if (!errors[field]) return null;
-    return <p className="text-xs text-destructive mt-1" data-testid={`error-${field}`}>{errors[field]}</p>;
+    return <p className="text-xs mt-1.5 px-2 py-0.5 rounded bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400 inline-block" data-testid={`error-${field}`}>{errors[field]}</p>;
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl" data-testid="dialog-appointment">
         <DialogHeader>
-          <DialogTitle>{appointment ? "Editar Cita" : "Nueva Cita"}</DialogTitle>
+          <div className="flex items-center gap-3">
+            <div className="page-icon">
+              <CalendarPlus />
+            </div>
+            <DialogTitle className="text-xl">{appointment ? "Editar Cita" : "Nueva Cita"}</DialogTitle>
+          </div>
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Proveedor</div>
             <div>
               <Label htmlFor="provider">Proveedor *</Label>
               <Select
@@ -223,6 +229,7 @@ export function AppointmentDialog({
               {fieldError("providerId")}
             </div>
 
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 mt-2">Horario</div>
             <div>
               <Label htmlFor="start-date">Fecha Inicio *</Label>
               <Input
@@ -290,6 +297,7 @@ export function AppointmentDialog({
           </div>
 
           <div className="space-y-4">
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Recursos</div>
             <div>
               <Label htmlFor="work-minutes">Minutos de Trabajo Necesarios *</Label>
               <Input
@@ -361,11 +369,11 @@ export function AppointmentDialog({
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} data-testid="button-cancel">
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={isSaving} data-testid="button-save">
+          <Button className="gradient-btn text-white border-0 no-default-hover-elevate no-default-active-elevate" onClick={handleSave} disabled={isSaving} data-testid="button-save">
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Guardar Cita
           </Button>

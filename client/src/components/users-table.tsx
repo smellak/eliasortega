@@ -59,20 +59,20 @@ export function UsersTable({ users, onAdd, onEdit, onDelete }: UsersTableProps) 
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button onClick={() => setIsAdding(true)} disabled={isAdding} data-testid="button-add-user">
+        <Button onClick={() => setIsAdding(true)} disabled={isAdding} data-testid="button-add-user" className="gradient-btn text-white border-0 no-default-hover-elevate no-default-active-elevate">
           <Plus className="h-4 w-4 mr-2" />
           Agregar Usuario
         </Button>
       </div>
 
-      <div className="border border-border rounded-md">
+      <div className="premium-table">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Correo</TableHead>
-              <TableHead>Rol</TableHead>
-              {isAdding && <TableHead>Contraseña</TableHead>}
-              <TableHead className="text-right">Acciones</TableHead>
+            <TableRow className="bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-950/50 dark:to-blue-900/30">
+              <TableHead className="font-semibold text-blue-900 dark:text-blue-100">Correo</TableHead>
+              <TableHead className="font-semibold text-blue-900 dark:text-blue-100">Rol</TableHead>
+              {isAdding && <TableHead className="font-semibold text-blue-900 dark:text-blue-100">Contraseña</TableHead>}
+              <TableHead className="text-right font-semibold text-blue-900 dark:text-blue-100">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -125,7 +125,7 @@ export function UsersTable({ users, onAdd, onEdit, onDelete }: UsersTableProps) 
             )}
 
             {users.map((user) => (
-              <TableRow key={user.id}>
+              <TableRow key={user.id} className="hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-colors">
                 {editingId === user.id ? (
                   <>
                     <TableCell>

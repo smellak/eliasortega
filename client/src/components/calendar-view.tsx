@@ -83,10 +83,11 @@ export function CalendarView({
           <h2 className="text-xl font-semibold ml-2 capitalize">{format(currentDate, "MMMM yyyy", { locale: es })}</h2>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-0.5 rounded-full bg-muted p-1">
           <Button
-            variant={viewType === "dayGridMonth" ? "default" : "outline"}
+            variant={viewType === "dayGridMonth" ? "default" : "ghost"}
             size="sm"
+            className="rounded-full"
             onClick={() => {
               setViewType("dayGridMonth");
               calendarRef.current?.getApi().changeView("dayGridMonth");
@@ -97,8 +98,9 @@ export function CalendarView({
             Mes
           </Button>
           <Button
-            variant={viewType === "timeGridWeek" ? "default" : "outline"}
+            variant={viewType === "timeGridWeek" ? "default" : "ghost"}
             size="sm"
+            className="rounded-full"
             onClick={() => {
               setViewType("timeGridWeek");
               calendarRef.current?.getApi().changeView("timeGridWeek");
@@ -109,8 +111,9 @@ export function CalendarView({
             Semana
           </Button>
           <Button
-            variant={viewType === "timeGridDay" ? "default" : "outline"}
+            variant={viewType === "timeGridDay" ? "default" : "ghost"}
             size="sm"
+            className="rounded-full"
             onClick={() => {
               setViewType("timeGridDay");
               calendarRef.current?.getApi().changeView("timeGridDay");
@@ -123,7 +126,7 @@ export function CalendarView({
         </div>
       </div>
 
-      <div className="calendar-container bg-card rounded-md border border-card-border p-4">
+      <div className="calendar-container bg-card rounded-xl border border-card-border p-4 shadow-sm">
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -157,13 +160,13 @@ export function CalendarView({
           eventContent={(eventInfo) => {
             const props = eventInfo.event.extendedProps;
             return (
-              <div className="p-1 text-xs overflow-hidden">
-                <div className="font-semibold truncate">{props.providerName}</div>
-                <div className="font-mono text-[10px] opacity-90">
+              <div className="p-1.5 text-xs overflow-hidden">
+                <div className="font-semibold truncate text-white">{props.providerName}</div>
+                <div className="font-mono text-[10px] text-white/85">
                   {format(new Date(eventInfo.event.start!), "HH:mm", { locale: es })} -{" "}
                   {format(new Date(eventInfo.event.end!), "HH:mm", { locale: es })}
                 </div>
-                <div className="text-[10px] opacity-80 mt-0.5">
+                <div className="text-[10px] text-white/70 mt-0.5">
                   W:{props.workMinutesNeeded} F:{props.forkliftsNeeded}
                 </div>
               </div>
@@ -180,24 +183,51 @@ export function CalendarView({
           display: none;
         }
         .fc .fc-col-header-cell {
-          padding: 0.5rem;
+          padding: 0.5rem 0.75rem;
           font-weight: 600;
-          background: hsl(var(--muted));
-          color: hsl(var(--muted-foreground));
+          background: linear-gradient(135deg, hsl(213 94% 97%), hsl(213 40% 95%));
+          color: hsl(213 50% 30%);
+        }
+        .dark .fc .fc-col-header-cell {
+          background: linear-gradient(135deg, hsl(213 30% 12%), hsl(213 20% 15%));
+          color: hsl(213 50% 80%);
         }
         .fc .fc-timegrid-slot {
           height: 3rem;
+          transition: background-color 0.15s ease;
+        }
+        .fc .fc-timegrid-slot:hover {
+          background: hsl(213 60% 97%);
+        }
+        .dark .fc .fc-timegrid-slot:hover {
+          background: hsl(213 20% 14%);
         }
         .fc .fc-event {
-          border-radius: 0.375rem;
-          border: 1px solid;
-          cursor: pointer;
+          border-radius: 0.5rem;
+          border: none;
+          box-shadow: 0 2px 6px rgba(0, 102, 204, 0.25);
+          background: linear-gradient(135deg, hsl(213 94% 52%), hsl(213 94% 42%));
+          transition: box-shadow 0.2s ease, transform 0.15s ease;
+        }
+        .fc .fc-event:hover {
+          box-shadow: 0 4px 12px rgba(0, 102, 204, 0.35);
         }
         .fc .fc-event-main {
-          color: inherit;
+          color: white;
         }
         .fc .fc-daygrid-day-number {
-          padding: 0.25rem 0.5rem;
+          padding: 0.375rem 0.625rem;
+          font-weight: 500;
+          color: hsl(213 30% 35%);
+        }
+        .dark .fc .fc-daygrid-day-number {
+          color: hsl(213 30% 75%);
+        }
+        .fc .fc-day-today {
+          background: hsl(213 80% 97%) !important;
+        }
+        .dark .fc .fc-day-today {
+          background: hsl(213 30% 13%) !important;
         }
       `}</style>
     </div>

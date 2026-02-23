@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { AppointmentDialog } from "@/components/appointment-dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { Search, Pencil, Trash2, Plus } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, List, CalendarDays } from "lucide-react";
 import { format } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
 import { appointmentsApi, providersApi } from "@/lib/api";
@@ -136,31 +136,48 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
 
   if (isLoadingAppointments) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-semibold">Citas</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Visualiza y gestiona todas las citas del almacén
-          </p>
+      <div className="space-y-6 animate-fadeIn">
+        <div className="flex items-center gap-3">
+          <div className="page-icon">
+            <List />
+          </div>
+          <div>
+            <h1 className="text-3xl font-semibold">Citas</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Visualiza y gestiona todas las citas del almacén
+            </p>
+          </div>
         </div>
-        <Card className="p-12">
-          <div className="text-center text-muted-foreground">Cargando citas...</div>
-        </Card>
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <Card key={i} className="p-4">
+              <div className="space-y-3">
+                <div className="h-6 skeleton-shimmer rounded w-1/3" />
+                <div className="h-4 skeleton-shimmer rounded w-2/3" />
+              </div>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold">Citas</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Visualiza y gestiona todas las citas del almacén
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="page-icon">
+            <List />
+          </div>
+          <div>
+            <h1 className="text-3xl font-semibold">Citas</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Visualiza y gestiona todas las citas del almacén
+            </p>
+          </div>
         </div>
         {!isReadOnly && (
-          <Button onClick={() => {
+          <Button className="gradient-btn text-white border-0 no-default-hover-elevate no-default-active-elevate" onClick={() => {
             setSelectedAppointment(null);
             setAppointmentDialogOpen(true);
           }} data-testid="button-new-appointment">
@@ -170,30 +187,31 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
         )}
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="relative group rounded-xl shadow-sm border-2 border-transparent focus-within:border-blue-300 dark:focus-within:border-blue-700 transition-all duration-200">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-blue-500 transition-colors" />
         <Input
           placeholder="Buscar por proveedor..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
+          className="pl-10 border-0 shadow-none focus-visible:ring-0 rounded-xl"
           data-testid="input-search"
         />
       </div>
 
       <div className="space-y-3">
         {filteredAppointments.map((appointment) => (
-          <Card key={appointment.id} className="p-4 hover-elevate" data-testid={`card-appointment-${appointment.id}`}>
+          <Card key={appointment.id} className="p-4 hover-elevate border-l-4 border-l-blue-500 rounded-xl transition-all duration-200" data-testid={`card-appointment-${appointment.id}`}>
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 mb-2">
+                <div className="flex items-center gap-3 mb-2 flex-wrap">
                   <h3 className="font-semibold text-lg">{appointment.providerName}</h3>
                   {appointment.goodsType && (
-                    <Badge variant="outline">{appointment.goodsType}</Badge>
+                    <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border-0">{appointment.goodsType}</Badge>
                   )}
                 </div>
                 <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                  <div className="font-mono">
+                  <div className="flex items-center gap-1.5 font-mono">
+                    <CalendarDays className="h-3.5 w-3.5" />
                     {format(new Date(appointment.startUtc), "MMM dd, HH:mm")} -{" "}
                     {format(new Date(appointment.endUtc), "HH:mm")}
                   </div>
@@ -228,9 +246,10 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
         ))}
 
         {filteredAppointments.length === 0 && (
-          <Card className="p-12">
+          <Card className="p-16">
             <div className="text-center text-muted-foreground">
-              <p>No se encontraron citas.</p>
+              <List className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p className="text-base font-medium">No se encontraron citas.</p>
               {searchQuery && <p className="text-sm mt-1">Intenta con otro término de búsqueda.</p>}
             </div>
           </Card>

@@ -1,4 +1,4 @@
-import { openai } from "./llm-clients";
+import { anthropic } from "./llm-clients";
 import { CALCULATOR_AGENT_SYSTEM_PROMPT } from "./prompts";
 import { z } from "zod";
 
@@ -133,6 +133,8 @@ function calculateDeterministic(input: CalculatorInput): CalculatorOutput | null
   };
 }
 
+const CALCULATOR_MODEL = process.env.CALCULATOR_MODEL || "claude-haiku-4-5-20251001";
+
 export async function runCalculator(input: CalculatorInput): Promise<CalculatorOutput> {
   const deterministicResult = calculateDeterministic(input);
   if (deterministicResult) {
@@ -140,21 +142,20 @@ export async function runCalculator(input: CalculatorInput): Promise<CalculatorO
   }
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
+    const response = await anthropic.messages.create({
+      model: CALCULATOR_MODEL,
+      max_tokens: 500,
+      top_k: 1,
+      system: CALCULATOR_AGENT_SYSTEM_PROMPT,
       messages: [
-        { role: "system", content: CALCULATOR_AGENT_SYSTEM_PROMPT },
         { role: "user", content: JSON.stringify(input) },
       ],
-      max_completion_tokens: 500,
-      temperature: 0.1,
-      response_format: { type: "json_object" },
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) throw new Error("No response from calculator agent");
+    const textBlock = response.content.find((b) => b.type === "text");
+    if (!textBlock || textBlock.type !== "text") throw new Error("No response from calculator agent");
 
-    const parsed = JSON.parse(content);
+    const parsed = JSON.parse(textBlock.text);
     return calculatorOutputSchema.parse(parsed);
   } catch (error) {
     console.error("Calculator LLM fallback error:", error);

@@ -66,7 +66,7 @@ Preferred communication style: Simple, everyday language.
 
 ### AI Integration
 - **Main Agent**: Claude Haiku 4.5 (Anthropic) - lightweight conversational orchestrator
-- **Calculator**: Deterministic TypeScript formulas (GPT-4.1 fallback for edge cases)
+- **Calculator**: Deterministic TypeScript formulas (Claude Haiku 4.5 fallback for edge cases)
 - **Tools**: `calculator`, `calendar_availability`, `calendar_book`
 - **Memory**: PostgreSQL-backed conversation history
 - **Streaming**: SSE for real-time response delivery
@@ -144,7 +144,7 @@ Container runs: `npx prisma db push --skip-generate && node dist/index.js`
 
 ### Portability
 - `vite.config.ts`: Replit plugins load only when `REPL_ID` is set (try/catch guarded)
-- `llm-clients.ts`: Accepts both `AI_INTEGRATIONS_*` (Replit) and standard `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`
+- `llm-clients.ts`: Accepts both `AI_INTEGRATIONS_ANTHROPIC_*` (Replit) and standard `ANTHROPIC_API_KEY`
 - No Replit-specific code in server or client source
 
 ## Dev Credentials

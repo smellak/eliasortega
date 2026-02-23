@@ -117,6 +117,36 @@ Preferred communication style: Simple, everyday language.
 - `shared/types.ts` - Shared Zod schemas and TypeScript types
 - `prisma/schema.prisma` - Database schema (all v2.0 models)
 
+## Deployment (GitHub + Coolify Docker)
+
+### Files
+- `Dockerfile` — Multi-stage Node 20 Alpine build (builder + runner)
+- `docker-compose.yml` — Single-service compose for Coolify or standalone Docker
+- `.env.example` — All environment variables documented
+- `.dockerignore` — Excludes Replit-specific files and dev artifacts
+
+### Build Process
+1. `npm ci` + `npx prisma generate` (builder stage)
+2. `vite build` (frontend → `dist/public/`)
+3. `esbuild` (server → `dist/index.js`)
+4. Runner stage copies only `node_modules`, `dist/`, `prisma/`, `package.json`
+
+### Startup
+Container runs: `npx prisma db push --skip-generate && node dist/index.js`
+- Syncs schema to database on boot (safe, non-destructive)
+- Serves frontend + API on port 5000
+
+### Coolify Setup
+1. Push repo to GitHub
+2. In Coolify: New Resource → Docker Compose → point to repo
+3. Set environment variables (copy from `.env.example`)
+4. Deploy — health check at `/api/health`
+
+### Portability
+- `vite.config.ts`: Replit plugins load only when `REPL_ID` is set (try/catch guarded)
+- `llm-clients.ts`: Accepts both `AI_INTEGRATIONS_*` (Replit) and standard `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`
+- No Replit-specific code in server or client source
+
 ## Dev Credentials
 - Admin: admin@admin.com / admin123
 - Port: 5000

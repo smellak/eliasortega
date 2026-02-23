@@ -1,0 +1,204 @@
+# Prompt para Replit: Preparar proyecto para GitHub + Coolify
+
+Copia y pega este prompt completo en Replit AI para que prepare el proyecto.
+
+---
+
+## PROMPT:
+
+Necesito preparar este proyecto para desplegarlo fuera de Replit, en un servidor con Coolify usando Docker. El proyecto se moverá a un repositorio de GitHub. Haz todos los cambios necesarios:
+
+### 1. Crear Dockerfile (producción)
+
+Crea un `Dockerfile` en la raíz del proyecto con build multi-stage:
+
+```dockerfile
+# Stage 1: Build
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copiar package files e instalar dependencias
+COPY package*.json ./
+COPY prisma ./prisma/
+RUN npm ci
+
+# Generar cliente Prisma
+RUN npx prisma generate
+
+# Copiar código fuente y hacer build del frontend
+COPY . .
+RUN npm run build
+
+# Stage 2: Production
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=5000
+
+# Copiar solo lo necesario desde el builder
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/package.json ./
+
+# Exponer puerto
+EXPOSE 5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:5000/api/health || exit 1
+
+# Ejecutar migraciones de Prisma y arrancar
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+```
+
+### 2. Crear .dockerignore
+
+Crea `.dockerignore` en la raíz:
+
+```
+node_modules
+dist
+.git
+.gitignore
+*.md
+.env
+.env.*
+.replit
+replit.nix
+.config/
+```
+
+### 3. Verificar/crear script de build
+
+Asegúrate de que en `package.json` existen estos scripts y que funcionan correctamente:
+
+```json
+{
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.server.json",
+    "start": "node dist/index.js",
+    "dev": "tsx watch server/index.ts"
+  }
+}
+```
+
+Si el build del servidor se hace de otra forma (esbuild, tsx, etc.), adáptalo pero asegúrate de que:
+- `npm run build` genera el frontend en `dist/public/` (o donde Express sirva los estáticos)
+- `npm run build` compila el servidor TypeScript a `dist/index.js`
+- `npm run start` arranca el servidor compilado sin tsx ni ts-node
+
+Revisa cómo está configurado actualmente el build y ajusta el Dockerfile si la salida va a otra carpeta. Lo importante es que funcione esta secuencia:
+```
+npm ci → npx prisma generate → npm run build → node dist/index.js
+```
+
+### 4. Verificar que el servidor sirve estáticos en producción
+
+En `server/index.ts` (o donde se configure Express), verifica que en producción sirve los archivos estáticos del frontend. Debería haber algo como:
+
+```typescript
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "public")));
+  app.get("*", (req, res) => {
+    if (!req.path.startsWith("/api")) {
+      res.sendFile(path.join(__dirname, "public", "index.html"));
+    }
+  });
+}
+```
+
+Si usa Vite en desarrollo (con el middleware de vite.ts), asegúrate de que solo se carga en development y que en producción usa los estáticos compilados.
+
+### 5. Verificar variables de entorno
+
+Asegúrate de que NINGUNA variable de entorno tiene valores hardcodeados en el código. Todas deben leerse de `process.env`. Verifica especialmente:
+
+- `DATABASE_URL` — conexión a PostgreSQL (Neon)
+- `JWT_SECRET` — secreto para tokens
+- `ANTHROPIC_API_KEY` — API de Anthropic para el agente
+- `OPENAI_API_KEY` — API de OpenAI para fallback de calculadora
+- `PORT` — puerto del servidor (default 5000)
+
+Si hay alguna referencia a `REPL_ID`, `REPLIT_DB_URL`, o cualquier cosa específica de Replit, elimínala o hazla opcional.
+
+### 6. Crear .env.example
+
+Crea un archivo `.env.example` en la raíz con todas las variables necesarias y valores de ejemplo:
+
+```env
+# Base de datos (PostgreSQL - Neon)
+DATABASE_URL=postgresql://user:password@host:5432/dbname?sslmode=require
+
+# Seguridad
+JWT_SECRET=cambiar-por-un-secreto-largo-y-aleatorio
+
+# APIs de IA
+ANTHROPIC_API_KEY=sk-ant-xxxxx
+OPENAI_API_KEY=sk-xxxxx
+
+# Email (SMTP) — Opcional, si no se configura los emails se loguean a consola
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=alertas@tudominio.com
+SMTP_PASS=xxxx
+SMTP_FROM=Centro Hogar Sanchez <alertas@tudominio.com>
+
+# Resumen diario
+DAILY_SUMMARY_HOUR=07:00
+
+# Integración externa — Si no se configura, los endpoints de integración devuelven 403
+INTEGRATION_API_KEY=
+
+# Servidor
+PORT=5000
+NODE_ENV=production
+```
+
+### 7. Verificar .gitignore
+
+Asegúrate de que `.gitignore` incluye:
+
+```
+node_modules/
+dist/
+.env
+.env.local
+*.db
+.replit
+replit.nix
+.config/
+```
+
+### 8. Limpiar dependencias específicas de Replit
+
+Revisa `package.json` por dependencias que solo sirven en Replit (como `@replit/vite-plugin-*`, `@replit/agent`, etc.) y elimínalas si las hay. Haz `npm install` para actualizar el lockfile.
+
+### 9. Verificar que todo compila
+
+Ejecuta:
+```bash
+npm run build
+```
+
+Si hay errores de TypeScript, corrígelos. El build debe completarse sin errores.
+
+### 10. Test final local
+
+Ejecuta este test para simular lo que hará Docker:
+```bash
+npm run build
+NODE_ENV=production node dist/index.js
+```
+
+Verifica que:
+- El servidor arranca en el puerto 5000
+- La ruta raíz `/` sirve el frontend
+- La ruta `/api/health` devuelve OK
+- La ruta `/chat` carga el chat público
+- La ruta `/docs` carga Swagger
+
+Si todo funciona, el proyecto está listo para subir a GitHub.

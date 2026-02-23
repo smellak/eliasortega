@@ -1,0 +1,467 @@
+# Plan de Implementación de Mejoras
+## Sistema de Gestión de Citas de Almacén — Centro Hogar Sanchez
+
+**Versión:** 2.0  
+**Fecha:** Febrero 2026  
+**Estado:** Propuesta de mejoras sobre v1.0
+
+---
+
+> **Propósito del documento:** Este documento detalla el plan completo de mejoras para el Sistema de Gestión de Citas de Almacén de Centro Hogar Sanchez. Incluye la simplificación del modelo de capacidad (Opción B: Slots con Tallas), optimización del agente IA, y mejoras de infraestructura, seguridad y operativa. Cada mejora incluye justificación, especificación técnica, prioridad y estimación.
+
+---
+
+## 1. Resumen Ejecutivo
+
+El sistema actual (v1.0) funciona correctamente pero presenta oportunidades de mejora significativas en tres áreas clave:
+
+| Área | Problema | Solución propuesta | Impacto |
+|------|----------|-------------------|---------|
+| **Capacidad** | Modelo minuto a minuto demasiado complejo para el equipo de almacén | Slots fijos con sistema de tallas (S/M/L) | Alto |
+| **Agente IA** | Modelo sobredimensionado y costoso para un flujo lineal | Modelo más ligero + flujo híbrido determinista/IA | Alto |
+| **Operativa** | Sin notificaciones, auditoría ni trazabilidad | Notificaciones por email + log de auditoría | Alto |
+| **Seguridad** | API de integración abierta por defecto, sesiones débiles | API cerrada por defecto + sesión mejorada para chat | Medio |
+| **Arquitectura** | Servidor único puede bloquearse con llamadas a LLM | Separar worker IA del servidor HTTP | Medio |
+| **Datos** | Desnormalización innecesaria de provider_name | Usar siempre relación FK, crear proveedor al vuelo | Bajo |
+
+> **Estimación global:** Tiempo total estimado: 6-8 semanas de desarrollo. Se recomienda implementar en 4 fases incrementales, empezando por los cambios de mayor impacto (capacidad y notificaciones) y terminando con optimizaciones de arquitectura.
+
+---
+
+## 2. Simplificación del Modelo de Capacidad
+
+### 2.1 Problema actual
+
+El sistema actual valida capacidad minuto a minuto, calculando tasas de trabajo fraccionarias y comparando con recursos disponibles en cada instante. Aunque es matemáticamente preciso, presenta varios problemas prácticos:
+
+- El jefe de almacén no puede explicar a un proveedor por qué no cabe su cita: «en el minuto 47 la tasa de trabajo supera 2.7 trabajadores» no es un mensaje comprensible.
+- Los indicadores de capacidad muestran porcentajes abstractos que no se traducen en decisiones operativas claras.
+- Los conflictos de capacidad son difíciles de resolver manualmente porque el modelo es opaco.
+
+### 2.2 Solución: Sistema de Slots con Tallas
+
+#### 2.2.1 Concepto general
+
+La jornada se divide en franjas horarias fijas (slots). Cada slot tiene un número máximo de puntos de capacidad. Las descargas se clasifican en tallas (S, M, L) que consumen diferente cantidad de puntos. Una descarga solo se puede programar si hay suficientes puntos libres en el slot.
+
+> **Ejemplo mental:** Franja 08:00-10:00 tiene 6 puntos. Un camión de colchones (talla M) gasta 2 puntos. Un camión grande de sofás (talla L) gasta 3 puntos. En esta franja caben: 3 medianos, o 2 grandes, o 1 grande + 1 mediano + 1 pequeño. El jefe de almacén entiende esto instantáneamente.
+
+#### 2.2.2 Configuración de slots
+
+| Parámetro | Valor por defecto | Configurable |
+|-----------|-------------------|:------------:|
+| Franjas horarias (L-V) | 08:00-10:00, 10:00-12:00, 12:00-14:00 | Sí, desde panel |
+| Franjas horarias (Sábado) | 08:00-11:00, 11:00-14:00 | Sí, desde panel |
+| Domingo | Cerrado | Sí |
+| Puntos por franja (L-V) | 6 puntos | Sí, por franja |
+| Puntos por franja (Sábado) | 4 puntos | Sí, por franja |
+
+#### 2.2.3 Sistema de tallas
+
+La talla se determina automáticamente a partir de la duración estimada por la calculadora de recursos (que no cambia):
+
+| Talla | Duración estimada | Puntos que consume | Ejemplos típicos |
+|-------|-------------------|:------------------:|------------------|
+| **S (Pequeña)** | ≤30 minutos | 1 punto | Electrodomésticos pequeños, baño, PAE |
+| **M (Mediana)** | 31-90 minutos | 2 puntos | Colchones, mobiliario estándar, cocina |
+| **L (Grande)** | >90 minutos | 3 puntos | Sofás grandes, tapicería voluminosa, mixto |
+
+#### 2.2.4 Modelo de datos modificado
+
+Se reemplaza la tabla `capacity_shifts` por una nueva estructura de slots:
+
+**Nueva tabla: `slot_templates`**
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | String (CUID) | Identificador único |
+| day_of_week | Int (0-6) | Día de la semana (0=lunes, 6=domingo) |
+| start_time | String (HH:mm) | Hora de inicio del slot (hora local Madrid) |
+| end_time | String (HH:mm) | Hora de fin del slot |
+| max_points | Int | Puntos máximos de capacidad |
+| active | Boolean | Si el slot está activo |
+
+**Nueva tabla: `slot_overrides` (para excepciones)**
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | String (CUID) | Identificador único |
+| date | Date | Fecha específica del override |
+| start_time | String (HH:mm) | Hora inicio (si null, día completo cerrado) |
+| end_time | String (HH:mm) | Hora fin |
+| max_points | Int | Puntos máximos (0 = cerrado) |
+| reason | String? | Motivo del override (festivo, evento, etc.) |
+
+**Campos añadidos en tabla `appointments`**
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| size | Enum (S, M, L) | Talla de la descarga |
+| points_used | Int | Puntos consumidos en el slot |
+| slot_date | Date | Fecha del slot asignado |
+| slot_start_time | String (HH:mm) | Hora inicio del slot |
+
+**Campos eliminados de `appointments`:**
+
+- `work_minutes_needed` → se mantiene internamente para la calculadora pero ya no se usa en validación de capacidad
+- `forklifts_needed` → sustituido por el sistema de puntos
+
+#### 2.2.5 Nuevo algoritmo de validación
+
+El nuevo algoritmo es trivial comparado con el actual:
+
+1. Recibir solicitud de cita con fecha y franja horaria deseada
+2. Buscar el `slot_template` correspondiente al día de la semana + franja
+3. Verificar si hay un `slot_override` para esa fecha específica
+4. Sumar los `points_used` de todas las citas existentes en ese slot+fecha
+5. Comparar: `puntos_usados + puntos_nueva_cita ≤ max_points`
+6. Si cabe → crear cita. Si no cabe → mensaje claro: «La franja 08:00-10:00 está llena (5/6 puntos usados, necesitas 2)»
+
+> **Ventaja clave:** El mensaje de conflicto es comprensible por cualquier persona: «No cabe porque la franja de 10 a 12 tiene 5 de 6 puntos ocupados y tu descarga necesita 2». No hay tasas fraccionarias ni minutos específicos.
+
+#### 2.2.6 Visualización en el calendario
+
+El calendario del panel cambia significativamente. En lugar de barras de porcentaje abstractas, cada día muestra sus franjas con un indicador visual simple:
+
+- Franja verde: menos del 50% de puntos usados
+- Franja amarilla: entre 50% y 80% usados
+- Franja roja: más del 80% usados
+- Franja gris: completa (100%)
+
+Dentro de cada franja se muestran las citas como bloques de tamaño proporcional a su talla (S pequeño, M mediano, L grande), facilitando la lectura visual.
+
+En la vista de día, cada franja muestra:
+
+- «Franja 08:00-10:00: 4/6 puntos — Proveedor A (M), Proveedor B (S), Proveedor C (S)»
+- Botón de añadir cita directamente dentro de la franja
+
+---
+
+## 3. Optimización del Agente IA
+
+### 3.1 Problema actual
+
+El agente Elías Ortega usa Claude Sonnet 4.5 con hasta 10 ciclos de tool-calling por mensaje. Esto es costoso (cada interacción puede suponer 5-15 llamadas a la API de Anthropic) y lento para un flujo que es esencialmente lineal. El 90% de las conversaciones siguen exactamente el mismo patrón.
+
+### 3.2 Solución: Arquitectura híbrida
+
+Mantener el agente conversacional (dirección lo requiere) pero optimizar su uso.
+
+#### 3.2.1 Modelo por fases
+
+| Fase | Acción | Motor | Coste |
+|------|--------|-------|-------|
+| **1. Saludo** | Detectar intención del proveedor | LLM ligero (Haiku / GPT-4.1-mini) | Bajo |
+| **2. Recogida de datos** | Extraer: empresa, mercancía, unidades, líneas, albaranes | LLM ligero con schema JSON | Bajo |
+| **3. Cálculo** | Determinar talla, puntos, duración | Determinista (sin LLM) | Cero |
+| **4. Búsqueda slots** | Encontrar franjas disponibles | Determinista (query BD) | Cero |
+| **5. Presentación opciones** | Formatear opciones para el proveedor | LLM ligero (template + datos) | Bajo |
+| **6. Confirmación** | Reservar y confirmar | Determinista + LLM para mensaje final | Bajo |
+
+> **Ahorro estimado:** Pasar de Claude Sonnet 4.5 a Haiku/GPT-4.1-mini para la conversación reduce el coste por interacción entre un 80% y un 95%. Solo las fases 1, 2 y 5 requieren LLM. Las fases 3, 4 y 6 son deterministas y no cuestan nada. Se reserva el modelo potente como fallback para categorías no reconocidas.
+
+#### 3.2.2 Flujo de conversación optimizado
+
+El agente sigue siendo conversacional y natural, pero internamente el sistema dirige el flujo:
+
+1. **Proveedor escribe.** LLM ligero analiza el mensaje y extrae datos estructurados (JSON). Si falta información, genera pregunta específica. El prompt incluye la lista de campos requeridos y los ya recopilados.
+2. **Datos completos.** La calculadora determinista clasifica la mercancía, calcula talla (S/M/L) y puntos. Si la categoría no se reconoce, se invoca LLM potente como fallback (igual que ahora).
+3. **Búsqueda.** Query directa a BD: buscar slots con puntos suficientes en los próximos 5 días laborables. Sin tool-calling, sin LLM. Retorna hasta 3 opciones.
+4. **Presentación.** LLM ligero formatea las opciones en lenguaje natural con la personalidad de Elías. Template pre-construido con placeholders para los datos.
+5. **Confirmación.** Proveedor elige. INSERT en BD (sin LLM). LLM ligero genera mensaje de confirmación con template.
+
+#### 3.2.3 Cambios técnicos específicos
+
+| Componente | Actual | Propuesto |
+|------------|--------|-----------|
+| Modelo principal | Claude Sonnet 4.5 | Claude Haiku 4.5 o GPT-4.1-mini |
+| Modelo fallback | GPT-4.1 (solo calculadora) | Claude Sonnet 4.5 (solo si Haiku no resuelve categoría) |
+| Tool-calling | Hasta 10 ciclos por mensaje | Máximo 2 ciclos (datos + confirmación) |
+| Streaming SSE | Todo el mensaje | Se mantiene igual |
+| Historial | 20 mensajes (10 intercambios) | Se mantiene igual |
+| Prompt sistema | ~2000 tokens con reglas complejas | ~800 tokens, flujo simplificado |
+| Horarios almacén | Hardcodeados en prompt | Leídos de slot_templates en BD |
+
+#### 3.2.4 Persistencia de sesión mejorada
+
+Actualmente el chat depende de un sessionId en el navegador que se pierde al cambiar de dispositivo. Se propone:
+
+- **Código de acceso temporal:** Al iniciar una reserva, el sistema genera un código de 6 dígitos que el proveedor puede usar en otro dispositivo para retomar la conversación. Válido 24 horas.
+- **Consulta de citas:** El proveedor puede preguntar a Elías «quiero ver mis citas» y, tras verificar con su nombre de empresa, el sistema muestra las citas asociadas a ese proveedor.
+- **Enlace directo:** Tras confirmar una reserva, se envía un enlace único al proveedor (por el propio chat) que le permite consultar o cancelar su cita sin login.
+
+---
+
+## 4. Sistema de Notificaciones por Email
+
+### 4.1 Problema actual
+
+No existe ningún mecanismo de notificación. Cuando un proveedor reserva una cita por el chat, el equipo de almacén no se entera hasta que abre el panel. En un almacén real, esto es crítico: necesitan saber con antelación qué llega y cuándo.
+
+### 4.2 Solución: Notificaciones exclusivamente por email
+
+El equipo de Centro Hogar Sanchez es tradicional y trabaja con correo electrónico como herramienta principal de comunicación. No tiene sentido introducir Telegram, Slack ni notificaciones in-app que nadie va a mirar. El canal único es el email, con dos tipos de envío:
+
+#### 4.2.1 Resumen diario (producto estrella)
+
+Un email automático que se envía **todos los días laborables a las 7:00** con todas las citas programadas para ese día.
+
+**Contenido del email:**
+- Asunto: «📦 Citas de almacén — [Fecha] — [N] descargas programadas»
+- Tabla con todas las citas del día: hora, proveedor, tipo de mercancía, talla (S/M/L), franja asignada
+- Resumen de capacidad por franja: «08:00-10:00: 4/6 puntos | 10:00-12:00: 2/6 puntos | 12:00-14:00: libre»
+- Notas especiales si hay algún slot_override activo (festivo parcial, etc.)
+
+**Diseño:** HTML sencillo, legible en móvil, imprimible. El jefe de almacén debe poder imprimirlo y pegarlo en la pared.
+
+#### 4.2.2 Alertas puntuales
+
+Emails individuales que se envían cuando ocurre un evento relevante:
+
+| Evento | Asunto del email | Destinatarios |
+|--------|------------------|---------------|
+| Nueva cita creada (desde chat o panel) | «✅ Nueva cita: [Proveedor] — [Fecha] [Franja]» | Planificadores |
+| Cita modificada | «✏️ Cita modificada: [Proveedor] — [Fecha]» | Planificadores |
+| Cita cancelada | «❌ Cita cancelada: [Proveedor] — [Fecha] [Franja]» | Planificadores |
+| Cita creada para hoy mismo | «⚠️ URGENTE: Nueva cita HOY — [Proveedor] [Franja]» | Jefe almacén + planificadores |
+
+#### 4.2.3 Implementación técnica
+
+**Servicio de email:** Nodemailer con SMTP (compatible con cualquier proveedor: Gmail, Outlook, servidor propio) o un servicio transaccional como Resend/SendGrid si se prefiere mayor fiabilidad.
+
+**Nueva tabla: `email_recipients`**
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | String (CUID) | Identificador |
+| email | String | Dirección de correo |
+| name | String | Nombre del destinatario |
+| receives_daily_summary | Boolean | Si recibe el resumen diario |
+| receives_alerts | Boolean | Si recibe alertas puntuales |
+| receives_urgent | Boolean | Si recibe alertas de citas del mismo día |
+| active | Boolean | Si está activo |
+
+**Nueva tabla: `email_log`**
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | String (CUID) | Identificador |
+| recipient_email | String | Destinatario |
+| type | Enum (DAILY_SUMMARY, ALERT) | Tipo de envío |
+| subject | String | Asunto del email |
+| status | Enum (SENT, FAILED, RETRYING) | Estado de envío |
+| sent_at | DateTime? | Timestamp de envío exitoso |
+| error | String? | Detalle de error si falló |
+| created_at | DateTime | Timestamp de creación |
+
+**Cron job para resumen diario:** Tarea programada (node-cron o similar) que se ejecuta a las 7:00 Europe/Madrid cada día laborable, consulta las citas del día y envía el resumen a todos los destinatarios con `receives_daily_summary = true`.
+
+**Eventos para alertas:** Cada operación CRUD sobre citas emite un evento interno. El servicio de email escucha estos eventos y envía las alertas correspondientes de forma asíncrona (para no bloquear la respuesta al usuario).
+
+#### 4.2.4 Configuración desde el panel
+
+Se añade un nuevo módulo «Notificaciones» en el panel de gestión (solo ADMIN) donde se pueden:
+
+- Añadir/editar/eliminar destinatarios de email
+- Configurar qué tipo de emails recibe cada destinatario (resumen diario, alertas, urgentes)
+- Ver el log de emails enviados con su estado
+- Enviar email de prueba para verificar configuración SMTP
+- Configurar la hora del resumen diario (por defecto 7:00)
+
+---
+
+## 5. Sistema de Auditoría
+
+### 5.1 Problema actual
+
+No queda registro de quién creó, modificó o eliminó cada cita. Con múltiples planificadores y el agente IA creando citas, es imposible saber quién hizo qué y cuándo.
+
+### 5.2 Solución propuesta
+
+**Nueva tabla: `audit_log`**
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | String (CUID) | Identificador |
+| entity_type | String | Tipo de entidad (appointment, provider, capacity, user) |
+| entity_id | String | ID de la entidad afectada |
+| action | Enum (CREATE, UPDATE, DELETE) | Acción realizada |
+| actor_type | Enum (USER, CHAT_AGENT, INTEGRATION, SYSTEM) | Quién realizó la acción |
+| actor_id | String? | ID del usuario o sesión de chat |
+| changes | JSON? | Detalle de campos modificados (before/after) |
+| created_at | DateTime | Timestamp |
+
+Cada operación de escritura (CREATE, UPDATE, DELETE) en cualquier entidad principal genera automáticamente una entrada en el log de auditoría. Para las modificaciones, se almacena el estado anterior y posterior de los campos cambiados.
+
+#### 5.2.1 Visualización en el panel
+
+- Nuevo módulo «Historial» accesible para ADMIN y PLANNER
+- Filtros por tipo de entidad, acción, actor y rango de fechas
+- En la vista de detalle de cada cita, pestaña «Historial» que muestra todas las modificaciones
+- Indicador visual: icono de robot para acciones del chat, icono de persona para acciones manuales
+
+---
+
+## 6. Mejoras de Seguridad
+
+### 6.1 API de integración cerrada por defecto
+
+Actualmente, si `INTEGRATION_API_KEY` no está configurada, los endpoints de integración quedan completamente abiertos. La propuesta es invertir este comportamiento:
+
+- Si `INTEGRATION_API_KEY` no está configurada: endpoints de integración devuelven 403 Forbidden
+- Si está configurada: funciona como ahora (validación de X-API-Key header)
+- Añadir rate limiting específico para endpoints de integración: 50 requests/minuto
+
+### 6.2 Limpieza del modelo de datos
+
+Eliminar la desnormalización de `provider_name` en la tabla appointments:
+
+- Usar siempre la relación `provider_id` como fuente de verdad
+- Si un proveedor llega por el chat y no existe, crearlo automáticamente en la tabla providers
+- Migrar citas existentes: para aquellas sin `provider_id`, buscar/crear el proveedor por nombre y establecer la relación
+- Mantener `provider_name` como campo calculado (JOIN) en las consultas, no como dato almacenado
+
+### 6.3 Mejora de tokens JWT
+
+- Reducir expiración de 7 días a 24 horas
+- Implementar refresh token (expiración 7 días) para renovación automática
+- Almacenar refresh token en httpOnly cookie en lugar de localStorage
+- Añadir endpoint `POST /api/auth/refresh` para renovar access token
+
+---
+
+## 7. Mejoras de Arquitectura
+
+### 7.1 Separación del worker de IA
+
+El problema principal es que las llamadas a LLMs pueden tardar 5-30 segundos y bloquean capacidad del servidor Express. En escenarios de carga (varios proveedores usando el chat simultáneamente), esto puede degradar el rendimiento del panel de gestión.
+
+La solución propuesta es desacoplar el procesamiento de IA:
+
+- **Opción A (mínima):** Worker thread de Node.js. El servidor principal delega el procesamiento de chat a un worker thread que tiene su propio event loop. No requiere infraestructura adicional.
+- **Opción B (recomendada si crece):** BullMQ con Redis. Cola de mensajes que permite escalar el número de workers independientemente. Cada worker procesa un mensaje del chat a la vez.
+
+> **Recomendación:** Para el contexto actual (Replit, pocos usuarios concurrentes), la Opción A (worker thread) es suficiente y no añade complejidad. Si en el futuro el uso del chat crece significativamente, migrar a BullMQ es sencillo porque la interfaz es similar.
+
+### 7.2 Horarios dinámicos para el agente
+
+Actualmente los horarios del almacén están hardcodeados en el prompt del LLM. Cuando el almacén cambie horarios, habrá que modificar código.
+
+Con el nuevo modelo de slots, el agente puede leer dinámicamente:
+
+- Los `slot_templates` para saber los horarios base del almacén
+- Los `slot_overrides` para saber si hay días cerrados o con horario especial
+- Esta información se inyecta en el prompt del sistema en cada conversación, no se hardcodea
+
+---
+
+## 8. Plan de Fases de Implementación
+
+> **Enfoque incremental:** Cada fase es desplegable de forma independiente. La fase 1 es la más crítica porque cambia el modelo de capacidad, que afecta a todo el sistema. Las fases posteriores son mejoras incrementales que no rompen funcionalidad existente.
+
+### Fase 1: Nuevo modelo de capacidad + Notificaciones por email
+
+**Duración estimada:** 2-3 semanas  
+**Prioridad:** 🔴 CRÍTICA
+
+**Tareas de backend:**
+
+1. Crear tablas `slot_templates`, `slot_overrides` y migración de datos
+2. Implementar nuevo validador de capacidad basado en puntos
+3. Añadir campos `size`, `points_used`, `slot_date`, `slot_start_time` a appointments
+4. Migrar citas existentes al nuevo modelo (asignar tallas retroactivamente)
+5. Actualizar endpoints REST para usar el nuevo modelo
+6. Implementar servicio de email con Nodemailer (resumen diario + alertas)
+7. Crear tablas `email_recipients` y `email_log`
+8. Implementar cron job para resumen diario a las 7:00
+
+**Tareas de frontend:**
+
+1. Rediseñar página de Capacidad para gestionar slots en vez de turnos
+2. Rediseñar calendario para mostrar franjas con puntos
+3. Actualizar formulario de citas (selector de franja, indicador de talla)
+4. Nuevo módulo de Notificaciones (solo ADMIN): destinatarios, log, prueba de envío
+5. Actualizar mensajes de error de conflicto de capacidad
+
+### Fase 2: Optimización del agente IA
+
+**Duración estimada:** 1-2 semanas  
+**Prioridad:** 🟡 ALTA
+
+1. Cambiar modelo principal del orquestador a Haiku/GPT-4.1-mini
+2. Reestructurar el flujo del agente a fases deterministas
+3. Actualizar prompt del sistema para leer horarios de `slot_templates`
+4. Reducir tool-calling a máximo 2 ciclos por mensaje
+5. Simplificar prompts (~800 tokens vs ~2000 actuales)
+6. Implementar código de acceso temporal para sesiones de chat
+7. Añadir consulta de citas por nombre de proveedor en el chat
+
+### Fase 3: Auditoría y seguridad
+
+**Duración estimada:** 1 semana  
+**Prioridad:** ⚪ MEDIA
+
+1. Crear tabla `audit_log`
+2. Implementar middleware de auditoría automática en operaciones CRUD
+3. Crear módulo Historial en el panel
+4. Invertir comportamiento de `INTEGRATION_API_KEY` (cerrado por defecto)
+5. Eliminar desnormalización de `provider_name` + migración
+6. Implementar refresh tokens + httpOnly cookies
+
+### Fase 4: Arquitectura y optimización
+
+**Duración estimada:** 1 semana  
+**Prioridad:** ⚪ BAJA (ejecutar solo si hay carga real)
+
+1. Implementar worker thread para procesamiento de IA
+2. Implementar resumen diario configurable (hora de envío ajustable)
+3. Optimizar caché de `slot_templates` (evitar queries repetidas)
+4. Tests e2e para el flujo completo del chat
+
+---
+
+## 9. Resumen de Cambios en Base de Datos
+
+### 9.1 Tablas nuevas
+
+| Tabla | Fase | Descripción |
+|-------|------|-------------|
+| **slot_templates** | Fase 1 | Plantillas de franjas horarias semanales |
+| **slot_overrides** | Fase 1 | Excepciones a las franjas (festivos, eventos) |
+| **email_recipients** | Fase 1 | Destinatarios de notificaciones por email |
+| **email_log** | Fase 1 | Registro de emails enviados |
+| **audit_log** | Fase 3 | Log de auditoría de todas las operaciones |
+
+### 9.2 Tablas modificadas
+
+| Tabla | Cambio | Fase |
+|-------|--------|------|
+| **appointments** | Añadir: `size` (Enum S/M/L), `points_used` (Int), `slot_date` (Date), `slot_start_time` (String) | Fase 1 |
+| **appointments** | Eliminar: `provider_name` (usar JOIN). Hacer `provider_id` NOT NULL | Fase 3 |
+| **users** | Añadir: `refresh_token` (String?), `refresh_token_expires` (DateTime?) | Fase 3 |
+
+### 9.3 Tablas eliminadas
+
+| Tabla | Motivo | Fase |
+|-------|--------|------|
+| **capacity_shifts** | Reemplazada por `slot_templates` + `slot_overrides` | Fase 1 |
+
+---
+
+## 10. Métricas de Éxito
+
+Para evaluar si las mejoras cumplen sus objetivos, se proponen las siguientes métricas:
+
+| Métrica | Actual (estimado) | Objetivo | Cómo medir |
+|---------|-------------------|----------|------------|
+| Tiempo medio de reserva por chat | 3-5 minutos | <2 minutos | Timestamp primer mensaje vs confirmación |
+| Coste por reserva (tokens LLM) | ~$0.05-0.15 | <$0.02 | Tokens consumidos por sesión de chat |
+| % de conflictos resueltos sin ayuda | ~30% (dato opaco) | >80% (mensaje claro) | Encuesta al equipo tras 1 mes |
+| Tiempo de respuesta del chat (primer token) | 2-5 segundos | <1 segundo | Latencia SSE medida en logs |
+| Citas creadas por chat sin intervención manual | Sin dato | >90% | Ratio chat completados vs abandonados |
+| Emails entregados correctamente | N/A | >99% | `email_log` con status=SENT |
+| Equipo revisa resumen diario | N/A | >90% días | Encuesta al equipo tras 1 mes |
+
+---
+
+> **Siguiente paso:** Revisar este plan con el equipo técnico y el jefe de almacén. Validar especialmente: (1) que las franjas horarias propuestas tienen sentido operativo, (2) que el sistema de tallas S/M/L cubre todos los casos reales, y (3) que los destinatarios de email y la hora del resumen diario son los correctos. Una vez validado, iniciar la Fase 1.

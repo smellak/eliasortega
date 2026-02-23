@@ -1,3 +1,10 @@
+> **NOTA (2026-02-24):** Este documento describe la version 1.0 del sistema.
+> El sistema actual (v2.0) usa validacion por franjas horarias con puntos
+> (SlotTemplates + SlotOverrides, tallas S/M/L) en lugar del modelo legacy
+> de trabajadores/carretillas/muelles. La calculadora LLM usa Anthropic Claude
+> Haiku en lugar de OpenAI GPT-4.1. Ver `ANALISIS-PROYECTO.md` y `replit.md`
+> para la arquitectura actual.
+
 # Informe Completo: Sistema de Gestión de Citas de Almacén
 ## Centro Hogar Sanchez (CHS)
 

@@ -632,11 +632,23 @@ router.delete("/api/slot-templates/:id", authenticateToken, requireRole("ADMIN",
 router.get("/api/slot-overrides", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const { from, to } = req.query;
-    const where: any = {};
+    let where: any = {};
     if (from || to) {
-      where.AND = [];
-      if (from) where.AND.push({ date: { gte: new Date(from as string) } });
-      if (to) where.AND.push({ date: { lte: new Date(to as string) } });
+      // An override overlaps the [from, to] window if:
+      //   - Its start date (date) is <= to  AND
+      //   - Its effective end date (dateEnd ?? date) is >= from
+      const conditions: any[] = [];
+      if (to) conditions.push({ date: { lte: new Date(to as string) } });
+      if (from) {
+        const fromDate = new Date(from as string);
+        conditions.push({
+          OR: [
+            { dateEnd: { gte: fromDate } },       // range override overlaps
+            { dateEnd: null, date: { gte: fromDate } }, // single-day override in range
+          ],
+        });
+      }
+      if (conditions.length > 0) where.AND = conditions;
     }
 
     const overrides = await prisma.slotOverride.findMany({
@@ -654,9 +666,14 @@ router.post("/api/slot-overrides", authenticateToken, requireRole("ADMIN", "PLAN
   try {
     const data = createSlotOverrideSchema.parse(req.body);
 
+    if (data.dateEnd && new Date(data.dateEnd) < new Date(data.date)) {
+      return res.status(400).json({ error: "dateEnd must be >= date" });
+    }
+
     const override = await prisma.slotOverride.create({
       data: {
         date: new Date(data.date),
+        dateEnd: data.dateEnd ? new Date(data.dateEnd) : null,
         startTime: data.startTime,
         endTime: data.endTime,
         maxPoints: data.maxPoints,
@@ -691,10 +708,18 @@ router.put("/api/slot-overrides/:id", authenticateToken, requireRole("ADMIN", "P
 
     const updateData: any = {};
     if (data.date !== undefined) updateData.date = new Date(data.date);
+    if (data.dateEnd !== undefined) updateData.dateEnd = new Date(data.dateEnd);
     if (data.startTime !== undefined) updateData.startTime = data.startTime;
     if (data.endTime !== undefined) updateData.endTime = data.endTime;
     if (data.maxPoints !== undefined) updateData.maxPoints = data.maxPoints;
     if (data.reason !== undefined) updateData.reason = data.reason;
+
+    // Validate dateEnd >= date when both are being set or one is changing
+    const effectiveDate = updateData.date || before?.date;
+    const effectiveDateEnd = updateData.dateEnd !== undefined ? updateData.dateEnd : before?.dateEnd;
+    if (effectiveDateEnd && effectiveDate && new Date(effectiveDateEnd) < new Date(effectiveDate)) {
+      return res.status(400).json({ error: "dateEnd must be >= date" });
+    }
 
     const override = await prisma.slotOverride.update({
       where: { id: req.params.id },

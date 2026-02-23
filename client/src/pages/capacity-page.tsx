@@ -341,6 +341,7 @@ function SlotOverridesTab({ isReadOnly }: { isReadOnly: boolean }) {
   const [overrideToDelete, setOverrideToDelete] = useState<string | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newDate, setNewDate] = useState("");
+  const [newDateEnd, setNewDateEnd] = useState("");
   const [newStartTime, setNewStartTime] = useState("");
   const [newEndTime, setNewEndTime] = useState("");
   const [newMaxPoints, setNewMaxPoints] = useState(0);
@@ -377,6 +378,7 @@ function SlotOverridesTab({ isReadOnly }: { isReadOnly: boolean }) {
 
   const resetForm = () => {
     setNewDate("");
+    setNewDateEnd("");
     setNewStartTime("");
     setNewEndTime("");
     setNewMaxPoints(0);
@@ -388,11 +390,23 @@ function SlotOverridesTab({ isReadOnly }: { isReadOnly: boolean }) {
       toast({ title: "Error", description: "La fecha es obligatoria", variant: "destructive" });
       return;
     }
+    if (newDateEnd && newDateEnd < newDate) {
+      toast({ title: "Error", description: "La fecha fin debe ser igual o posterior a la fecha inicio", variant: "destructive" });
+      return;
+    }
     const dateValue = new Date(newDate);
     dateValue.setUTCHours(0, 0, 0, 0);
 
+    let dateEndValue: string | undefined;
+    if (newDateEnd) {
+      const de = new Date(newDateEnd);
+      de.setUTCHours(0, 0, 0, 0);
+      dateEndValue = de.toISOString();
+    }
+
     createMutation.mutate({
       date: dateValue.toISOString(),
+      dateEnd: dateEndValue,
       startTime: newStartTime || undefined,
       endTime: newEndTime || undefined,
       maxPoints: newMaxPoints,
@@ -411,6 +425,15 @@ function SlotOverridesTab({ isReadOnly }: { isReadOnly: boolean }) {
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
     return d.toLocaleDateString("es-ES", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+  };
+
+  const formatDateRange = (override: SlotOverride) => {
+    const start = formatDate(override.date);
+    if (override.dateEnd) {
+      const end = formatDate(override.dateEnd);
+      return `${start} — ${end}`;
+    }
+    return start;
   };
 
   if (isLoading) {
@@ -465,7 +488,7 @@ function SlotOverridesTab({ isReadOnly }: { isReadOnly: boolean }) {
               {overrides.map((override) => (
                 <TableRow key={override.id} data-testid={`row-override-${override.id}`}>
                   <TableCell className="whitespace-nowrap" data-testid={`text-override-date-${override.id}`}>
-                    {formatDate(override.date)}
+                    {formatDateRange(override)}
                   </TableCell>
                   <TableCell data-testid={`text-override-start-${override.id}`}>
                     {override.startTime || "—"}
@@ -507,15 +530,28 @@ function SlotOverridesTab({ isReadOnly }: { isReadOnly: boolean }) {
             <DialogTitle>Añadir Excepción</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="overrideDate">Fecha</Label>
-              <Input
-                id="overrideDate"
-                type="date"
-                value={newDate}
-                onChange={(e) => setNewDate(e.target.value)}
-                data-testid="input-override-date"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="overrideDate">Fecha inicio</Label>
+                <Input
+                  id="overrideDate"
+                  type="date"
+                  value={newDate}
+                  onChange={(e) => setNewDate(e.target.value)}
+                  data-testid="input-override-date"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="overrideDateEnd">Fecha fin (opcional)</Label>
+                <Input
+                  id="overrideDateEnd"
+                  type="date"
+                  value={newDateEnd}
+                  min={newDate || undefined}
+                  onChange={(e) => setNewDateEnd(e.target.value)}
+                  data-testid="input-override-date-end"
+                />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

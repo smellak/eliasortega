@@ -68,17 +68,19 @@ model SlotTemplate {
 }
 
 model SlotOverride {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   date      DateTime
-  startTime String?  @map("start_time")
-  endTime   String?  @map("end_time")
-  maxPoints Int      @default(0) @map("max_points")
+  dateEnd   DateTime? @map("date_end")
+  startTime String?   @map("start_time")
+  endTime   String?   @map("end_time")
+  maxPoints Int       @default(0) @map("max_points")
   reason    String?
-  source    String   @default("manual")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  source    String    @default("manual")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
 
   @@index([date])
+  @@index([dateEnd])
   @@map("slot_overrides")
 }
 

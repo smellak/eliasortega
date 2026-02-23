@@ -155,6 +155,7 @@ export interface SlotTemplate {
 // Slot Override types
 export const createSlotOverrideSchema = z.object({
   date: z.string().datetime(),
+  dateEnd: z.string().datetime().optional(),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
   maxPoints: z.number().int().min(0).default(0),
@@ -168,10 +169,12 @@ export type UpdateSlotOverrideInput = z.infer<typeof updateSlotOverrideSchema>;
 export interface SlotOverride {
   id: string;
   date: string;
+  dateEnd: string | null;
   startTime: string | null;
   endTime: string | null;
   maxPoints: number;
   reason: string | null;
+  source: string;
   createdAt: string;
   updatedAt: string;
 }

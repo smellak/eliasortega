@@ -114,7 +114,12 @@ export class SlotCapacityValidator {
 
     const overrides = await client.slotOverride.findMany({
       where: {
-        date: { gte: dateStart, lte: dateEnd },
+        OR: [
+          // Single-day override (no dateEnd): exact date match
+          { date: { gte: dateStart, lte: dateEnd }, dateEnd: null },
+          // Range override: date <= targetDate <= dateEnd
+          { date: { lte: dateEnd }, dateEnd: { gte: dateStart } },
+        ],
       },
     });
 

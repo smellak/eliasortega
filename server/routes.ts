@@ -21,6 +21,7 @@ import {
   createEmailRecipientSchema,
   updateEmailRecipientSchema,
 } from "../shared/types";
+// TODO: usar clearRefreshToken en endpoint de logout (Fase 2)
 import { authenticateToken, requireRole, generateToken, generateRefreshToken, saveRefreshToken, validateRefreshToken, clearRefreshToken, AuthRequest } from "./middleware/auth";
 import { capacityValidator } from "./services/capacity-validator";
 import { slotCapacityValidator } from "./services/slot-validator";

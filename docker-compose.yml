@@ -16,6 +16,7 @@ services:
       - DAILY_SUMMARY_HOUR=${DAILY_SUMMARY_HOUR:-7}
       - DAILY_SUMMARY_MINUTE=${DAILY_SUMMARY_MINUTE:-0}
       - INTEGRATION_API_KEY=${INTEGRATION_API_KEY:-}
+      - BASE_URL=${BASE_URL:-http://localhost:5000}
       - NODE_ENV=production
       - PORT=5000
     restart: unless-stopped

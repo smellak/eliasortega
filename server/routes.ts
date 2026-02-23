@@ -189,7 +189,8 @@ router.post("/api/chat/message", async (req, res) => {
       return res.status(400).json({ error: "sessionId and message are required" });
     }
 
-    const baseUrl = `http://localhost:${process.env.PORT || 5000}`;
+    const { getBaseUrl } = await import("./utils/base-url");
+    const baseUrl = getBaseUrl();
     
     const { AgentOrchestrator } = await import("./agent/orchestrator");
     const orchestrator = new AgentOrchestrator(sessionId, baseUrl);

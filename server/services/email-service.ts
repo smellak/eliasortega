@@ -103,13 +103,19 @@ export async function sendDailySummary(targetDate?: Date): Promise<number> {
   const dayStart = getMadridMidnight(date);
   const dayEnd = getMadridEndOfDay(date);
 
-  const appointments = await prisma.appointment.findMany({
-    where: {
-      startUtc: { gte: dayStart, lte: dayEnd },
-    },
-    include: { dock: true },
-    orderBy: { startUtc: "asc" },
-  });
+  let appointments: any[];
+  try {
+    appointments = await prisma.appointment.findMany({
+      where: { startUtc: { gte: dayStart, lte: dayEnd } },
+      include: { dock: true },
+      orderBy: { startUtc: "asc" },
+    });
+  } catch {
+    appointments = await prisma.appointment.findMany({
+      where: { startUtc: { gte: dayStart, lte: dayEnd } },
+      orderBy: { startUtc: "asc" },
+    });
+  }
 
   const recipients = await prisma.emailRecipient.findMany({
     where: { active: true, receivesDailySummary: true },

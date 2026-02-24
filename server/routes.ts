@@ -131,6 +131,19 @@ function resolveEstimationsForRoute(goodsType: string | null, units: number | nu
 }
 
 /** Normalize a Prisma appointment (with dock relation) to the flat shape the frontend expects. */
+/** Helper: query appointments with dock include, falling back to no-include if dock tables are unavailable */
+async function findAppointmentsWithDockFallback(
+  where: any,
+  orderBy?: any,
+  client: any = prisma,
+): Promise<any[]> {
+  try {
+    return await client.appointment.findMany({ where, include: { dock: true }, ...(orderBy ? { orderBy } : {}) });
+  } catch {
+    return await client.appointment.findMany({ where, ...(orderBy ? { orderBy } : {}) });
+  }
+}
+
 function normalizeAppointmentResponse(a: any) {
   return {
     ...a,
@@ -221,7 +234,6 @@ async function upsertAppointmentInternal(data: {
           slotStartTime: slotValidation.slotStartTime,
           dockId: slotValidation.assignedDock?.id || null,
         },
-        include: { dock: true },
       });
 
       return { success: true as const, action: "updated" as const, appointment, assignedDock: slotValidation.assignedDock };
@@ -249,7 +261,6 @@ async function upsertAppointmentInternal(data: {
         slotStartTime: slotValidation.slotStartTime,
         dockId: slotValidation.assignedDock?.id || null,
       },
-      include: { dock: true },
     });
 
     return { success: true as const, action: "created" as const, appointment, assignedDock: slotValidation.assignedDock };
@@ -273,10 +284,12 @@ router.get("/api/health", async (req, res) => {
 // --- Public appointment confirmation (no auth) ---
 router.get("/api/appointments/confirm/:token", publicRateLimiter, async (req, res) => {
   try {
-    const appt = await prisma.appointment.findUnique({
-      where: { confirmationToken: req.params.token },
-      include: { dock: true },
-    });
+    let appt: any;
+    try {
+      appt = await prisma.appointment.findUnique({ where: { confirmationToken: req.params.token }, include: { dock: true } });
+    } catch {
+      appt = await prisma.appointment.findUnique({ where: { confirmationToken: req.params.token } });
+    }
 
     let contactPhone = "";
     try { contactPhone = (await prisma.appConfig.findUnique({ where: { key: "provider_email_contact_phone" } }))?.value || ""; } catch { /* appConfig may not exist */ }
@@ -1124,11 +1137,7 @@ router.get("/api/appointments", authenticateToken, async (req: AuthRequest, res)
       where.providerId = providerId as string;
     }
 
-    const appointments = await prisma.appointment.findMany({
-      where,
-      include: { dock: true },
-      orderBy: { startUtc: "asc" },
-    });
+    const appointments = await findAppointmentsWithDockFallback(where, { startUtc: "asc" });
 
     const parsed = appointments.map(normalizeAppointmentResponse);
     res.json(parsed);
@@ -1203,7 +1212,6 @@ router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNE
           slotStartTime: slotValidation.slotStartTime,
           dockId: slotValidation.assignedDock?.id || null,
         },
-        include: { dock: true },
       });
 
       return { appointment, assignedDock: slotValidation.assignedDock };
@@ -1323,7 +1331,6 @@ router.put("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "PLA
       const appointment = await tx.appointment.update({
         where: { id: req.params.id },
         data: updateData,
-        include: { dock: true },
       });
 
       return { appointment, before: current, assignedDock: slotValidation.assignedDock };
@@ -1374,10 +1381,12 @@ router.put("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "PLA
 
 router.delete("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
   try {
-    const appointment = await prisma.appointment.findUnique({
-      where: { id: req.params.id },
-      include: { dock: true },
-    });
+    let appointment: any;
+    try {
+      appointment = await prisma.appointment.findUnique({ where: { id: req.params.id }, include: { dock: true } });
+    } catch {
+      appointment = await prisma.appointment.findUnique({ where: { id: req.params.id } });
+    }
 
     if (!appointment) {
       return res.status(404).json({ error: "Appointment not found" });
@@ -2087,10 +2096,12 @@ router.post("/api/integration/calendar/book", integrationRateLimiter, authentica
 
 router.get("/api/integration/appointments/by-external-ref/:externalRef", authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const appointment = await prisma.appointment.findUnique({
-      where: { externalRef: req.params.externalRef },
-      include: { dock: true },
-    });
+    let appointment: any;
+    try {
+      appointment = await prisma.appointment.findUnique({ where: { externalRef: req.params.externalRef }, include: { dock: true } });
+    } catch {
+      appointment = await prisma.appointment.findUnique({ where: { externalRef: req.params.externalRef } });
+    }
 
     if (!appointment) {
       return res.status(404).json({ success: false, error: "Appointment not found" });
@@ -2473,14 +2484,11 @@ router.get("/api/slots/week", authenticateToken, async (req: AuthRequest, res) =
       const dateStart = getMadridMidnight(dayDate);
       const dateEnd = getMadridEndOfDay(dayDate);
 
-      // Fetch all appointments for this day at once
-      const dayAppointments = await prisma.appointment.findMany({
-        where: {
-          slotDate: { gte: dateStart, lte: dateEnd },
-        },
-        include: { dock: true },
-        orderBy: { startUtc: "asc" },
-      });
+      // Fetch all appointments for this day at once (with dock fallback)
+      const dayAppointments = await findAppointmentsWithDockFallback(
+        { slotDate: { gte: dateStart, lte: dateEnd } },
+        { startUtc: "asc" },
+      );
 
       const slotResults = [];
       for (const slot of slots) {
@@ -2606,11 +2614,19 @@ router.post("/api/appointments/:id/reactivate", authenticateToken, requireRole("
     if (!appt) return res.status(404).json({ error: "Appointment not found" });
     if (appt.confirmationStatus !== "cancelled") return res.status(400).json({ error: "Only cancelled appointments can be reactivated" });
 
-    const updated = await prisma.appointment.update({
-      where: { id: appt.id },
-      data: { confirmationStatus: "pending", cancelledAt: null, cancellationReason: null },
-      include: { dock: true },
-    });
+    let updated: any;
+    try {
+      updated = await prisma.appointment.update({
+        where: { id: appt.id },
+        data: { confirmationStatus: "pending", cancelledAt: null, cancellationReason: null },
+        include: { dock: true },
+      });
+    } catch {
+      updated = await prisma.appointment.update({
+        where: { id: appt.id },
+        data: { confirmationStatus: "pending", cancelledAt: null, cancellationReason: null },
+      });
+    }
 
     logAudit({
       entityType: "APPOINTMENT",

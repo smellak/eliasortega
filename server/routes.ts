@@ -1,6 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import path from "path";
+import { z } from "zod";
 import {
   loginSchema,
   createProviderSchema,
@@ -23,6 +24,7 @@ import {
   changePasswordSchema,
   confirmAppointmentSchema,
 } from "../shared/types";
+import { getMadridDayOfWeek, getMadridMidnight, getMadridEndOfDay } from "./utils/madrid-date";
 import { authenticateToken, requireRole, generateToken, generateRefreshToken, saveRefreshToken, validateRefreshToken, clearRefreshToken, authenticateJwtOrApiKey, AuthRequest } from "./middleware/auth";
 import { slotCapacityValidator } from "./services/slot-validator";
 import { logAudit, computeChanges } from "./services/audit-service";
@@ -48,6 +50,29 @@ function authenticateIntegration(req: Request, res: Response, next: NextFunction
 }
 
 const integrationRateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+const publicRateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function publicRateLimiter(req: Request, res: Response, next: NextFunction) {
+  const key = (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000; // 15 minutes
+  const maxRequests = 30;
+
+  let entry = publicRateLimitMap.get(key);
+  if (!entry || now > entry.resetAt) {
+    entry = { count: 0, resetAt: now + windowMs };
+    publicRateLimitMap.set(key, entry);
+  }
+
+  entry.count++;
+
+  if (entry.count > maxRequests) {
+    return res.status(429).json({ success: false, error: "Demasiadas peticiones. Inténtalo en 15 minutos." });
+  }
+
+  next();
+}
 
 function integrationRateLimiter(req: Request, res: Response, next: NextFunction) {
   const key = (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
@@ -120,8 +145,7 @@ async function upsertAppointmentInternal(data: {
 
     const { size, points: pointsUsed } = slotCapacityValidator.determineSizeAndPoints(data.workMinutesNeeded);
     const startDate = new Date(data.start);
-    const slotDate = new Date(startDate);
-    slotDate.setHours(0, 0, 0, 0);
+    const slotDate = getMadridMidnight(startDate);
     const resolvedSlotStart = await slotCapacityValidator.resolveSlotStartTime(startDate, tx);
     const slotStartTime = resolvedSlotStart || formatInTimeZone(startDate, 'Europe/Madrid', 'HH:mm');
 
@@ -162,8 +186,8 @@ async function upsertAppointmentInternal(data: {
           lines: est.lines,
           deliveryNotesCount: est.deliveryNotesCount,
           estimatedFields: est.estimatedFields.length > 0 ? JSON.stringify(est.estimatedFields) : null,
-          providerEmail: data.providerEmail ?? undefined,
-          providerPhone: data.providerPhone ?? undefined,
+          providerEmail: data.providerEmail || null,
+          providerPhone: data.providerPhone || null,
           size,
           pointsUsed,
           slotDate,
@@ -216,7 +240,7 @@ router.get("/api/health", async (req, res) => {
 });
 
 // --- Public appointment confirmation (no auth) ---
-router.get("/api/appointments/confirm/:token", async (req, res) => {
+router.get("/api/appointments/confirm/:token", publicRateLimiter, async (req, res) => {
   try {
     const appt = await prisma.appointment.findUnique({
       where: { confirmationToken: req.params.token },
@@ -235,7 +259,7 @@ router.get("/api/appointments/confirm/:token", async (req, res) => {
   }
 });
 
-router.post("/api/appointments/confirm", async (req, res) => {
+router.post("/api/appointments/confirm", publicRateLimiter, async (req, res) => {
   try {
     const data = confirmAppointmentSchema.parse(req.body);
 
@@ -248,7 +272,7 @@ router.post("/api/appointments/confirm", async (req, res) => {
     }
 
     if (appt.confirmationStatus === "confirmed" && data.action === "confirm") {
-      return res.json({ success: true, status: "confirmed", message: "La cita ya estaba confirmada" });
+      return res.status(200).json({ success: true, status: "already_confirmed", message: "La cita ya estaba confirmada" });
     }
 
     if (appt.confirmationStatus === "cancelled") {
@@ -278,13 +302,22 @@ router.post("/api/appointments/confirm", async (req, res) => {
   }
 });
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function buildConfirmationPage(status: string, appt: any, contactPhone: string): string {
   const header = `<div style="background:#1e40af;color:#fff;padding:20px;text-align:center;">
     <h1 style="margin:0;font-size:20px;">Centro Hogar Sánchez</h1>
     <p style="margin:4px 0 0;font-size:13px;opacity:0.85;">Gestión de Descargas</p>
   </div>`;
   const footer = `<div style="padding:16px;text-align:center;font-size:12px;color:#94a3b8;border-top:1px solid #e2e8f0;">
-    ${contactPhone ? `Teléfono de contacto: <strong>${contactPhone}</strong><br>` : ""}
+    ${contactPhone ? `Teléfono de contacto: <strong>${escapeHtml(contactPhone)}</strong><br>` : ""}
     Centro Hogar Sánchez — Sistema de Gestión de Citas
   </div>`;
   const wrap = (body: string) => `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Confirmar Cita</title></head><body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f5f5f5;"><div style="max-width:500px;margin:20px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">${header}<div style="padding:24px;">${body}</div>${footer}</div></body></html>`;
@@ -298,10 +331,10 @@ function buildConfirmationPage(status: string, appt: any, contactPhone: string):
   const endTime = formatInTimeZone(appt.endUtc, "Europe/Madrid", "HH:mm");
   const sizeLabel = appt.size === "S" ? "Pequeña" : appt.size === "M" ? "Mediana" : appt.size === "L" ? "Grande" : "";
   const summary = `<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
-    <tr><td style="padding:10px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Proveedor</td><td style="padding:10px;border:1px solid #e2e8f0;">${appt.providerName}</td></tr>
+    <tr><td style="padding:10px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Proveedor</td><td style="padding:10px;border:1px solid #e2e8f0;">${escapeHtml(appt.providerName)}</td></tr>
     <tr><td style="padding:10px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Fecha</td><td style="padding:10px;border:1px solid #e2e8f0;">${dateStr}</td></tr>
     <tr><td style="padding:10px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Horario</td><td style="padding:10px;border:1px solid #e2e8f0;">${startTime} — ${endTime}</td></tr>
-    ${appt.goodsType ? `<tr><td style="padding:10px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Mercancía</td><td style="padding:10px;border:1px solid #e2e8f0;">${appt.goodsType}</td></tr>` : ""}
+    ${appt.goodsType ? `<tr><td style="padding:10px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Mercancía</td><td style="padding:10px;border:1px solid #e2e8f0;">${escapeHtml(appt.goodsType || "")}</td></tr>` : ""}
     ${sizeLabel ? `<tr><td style="padding:10px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Tamaño</td><td style="padding:10px;border:1px solid #e2e8f0;">${sizeLabel}</td></tr>` : ""}
   </table>`;
 
@@ -312,7 +345,7 @@ function buildConfirmationPage(status: string, appt: any, contactPhone: string):
 
   if (status === "cancelled") {
     const cancelledDate = appt.cancelledAt ? formatInTimeZone(appt.cancelledAt, "Europe/Madrid", "dd/MM/yyyy HH:mm") : "";
-    return wrap(`<div style="text-align:center;padding:8px 0;"><p style="font-size:24px;margin:0;">❌</p><p style="font-size:18px;color:#dc2626;font-weight:600;margin:8px 0;">Cita anulada</p></div>${summary}${appt.cancellationReason ? `<p style="color:#64748b;font-size:13px;"><strong>Motivo:</strong> ${appt.cancellationReason}</p>` : ""}<p style="text-align:center;color:#64748b;">Si necesitas reprogramar, contacta con el almacén.</p>${cancelledDate ? `<p style="text-align:center;font-size:12px;color:#94a3b8;">Anulada el ${cancelledDate}</p>` : ""}`);
+    return wrap(`<div style="text-align:center;padding:8px 0;"><p style="font-size:24px;margin:0;">❌</p><p style="font-size:18px;color:#dc2626;font-weight:600;margin:8px 0;">Cita anulada</p></div>${summary}${appt.cancellationReason ? `<p style="color:#64748b;font-size:13px;"><strong>Motivo:</strong> ${escapeHtml(appt.cancellationReason || "")}</p>` : ""}<p style="text-align:center;color:#64748b;">Si necesitas reprogramar, contacta con el almacén.</p>${cancelledDate ? `<p style="text-align:center;font-size:12px;color:#94a3b8;">Anulada el ${cancelledDate}</p>` : ""}`);
   }
 
   // Pending — show confirm/cancel buttons
@@ -445,10 +478,7 @@ router.get("/api/auth/me", authenticateToken, (req: AuthRequest, res) => {
 
 router.post("/api/auth/refresh", async (req, res) => {
   try {
-    const { refreshToken } = req.body;
-    if (!refreshToken) {
-      return res.status(400).json({ error: "Refresh token required" });
-    }
+    const { refreshToken } = z.object({ refreshToken: z.string().min(1) }).parse(req.body);
 
     const user = await validateRefreshToken(refreshToken);
     if (!user) {
@@ -954,6 +984,9 @@ router.get("/api/slots/availability", authenticateToken, async (req: AuthRequest
     }
 
     const targetDate = new Date(date as string);
+    if (isNaN(targetDate.getTime())) {
+      return res.status(400).json({ error: "Invalid date format" });
+    }
     const pointsNeeded = parseInt(points as string) || 1;
 
     const slots = await slotCapacityValidator.getSlotsForDate(targetDate);
@@ -993,10 +1026,8 @@ router.get("/api/slots/usage", authenticateToken, async (req: AuthRequest, res) 
     const endDate = new Date(to as string);
     const results: Array<{ date: string; slots: Array<{ startTime: string; endTime: string; maxPoints: number; pointsUsed: number; pointsAvailable: number }> }> = [];
 
-    const current = new Date(startDate);
-    current.setHours(0, 0, 0, 0);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
+    const current = getMadridMidnight(new Date(from as string));
+    const end = getMadridEndOfDay(new Date(to as string));
 
     while (current <= end) {
       const slots = await slotCapacityValidator.getSlotsForDate(current);
@@ -1048,7 +1079,11 @@ router.get("/api/appointments", authenticateToken, async (req: AuthRequest, res)
       orderBy: { startUtc: "asc" },
     });
 
-    res.json(appointments);
+    const parsed = appointments.map((a: any) => ({
+      ...a,
+      estimatedFields: a.estimatedFields ? JSON.parse(a.estimatedFields) : null,
+    }));
+    res.json(parsed);
   } catch (error) {
     console.error("Get appointments error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -1063,8 +1098,10 @@ router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNE
 
     const { size, points: pointsUsed } = slotCapacityValidator.determineSizeAndPoints(data.workMinutesNeeded);
     const startDate = new Date(data.start);
-    const slotDate = new Date(startDate);
-    slotDate.setHours(0, 0, 0, 0);
+    if (getMadridDayOfWeek(startDate) === 0) {
+      return res.status(400).json({ error: "No se aceptan citas en domingo. El almacén está cerrado." });
+    }
+    const slotDate = getMadridMidnight(startDate);
 
     const result = await prisma.$transaction(async (tx) => {
       const resolvedSlotStart = await slotCapacityValidator.resolveSlotStartTime(startDate, tx);
@@ -1192,8 +1229,7 @@ router.put("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "PLA
       const effectiveStart = updateData.startUtc || current.startUtc;
 
       const { size, points: pointsUsed } = slotCapacityValidator.determineSizeAndPoints(effectiveWorkMinutes);
-      const slotDate = new Date(effectiveStart);
-      slotDate.setHours(0, 0, 0, 0);
+      const slotDate = getMadridMidnight(effectiveStart);
       const resolvedSlotStart = await slotCapacityValidator.resolveSlotStartTime(effectiveStart, tx);
       const slotStartTime = resolvedSlotStart || formatInTimeZone(effectiveStart, 'Europe/Madrid', 'HH:mm');
 
@@ -1359,10 +1395,8 @@ router.get("/api/capacity/utilization", authenticateToken, async (req: AuthReque
     const from = new Date(startDate as string);
     const to = new Date(endDate as string);
 
-    const current = new Date(from);
-    current.setHours(0, 0, 0, 0);
-    const end = new Date(to);
-    end.setHours(23, 59, 59, 999);
+    const current = getMadridMidnight(new Date(from));
+    const end = getMadridEndOfDay(new Date(to));
 
     const allSlots: Array<{
       date: string;
@@ -1409,10 +1443,8 @@ router.get("/api/capacity/utilization", authenticateToken, async (req: AuthReque
     }
 
     // Count appointments in range
-    const fromStart = new Date(from);
-    fromStart.setHours(0, 0, 0, 0);
-    const toEnd = new Date(to);
-    toEnd.setHours(23, 59, 59, 999);
+    const fromStart = getMadridMidnight(new Date(from));
+    const toEnd = getMadridEndOfDay(new Date(to));
 
     const appointmentCount = await prisma.appointment.count({
       where: {
@@ -1455,9 +1487,9 @@ router.post("/api/capacity/quick-adjust", authenticateToken, requireRole("ADMIN"
     if (isNaN(targetDate.getTime())) {
       return res.status(400).json({ error: "Invalid date format" });
     }
-    targetDate.setHours(0, 0, 0, 0);
+    const midnightTarget = getMadridMidnight(targetDate);
 
-    const dayOfWeek = targetDate.getDay();
+    const dayOfWeek = getMadridDayOfWeek(targetDate);
 
     // Get templates for this day of week
     const templates = await prisma.slotTemplate.findMany({
@@ -1469,9 +1501,8 @@ router.post("/api/capacity/quick-adjust", authenticateToken, requireRole("ADMIN"
       return res.status(404).json({ error: "No hay franjas configuradas para este día" });
     }
 
-    const dateStart = new Date(targetDate);
-    const dateEnd = new Date(targetDate);
-    dateEnd.setHours(23, 59, 59, 999);
+    const dateStart = midnightTarget;
+    const dateEnd = getMadridEndOfDay(targetDate);
 
     // Delete previous quick_adjust overrides for this date
     await prisma.slotOverride.deleteMany({
@@ -1566,18 +1597,17 @@ router.get("/api/capacity/today-status", authenticateToken, async (req: AuthRequ
   try {
     const dateParam = req.query.date as string | undefined;
     const targetDate = dateParam ? new Date(dateParam) : new Date();
-    targetDate.setHours(0, 0, 0, 0);
+    const midnightTarget = getMadridMidnight(targetDate);
 
-    const dayOfWeek = targetDate.getDay();
+    const dayOfWeek = getMadridDayOfWeek(targetDate);
 
     const templates = await prisma.slotTemplate.findMany({
       where: { dayOfWeek, active: true },
       orderBy: { startTime: "asc" },
     });
 
-    const dateStart = new Date(targetDate);
-    const dateEnd = new Date(targetDate);
-    dateEnd.setHours(23, 59, 59, 999);
+    const dateStart = midnightTarget;
+    const dateEnd = getMadridEndOfDay(targetDate);
 
     // Check for quick_adjust overrides
     const quickOverrides = await prisma.slotOverride.findMany({
@@ -1614,10 +1644,10 @@ router.get("/api/capacity/today-status", authenticateToken, async (req: AuthRequ
     }
 
     // Get effective slots with usage
-    const slots = await slotCapacityValidator.getSlotsForDate(targetDate);
+    const slots = await slotCapacityValidator.getSlotsForDate(midnightTarget);
     const slotsWithUsage = await Promise.all(
       slots.map(async (slot) => {
-        const usedPoints = await slotCapacityValidator.getSlotUsage(targetDate, slot.startTime);
+        const usedPoints = await slotCapacityValidator.getSlotUsage(midnightTarget, slot.startTime);
         return {
           startTime: slot.startTime,
           endTime: slot.endTime,
@@ -1629,7 +1659,7 @@ router.get("/api/capacity/today-status", authenticateToken, async (req: AuthRequ
     );
 
     res.json({
-      date: targetDate.toISOString().split("T")[0],
+      date: midnightTarget.toISOString().split("T")[0],
       quickAdjustLevel,
       slots: slotsWithUsage,
     });
@@ -2317,16 +2347,16 @@ router.get("/api/slots/week", authenticateToken, async (req: AuthRequest, res) =
     }
 
     // Find Monday of the week containing refDate
-    const day = refDate.getDay(); // 0=Sun, 1=Mon, ...
+    const day = getMadridDayOfWeek(refDate); // 0=Sun, 1=Mon, ...
     const diffToMonday = day === 0 ? -6 : 1 - day;
     const monday = new Date(refDate);
     monday.setDate(monday.getDate() + diffToMonday);
-    monday.setHours(0, 0, 0, 0);
+    const mondayMidnight = getMadridMidnight(monday);
 
     // Generate Mon-Sat (6 days)
     const days: Date[] = [];
     for (let i = 0; i < 6; i++) {
-      const d = new Date(monday);
+      const d = new Date(mondayMidnight);
       d.setDate(d.getDate() + i);
       days.push(d);
     }
@@ -2366,10 +2396,8 @@ router.get("/api/slots/week", authenticateToken, async (req: AuthRequest, res) =
       const dateStr = dayDate.toISOString().split("T")[0];
       const slots = await slotCapacityValidator.getSlotsForDate(dayDate);
 
-      const dateStart = new Date(dayDate);
-      dateStart.setHours(0, 0, 0, 0);
-      const dateEnd = new Date(dayDate);
-      dateEnd.setHours(23, 59, 59, 999);
+      const dateStart = getMadridMidnight(dayDate);
+      const dateEnd = getMadridEndOfDay(dayDate);
 
       // Fetch all appointments for this day at once
       const dayAppointments = await prisma.appointment.findMany({
@@ -2415,8 +2443,8 @@ router.get("/api/slots/week", authenticateToken, async (req: AuthRequest, res) =
 
       result.push({
         date: dateStr,
-        dayOfWeek: dayDate.getDay(),
-        dayName: dayNames[dayDate.getDay()],
+        dayOfWeek: getMadridDayOfWeek(dayDate),
+        dayName: dayNames[getMadridDayOfWeek(dayDate)],
         slots: slotResults,
       });
     }

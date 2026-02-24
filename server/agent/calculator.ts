@@ -18,8 +18,6 @@ const calculatorInputSchema = z.object({
 const calculatorOutputSchema = z.object({
   categoria_elegida: z.string(),
   work_minutes_needed: z.number().int().min(0),
-  forklifts_needed: z.number().int().min(0),
-  workers_needed: z.number().int().min(0),
   duration_min: z.number().int().min(0),
 });
 
@@ -28,8 +26,6 @@ export type CalculatorInput = z.infer<typeof calculatorInputSchema>;
 export interface CalculatorOutput {
   categoria_elegida: string;
   work_minutes_needed: number;
-  forklifts_needed: number;
-  workers_needed: number;
   duration_min: number;
   estimatedFields?: string[];
   usedLines: number;
@@ -41,18 +37,17 @@ interface CategoryCoefficients {
   TA: number;
   TL: number;
   TU: number;
-  usesForklift: boolean;
 }
 
 const CATEGORIES: Record<string, CategoryCoefficients> = {
-  "Asientos":     { TD: 48.88, TA: 5.49,  TL: 0.00, TU: 1.06, usesForklift: true },
-  "Baño":         { TD: 3.11,  TA: 11.29, TL: 0.61, TU: 0.00, usesForklift: false },
-  "Cocina":       { TD: 10.67, TA: 0.00,  TL: 4.95, TU: 0.04, usesForklift: false },
-  "Colchonería":  { TD: 14.83, TA: 0.00,  TL: 4.95, TU: 0.12, usesForklift: true },
-  "Electro":      { TD: 33.49, TA: 0.81,  TL: 0.00, TU: 0.31, usesForklift: true },
-  "Mobiliario":   { TD: 23.20, TA: 0.00,  TL: 2.54, TU: 0.25, usesForklift: true },
-  "PAE":          { TD: 6.67,  TA: 8.33,  TL: 0.00, TU: 0.00, usesForklift: false },
-  "Tapicería":    { TD: 34.74, TA: 0.00,  TL: 2.25, TU: 0.10, usesForklift: true },
+  "Asientos":     { TD: 48.88, TA: 5.49,  TL: 0.00, TU: 1.06 },
+  "Baño":         { TD: 3.11,  TA: 11.29, TL: 0.61, TU: 0.00 },
+  "Cocina":       { TD: 10.67, TA: 0.00,  TL: 4.95, TU: 0.04 },
+  "Colchonería":  { TD: 14.83, TA: 0.00,  TL: 4.95, TU: 0.12 },
+  "Electro":      { TD: 33.49, TA: 0.81,  TL: 0.00, TU: 0.31 },
+  "Mobiliario":   { TD: 23.20, TA: 0.00,  TL: 2.54, TU: 0.25 },
+  "PAE":          { TD: 6.67,  TA: 8.33,  TL: 0.00, TU: 0.00 },
+  "Tapicería":    { TD: 34.74, TA: 0.00,  TL: 2.25, TU: 0.10 },
 };
 
 const CATEGORY_SYNONYMS: Record<string, string> = {
@@ -139,31 +134,9 @@ function calculateDeterministic(input: CalculatorInput): CalculatorOutput | null
 
   const workMinutes = humanRound(rawMinutes);
 
-  let forkliftsNeeded: number;
-  if (!coeff.usesForklift) {
-    forkliftsNeeded = 0;
-  } else if (workMinutes >= 90) {
-    forkliftsNeeded = 2;
-  } else {
-    forkliftsNeeded = 1;
-  }
-
-  let workersNeeded: number;
-  if (workMinutes <= 30) workersNeeded = 1;
-  else if (workMinutes <= 90) workersNeeded = 2;
-  else workersNeeded = 3;
-
-  if (category === "Tapicería" || category === "Asientos") {
-    workersNeeded += 1;
-  }
-
-  workersNeeded = Math.min(workersNeeded, 4);
-
   return {
     categoria_elegida: category,
     work_minutes_needed: workMinutes,
-    forklifts_needed: forkliftsNeeded,
-    workers_needed: workersNeeded,
     duration_min: workMinutes,
     estimatedFields: estimatedFields.length > 0 ? estimatedFields : undefined,
     usedLines: L,
@@ -218,8 +191,6 @@ export async function runCalculator(input: CalculatorInput): Promise<CalculatorO
     return {
       categoria_elegida: "Mobiliario",
       work_minutes_needed: 60,
-      forklifts_needed: 1,
-      workers_needed: 2,
       duration_min: 60,
       estimatedFields: estimatedFields.length > 0 ? estimatedFields : undefined,
       usedLines: filledInput.lines!,

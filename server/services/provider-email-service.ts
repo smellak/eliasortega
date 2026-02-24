@@ -7,6 +7,15 @@ import { getBaseUrl } from "../utils/base-url";
 
 // --- HTML Templates ---
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function wrapHtml(title: string, bodyContent: string): string {
   return `<!DOCTYPE html>
 <html lang="es">
@@ -48,10 +57,10 @@ function appointmentSummaryHtml(appt: {
 
   return `
     <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-      <tr><td style="padding:8px 12px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;width:40%;">Proveedor</td><td style="padding:8px 12px;border:1px solid #e2e8f0;">${appt.providerName}</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;width:40%;">Proveedor</td><td style="padding:8px 12px;border:1px solid #e2e8f0;">${escapeHtml(appt.providerName)}</td></tr>
       <tr><td style="padding:8px 12px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Fecha</td><td style="padding:8px 12px;border:1px solid #e2e8f0;">${dateStr}</td></tr>
       <tr><td style="padding:8px 12px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Horario</td><td style="padding:8px 12px;border:1px solid #e2e8f0;">${startTime} — ${endTime}</td></tr>
-      ${appt.goodsType ? `<tr><td style="padding:8px 12px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Mercancía</td><td style="padding:8px 12px;border:1px solid #e2e8f0;">${appt.goodsType}</td></tr>` : ""}
+      ${appt.goodsType ? `<tr><td style="padding:8px 12px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Mercancía</td><td style="padding:8px 12px;border:1px solid #e2e8f0;">${escapeHtml(appt.goodsType)}</td></tr>` : ""}
       ${appt.units != null ? `<tr><td style="padding:8px 12px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Unidades</td><td style="padding:8px 12px;border:1px solid #e2e8f0;">${appt.units}</td></tr>` : ""}
       <tr><td style="padding:8px 12px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Tamaño</td><td style="padding:8px 12px;border:1px solid #e2e8f0;">${sizeLabel}</td></tr>
       <tr><td style="padding:8px 12px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Duración</td><td style="padding:8px 12px;border:1px solid #e2e8f0;">~${appt.workMinutesNeeded} min</td></tr>
@@ -60,11 +69,11 @@ function appointmentSummaryHtml(appt: {
 
 function buildConfirmationEmailHtml(appt: any, confirmUrl: string, extraText: string, contactPhone: string): string {
   const summary = appointmentSummaryHtml(appt);
-  const phoneSection = contactPhone ? `<p style="margin:8px 0;font-size:13px;color:#64748b;">Teléfono del almacén: <strong>${contactPhone}</strong></p>` : "";
-  const extraSection = extraText ? `<div style="margin:16px 0;padding:12px;background:#fefce8;border:1px solid #fef08a;border-radius:6px;font-size:13px;">${extraText}</div>` : "";
+  const phoneSection = contactPhone ? `<p style="margin:8px 0;font-size:13px;color:#64748b;">Teléfono del almacén: <strong>${escapeHtml(contactPhone)}</strong></p>` : "";
+  const extraSection = extraText ? `<div style="margin:16px 0;padding:12px;background:#fefce8;border:1px solid #fef08a;border-radius:6px;font-size:13px;">${escapeHtml(extraText)}</div>` : "";
 
   return wrapHtml("Confirmación de cita — Centro Hogar Sánchez", `
-    <p style="margin:0 0 8px;font-size:16px;">Hola <strong>${appt.providerName}</strong>,</p>
+    <p style="margin:0 0 8px;font-size:16px;">Hola <strong>${escapeHtml(appt.providerName)}</strong>,</p>
     <p style="margin:0 0 16px;color:#475569;">Tu cita de descarga ha sido registrada con los siguientes datos:</p>
     ${summary}
     ${extraSection}
@@ -79,8 +88,8 @@ function buildConfirmationEmailHtml(appt: any, confirmUrl: string, extraText: st
 
 function buildReminderEmailHtml(appt: any, confirmUrl: string, isConfirmed: boolean, extraText: string, contactPhone: string): string {
   const summary = appointmentSummaryHtml(appt);
-  const phoneSection = contactPhone ? `<p style="margin:8px 0;font-size:13px;color:#64748b;">Teléfono del almacén: <strong>${contactPhone}</strong></p>` : "";
-  const extraSection = extraText ? `<div style="margin:16px 0;padding:12px;background:#fefce8;border:1px solid #fef08a;border-radius:6px;font-size:13px;">${extraText}</div>` : "";
+  const phoneSection = contactPhone ? `<p style="margin:8px 0;font-size:13px;color:#64748b;">Teléfono del almacén: <strong>${escapeHtml(contactPhone)}</strong></p>` : "";
+  const extraSection = extraText ? `<div style="margin:16px 0;padding:12px;background:#fefce8;border:1px solid #fef08a;border-radius:6px;font-size:13px;">${escapeHtml(extraText)}</div>` : "";
 
   const actionSection = isConfirmed
     ? `<p style="color:#16a34a;font-weight:600;">Tu cita ya está confirmada. Si necesitas hacer algún cambio:</p>
@@ -94,7 +103,7 @@ function buildReminderEmailHtml(appt: any, confirmUrl: string, isConfirmed: bool
        <p style="margin:8px 0;font-size:13px;color:#64748b;text-align:center;">Si no puedes acudir, te pedimos que anules con la máxima antelación posible.</p>`;
 
   return wrapHtml("Recordatorio de cita — Centro Hogar Sánchez", `
-    <p style="margin:0 0 8px;font-size:16px;">Hola <strong>${appt.providerName}</strong>,</p>
+    <p style="margin:0 0 8px;font-size:16px;">Hola <strong>${escapeHtml(appt.providerName)}</strong>,</p>
     <p style="margin:0 0 16px;color:#475569;">Te recordamos que tienes una cita de descarga programada:</p>
     ${summary}
     ${extraSection}
@@ -174,11 +183,6 @@ export async function sendAppointmentReminder(appointmentId: string): Promise<bo
       });
     }
 
-    await prisma.appointment.update({
-      where: { id: appointmentId },
-      data: { reminderSentAt: new Date() },
-    });
-
     const baseUrl = getBaseUrl();
     const confirmUrl = `${baseUrl}/api/appointments/confirm/${token}`;
     const isConfirmed = appt.confirmationStatus === "confirmed";
@@ -187,6 +191,10 @@ export async function sendAppointmentReminder(appointmentId: string): Promise<bo
 
     const sent = await sendEmail(appt.providerEmail, subject, html, "ALERT");
     if (sent) {
+      await prisma.appointment.update({
+        where: { id: appointmentId },
+        data: { reminderSentAt: new Date() },
+      });
       console.log(`[PROVIDER-EMAIL] Reminder sent to ${appt.providerEmail} for appointment ${appointmentId}`);
     }
     return sent;
@@ -234,8 +242,23 @@ export async function runReminderCheck(): Promise<number> {
 
   let sent = 0;
   for (const appt of appointments) {
+    // Atomic claim: only proceed if we're the one to mark it
+    const updated = await prisma.appointment.updateMany({
+      where: { id: appt.id, reminderSentAt: null },
+      data: { reminderSentAt: new Date() },
+    });
+    if (updated.count === 0) continue; // Another process already claimed it
+
     const ok = await sendAppointmentReminder(appt.id);
-    if (ok) sent++;
+    if (!ok) {
+      // Revert if send failed so it can be retried
+      await prisma.appointment.update({
+        where: { id: appt.id },
+        data: { reminderSentAt: null },
+      });
+    } else {
+      sent++;
+    }
   }
   return sent;
 }

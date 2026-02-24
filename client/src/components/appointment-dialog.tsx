@@ -52,6 +52,7 @@ interface FormErrors {
   dateRange?: string;
   workMinutesNeeded?: string;
   forkliftsNeeded?: string;
+  providerEmail?: string;
 }
 
 function getSizeBadge(workMinutes: number): { label: string; points: number; variant: "default" | "secondary" | "outline" } {
@@ -230,6 +231,10 @@ export function AppointmentDialog({
     const forklifts = parseInt(formData.forkliftsNeeded, 10);
     if (isNaN(forklifts) || forklifts < 0) {
       newErrors.forkliftsNeeded = "Las carretillas no pueden ser negativas";
+    }
+
+    if (formData.providerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.providerEmail)) {
+      newErrors.providerEmail = "Formato de email no válido";
     }
 
     setErrors(newErrors);

@@ -1,5 +1,6 @@
 import { prisma } from "../db/client";
 import { formatInTimeZone } from "date-fns-tz";
+import { getMadridDayOfWeek, getMadridMidnight, getMadridEndOfDay } from "../utils/madrid-date";
 
 type PrismaTransactionClient = Omit<
   typeof prisma,
@@ -98,7 +99,7 @@ export class SlotCapacityValidator {
   ): Promise<SlotInfo[]> {
     const client = this.getClient(tx);
 
-    const dayOfWeek = date.getDay();
+    const dayOfWeek = getMadridDayOfWeek(date);
 
     const templates = tx
       ? await client.slotTemplate.findMany({
@@ -107,10 +108,8 @@ export class SlotCapacityValidator {
         })
       : await this.getCachedTemplates(dayOfWeek, client);
 
-    const dateStart = new Date(date);
-    dateStart.setHours(0, 0, 0, 0);
-    const dateEnd = new Date(date);
-    dateEnd.setHours(23, 59, 59, 999);
+    const dateStart = getMadridMidnight(date);
+    const dateEnd = getMadridEndOfDay(date);
 
     const overrides = await client.slotOverride.findMany({
       where: {
@@ -205,10 +204,8 @@ export class SlotCapacityValidator {
   ): Promise<number | SlotUsageResult> {
     const client = this.getClient(tx);
 
-    const dateStart = new Date(date);
-    dateStart.setHours(0, 0, 0, 0);
-    const dateEnd = new Date(date);
-    dateEnd.setHours(23, 59, 59, 999);
+    const dateStart = getMadridMidnight(date);
+    const dateEnd = getMadridEndOfDay(date);
 
     const whereClause: any = {
       slotDate: { gte: dateStart, lte: dateEnd },
@@ -257,7 +254,7 @@ export class SlotCapacityValidator {
       );
     }
 
-    const dayOfWeek = date.getDay();
+    const dayOfWeek = getMadridDayOfWeek(date);
     const dayName = DAY_NAMES_ES[dayOfWeek];
 
     if (!slot) {
@@ -316,11 +313,8 @@ export class SlotCapacityValidator {
   ): Promise<Array<{ date: string; slots: SlotUsageInfo[] }>> {
     const results: Array<{ date: string; slots: SlotUsageInfo[] }> = [];
 
-    const current = new Date(startDate);
-    current.setHours(0, 0, 0, 0);
-
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
+    let current = getMadridMidnight(startDate);
+    const end = getMadridEndOfDay(endDate);
 
     while (current <= end) {
       const slots = await this.getSlotsForDate(current);

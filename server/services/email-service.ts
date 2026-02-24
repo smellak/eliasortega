@@ -8,7 +8,8 @@ import {
   buildAlertSubject,
 } from "./email-templates";
 import { formatInTimeZone } from "date-fns-tz";
-import { startOfDay, endOfDay, addDays } from "date-fns";
+import { addDays } from "date-fns";
+import { getMadridMidnight, getMadridEndOfDay } from "../utils/madrid-date";
 
 let transporter: Transporter | null = null;
 
@@ -99,8 +100,8 @@ export async function sendEmail(
 export async function sendDailySummary(targetDate?: Date): Promise<number> {
   const date = targetDate || addDays(new Date(), 1);
   const dateStr = formatInTimeZone(date, "Europe/Madrid", "dd/MM/yyyy");
-  const dayStart = startOfDay(date);
-  const dayEnd = endOfDay(date);
+  const dayStart = getMadridMidnight(date);
+  const dayEnd = getMadridEndOfDay(date);
 
   const appointments = await prisma.appointment.findMany({
     where: {

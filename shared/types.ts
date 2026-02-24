@@ -83,7 +83,7 @@ const appointmentBaseSchema = z.object({
   providerName: z.string().min(1),
   start: z.string().datetime(),
   end: z.string().datetime(),
-  workMinutesNeeded: z.coerce.number().int().min(0),
+  workMinutesNeeded: z.coerce.number().int().min(1),
   forkliftsNeeded: z.coerce.number().int().min(0),
   goodsType: z.string().optional(),
   units: z.coerce.number().int().min(0).optional(),
@@ -94,13 +94,21 @@ const appointmentBaseSchema = z.object({
   providerPhone: z.string().optional(),
 });
 
-export const createAppointmentSchema = appointmentBaseSchema.refine(
-  data => new Date(data.end) > new Date(data.start), 
-  {
-    message: "End time must be after start time",
-    path: ["end"],
-  }
-);
+export const createAppointmentSchema = appointmentBaseSchema
+  .refine(
+    data => new Date(data.end) > new Date(data.start),
+    {
+      message: "End time must be after start time",
+      path: ["end"],
+    }
+  )
+  .refine(
+    data => new Date(data.start) > new Date(),
+    {
+      message: "Start time must be in the future",
+      path: ["start"],
+    }
+  );
 export type CreateAppointmentInput = z.infer<typeof createAppointmentSchema>;
 
 export const updateAppointmentSchema = appointmentBaseSchema.partial();
@@ -171,7 +179,13 @@ export const createSlotOverrideSchema = z.object({
   endTime: z.string().optional(),
   maxPoints: z.number().int().min(0).default(0),
   reason: z.string().optional(),
-});
+}).refine(
+  data => !data.dateEnd || new Date(data.dateEnd) >= new Date(data.date),
+  {
+    message: "dateEnd must be >= date",
+    path: ["dateEnd"],
+  }
+);
 export type CreateSlotOverrideInput = z.infer<typeof createSlotOverrideSchema>;
 
 export const updateSlotOverrideSchema = createSlotOverrideSchema.partial();

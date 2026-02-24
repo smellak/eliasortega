@@ -5,6 +5,7 @@ import { prisma } from "../db/client";
 import { logAudit } from "../services/audit-service";
 import { sendAppointmentConfirmation } from "../services/provider-email-service";
 import { formatInTimeZone } from "date-fns-tz";
+import { getMadridDayOfWeek, getMadridMidnight } from "../utils/madrid-date";
 import {
   normalizeCategory,
   estimateLines,
@@ -55,12 +56,8 @@ const CALENDAR_AVAILABILITY_TOOL: Anthropic.Tool = {
         type: "number",
         description: "Minutos de trabajo estimados (obtenido del calculator agent)",
       },
-      forkliftsNeeded: {
-        type: "number",
-        description: "Número de carretillas necesarias (obtenido del calculator agent)",
-      },
     },
-    required: ["from", "to", "duration_minutes", "providerName", "goodsType", "units", "workMinutesNeeded", "forkliftsNeeded"],
+    required: ["from", "to", "duration_minutes", "providerName", "goodsType", "units", "workMinutesNeeded"],
   },
 };
 
@@ -102,10 +99,6 @@ const CALENDAR_BOOK_TOOL: Anthropic.Tool = {
         type: "number",
         description: "Minutos de trabajo estimados (obtenido del calculator agent)",
       },
-      forkliftsNeeded: {
-        type: "number",
-        description: "Número de carretillas necesarias (obtenido del calculator agent)",
-      },
       providerEmail: {
         type: "string",
         description: "Email del proveedor para enviar confirmación de cita (opcional)",
@@ -115,13 +108,13 @@ const CALENDAR_BOOK_TOOL: Anthropic.Tool = {
         description: "Teléfono del proveedor para contacto (opcional)",
       },
     },
-    required: ["start", "end", "providerName", "goodsType", "units", "workMinutesNeeded", "forkliftsNeeded"],
+    required: ["start", "end", "providerName", "goodsType", "units", "workMinutesNeeded"],
   },
 };
 
 const CALCULATOR_TOOL: Anthropic.Tool = {
   name: "calculator",
-  description: "Calcula los recursos necesarios (tiempo, carretillas, operarios) para una entrega basándose en el tipo de mercancía y unidades. Líneas y albaranes son opcionales: si no se proporcionan, se estiman con datos históricos. Usa esta herramienta antes de buscar disponibilidad o reservar.",
+  description: "Calcula el tiempo estimado de descarga basándose en el tipo de mercancía y unidades. Líneas y albaranes son opcionales: si no se proporcionan, se estiman con datos históricos. Usa esta herramienta antes de buscar disponibilidad o reservar.",
   input_schema: {
     type: "object",
     properties: {
@@ -191,7 +184,7 @@ async function executeCalendarAvailability(input: Record<string, any>): Promise<
 
   for (const day of availableSlots) {
     const dayDate = new Date(day.date + "T12:00:00");
-    const dayOfWeek = dayDate.getDay();
+    const dayOfWeek = getMadridDayOfWeek(dayDate);
     const dayName = DAY_NAMES_ES[dayOfWeek];
     const formattedDate = day.date.split("-").reverse().join("/");
 
@@ -264,7 +257,6 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
   const endDate = new Date(input.end);
   const providerName = input.providerName;
   const workMinutesNeeded = input.workMinutesNeeded || 60;
-  const forkliftsNeeded = input.forkliftsNeeded || 0;
 
   // Estimate missing lines/albaranes before saving
   const { lines, albaranes, estimatedFields } = resolveEstimations(input);
@@ -298,8 +290,7 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const result = await prisma.$transaction(async (tx) => {
-      const slotDate = new Date(currentStart);
-      slotDate.setHours(0, 0, 0, 0);
+      const slotDate = getMadridMidnight(currentStart);
 
       const resolvedSlotStart = await slotCapacityValidator.resolveSlotStartTime(currentStart, tx);
       const slotStartTime = resolvedSlotStart || formatInTimeZone(currentStart, "Europe/Madrid", "HH:mm");
@@ -329,7 +320,7 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
         startUtc: currentStart,
         endUtc: currentEnd,
         workMinutesNeeded,
-        forkliftsNeeded,
+        forkliftsNeeded: 0,
         goodsType: input.goodsType || null,
         units: input.units ?? null,
         lines: lines ?? null,

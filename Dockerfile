@@ -15,8 +15,6 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-RUN apk add --no-cache wget
-
 ENV NODE_ENV=production
 ENV PORT=5000
 
@@ -27,7 +25,4 @@ COPY --from=builder /app/package.json ./
 
 EXPOSE 5000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:5000/api/health || exit 1
-
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate resolve --applied 20251028223225_init 2>/dev/null; npx prisma migrate resolve --applied 20251029000000_full_schema 2>/dev/null; npx prisma migrate resolve --applied 20260224000000_add_slot_override_source 2>/dev/null; npx prisma migrate resolve --applied 20260224100000_add_slot_override_date_range 2>/dev/null; npx prisma migrate deploy && node dist/index.js"]

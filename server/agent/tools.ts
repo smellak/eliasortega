@@ -257,6 +257,12 @@ function resolveEstimations(input: Record<string, any>): {
 async function executeCalendarBook(input: Record<string, any>): Promise<string> {
   const startDate = new Date(input.start);
   const endDate = new Date(input.end);
+
+  // Reject Sundays (matches POST /api/appointments validation in routes.ts)
+  if (getMadridDayOfWeek(startDate) === 0) {
+    return JSON.stringify({ success: false, error: "El almacén está cerrado los domingos. Elige otro día." });
+  }
+
   const providerName = input.providerName;
   const workMinutesNeeded = input.workMinutesNeeded || 60;
 

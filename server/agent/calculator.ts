@@ -189,9 +189,9 @@ export async function runCalculator(input: CalculatorInput): Promise<CalculatorO
   } catch (error) {
     console.error("Calculator LLM fallback error:", error);
     return {
-      categoria_elegida: "Mobiliario",
-      work_minutes_needed: 60,
-      duration_min: 60,
+      categoria_elegida: "General",
+      work_minutes_needed: 90,
+      duration_min: 90,
       estimatedFields: estimatedFields.length > 0 ? estimatedFields : undefined,
       usedLines: filledInput.lines!,
       usedAlbaranes: filledInput.albaranes!,

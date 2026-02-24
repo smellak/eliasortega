@@ -266,7 +266,10 @@ export const createDockOverrideSchema = z.object({
   dateEnd: z.string().datetime().optional(),
   isActive: z.boolean().default(false),
   reason: z.string().optional(),
-});
+}).refine(
+  data => !data.dateEnd || new Date(data.dateEnd) >= new Date(data.date),
+  { message: "dateEnd must be >= date", path: ["dateEnd"] },
+);
 export type CreateDockOverrideInput = z.infer<typeof createDockOverrideSchema>;
 
 // Slot Capacity Conflict

@@ -318,7 +318,7 @@ router.post("/api/appointments/confirm", publicRateLimiter, async (req, res) => 
     }
 
     if (appt.confirmationStatus === "confirmed" && data.action === "confirm") {
-      return res.status(200).json({ success: true, status: "already_confirmed", message: "La cita ya estaba confirmada" });
+      return res.status(409).json({ success: true, status: "already_confirmed", message: "La cita ya estaba confirmada" });
     }
 
     if (appt.confirmationStatus === "cancelled") {
@@ -333,6 +333,9 @@ router.post("/api/appointments/confirm", publicRateLimiter, async (req, res) => 
       return res.json({ success: true, status: "confirmed", message: "Cita confirmada correctamente" });
     }
 
+    // Design decision: A confirmed appointment CAN be cancelled by the provider.
+    // This is intentional — a provider who confirmed may later need to cancel.
+    // Valid transitions: pending→confirmed, pending→cancelled, confirmed→cancelled.
     if (data.action === "cancel") {
       await processAppointmentCancellation(appt.id, data.reason);
       return res.json({ success: true, status: "cancelled", message: "Cita anulada correctamente" });

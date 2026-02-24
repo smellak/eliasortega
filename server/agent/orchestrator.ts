@@ -4,6 +4,8 @@ import { getMainAgentPrompt } from "./prompts";
 import { AGENT_TOOLS, executeToolCall } from "./tools";
 import { ConversationMemory } from "./memory";
 
+const AGENT_MODEL = process.env.AGENT_MODEL || "claude-sonnet-4-6";
+
 export interface StreamChunk {
   type: "text" | "thinking" | "tool_use" | "tool_result" | "done" | "error";
   content?: string;
@@ -60,7 +62,7 @@ export class AgentOrchestrator {
 
         const systemPrompt = await getMainAgentPrompt(new Date());
         const stream = await anthropic.messages.stream({
-          model: "claude-opus-4-6",
+          model: AGENT_MODEL,
           max_tokens: 4096,
           system: systemPrompt,
           messages: anthropicMessages,

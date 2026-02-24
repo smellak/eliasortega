@@ -321,8 +321,8 @@ export class SlotCapacityValidator {
     const slot = await this.findSlotForTime(date, slotStartTime, tx);
     if (!slot) return 0;
 
-    // A dock is "available" if it has fewer active bookings than the slot's max points
-    // (since each booking uses at least 1 point, a dock can't have more bookings than maxPoints)
+    // A dock is "available" if it has fewer active bookings than its fair share of the
+    // slot's max points (maxPoints is total capacity across all docks, not per-dock).
     let availableCount = 0;
     for (const dock of activeDocks) {
       const bookings = await client.appointment.count({
@@ -333,8 +333,8 @@ export class SlotCapacityValidator {
           confirmationStatus: { not: "cancelled" },
         },
       });
-      // A dock is available if its booking count is less than the slot's max points
-      if (bookings < slot.maxPoints) {
+      const perDockLimit = Math.ceil(slot.maxPoints / activeDocks.length);
+      if (bookings < perDockLimit) {
         availableCount++;
       }
     }

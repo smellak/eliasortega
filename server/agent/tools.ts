@@ -294,9 +294,11 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
   // Attempt to book in the requested slot first
   const maxAttempts = 3;
   let currentStart = new Date(startDate);
+  let lastAttemptedStart = new Date(startDate);
   let lastError: string | null = null;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    lastAttemptedStart = new Date(currentStart);
     const result = await prisma.$transaction(async (tx) => {
       const slotDate = getMadridMidnight(currentStart);
 
@@ -426,7 +428,7 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
       currentStart.setHours(hours, minutes, 0, 0);
 
       // Skip if this is the same slot we just failed on
-      const prevTimeStr = formatInTimeZone(startDate, "Europe/Madrid", "yyyy-MM-dd HH:mm");
+      const prevTimeStr = formatInTimeZone(lastAttemptedStart, "Europe/Madrid", "yyyy-MM-dd HH:mm");
       const newTimeStr = formatInTimeZone(currentStart, "Europe/Madrid", "yyyy-MM-dd HH:mm");
       if (prevTimeStr === newTimeStr && nextDay.slots.length > 1) {
         const altSlot = nextDay.slots[1];

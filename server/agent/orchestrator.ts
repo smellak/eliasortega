@@ -28,28 +28,32 @@ export class AgentOrchestrator {
       await this.memory.addUserMessage(userMessage);
 
       const history = await this.memory.getHistory();
-      
-      // Limit history to prevent token overflow
-      // Keep only the most recent messages (last 10 exchanges = 20 messages)
-      const recentHistory = history.slice(-20);
-      
-      const anthropicMessages: Anthropic.MessageParam[] = recentHistory.map((msg) => {
-        let content = msg.content;
-        
-        // Truncate very long content (e.g., large tool results) to prevent prompt bloat
-        if (content.length > 3000) {
-          // Try to truncate at a safe boundary (newline or closing brace) to avoid corrupting JSON
-          let cutPoint = 2800;
-          const newlineIdx = content.lastIndexOf("\n", cutPoint);
-          if (newlineIdx > 2000) cutPoint = newlineIdx;
-          content = content.substring(0, cutPoint) + "\n... [truncado por tamaño]";
+
+      // Limit history to prevent token overflow.
+      // Strategy: keep the most recent messages intact, dropping oldest first
+      // if total character count exceeds budget. This avoids cutting messages
+      // mid-content, which can corrupt context.
+      const MAX_HISTORY_CHARS = 30000;
+      const MAX_MESSAGES = 20;
+
+      let recentHistory = history.slice(-MAX_MESSAGES);
+
+      // Drop oldest messages until we fit within the character budget
+      let totalChars = recentHistory.reduce((sum, msg) => sum + msg.content.length, 0);
+      while (totalChars > MAX_HISTORY_CHARS && recentHistory.length > 2) {
+        totalChars -= recentHistory[0].content.length;
+        recentHistory = recentHistory.slice(1);
+        // Ensure we don't start with an assistant message (Anthropic requires user-first)
+        if (recentHistory.length > 0 && recentHistory[0].role === "assistant") {
+          totalChars -= recentHistory[0].content.length;
+          recentHistory = recentHistory.slice(1);
         }
-        
-        return {
-          role: msg.role === "user" ? "user" : "assistant",
-          content: content,
-        };
-      });
+      }
+
+      const anthropicMessages: Anthropic.MessageParam[] = recentHistory.map((msg) => ({
+        role: msg.role === "user" ? "user" : "assistant",
+        content: msg.content,
+      }));
 
       let fullAssistantResponse = "";
       let shouldContinue = true;

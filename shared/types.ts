@@ -121,6 +121,7 @@ export interface Appointment {
   pointsUsed: number | null;
   slotDate: string | null;
   slotStartTime: string | null;
+  estimatedFields: string | null;
   createdAt: string;
   updatedAt: string;
 }

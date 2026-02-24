@@ -33,6 +33,7 @@ interface AppointmentDialogProps {
     units?: number;
     lines?: number;
     deliveryNotesCount?: number;
+    estimatedFields?: string | null;
   };
   providers: Array<{ id: string; name: string }>;
   onSave: (data: any) => void;
@@ -62,6 +63,14 @@ export function AppointmentDialog({
   providers,
   onSave,
 }: AppointmentDialogProps) {
+  const isFieldEstimated = (field: string): boolean => {
+    if (!appointment?.estimatedFields) return false;
+    try {
+      const fields = JSON.parse(appointment.estimatedFields);
+      return Array.isArray(fields) && fields.includes(field);
+    } catch { return false; }
+  };
+
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [availableSlots, setAvailableSlots] = useState<SlotAvailability[]>([]);
@@ -467,8 +476,28 @@ export function AppointmentDialog({
                 min="0"
                 value={formData.lines}
                 onChange={(e) => setFormData({ ...formData, lines: e.target.value })}
+                placeholder="Opcional — se estima auto."
                 data-testid="input-lines"
               />
+              {appointment?.estimatedFields && isFieldEstimated("lines") && formData.lines && (
+                <span className="text-xs text-amber-600 dark:text-amber-400 mt-1 inline-block">~{formData.lines} (estimado)</span>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="delivery-notes">Albaranes</Label>
+              <Input
+                id="delivery-notes"
+                type="number"
+                min="0"
+                value={formData.deliveryNotesCount}
+                onChange={(e) => setFormData({ ...formData, deliveryNotesCount: e.target.value })}
+                placeholder="Opcional — se estima auto."
+                data-testid="input-delivery-notes"
+              />
+              {appointment?.estimatedFields && isFieldEstimated("deliveryNotesCount") && formData.deliveryNotesCount && (
+                <span className="text-xs text-amber-600 dark:text-amber-400 mt-1 inline-block">~{formData.deliveryNotesCount} (estimado)</span>
+              )}
             </div>
           </div>
         </div>

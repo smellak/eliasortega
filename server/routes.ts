@@ -28,6 +28,7 @@ import { logAudit, computeChanges } from "./services/audit-service";
 import { sendAppointmentAlert, sendTestEmail, sendDailySummary } from "./services/email-service";
 import { prisma } from "./db/client";
 import { formatInTimeZone } from 'date-fns-tz';
+import { normalizeCategory, estimateLines, estimateDeliveryNotes, ESTIMATION_RATIOS } from "./config/estimation-ratios";
 import { addMinutes, setHours, setMinutes, setSeconds, setMilliseconds, isWeekend, addDays } from 'date-fns';
 import type { Request, Response, NextFunction } from "express";
 
@@ -71,6 +72,28 @@ function formatToMadridLocal(date: Date): string {
   return formatInTimeZone(date, 'Europe/Madrid', 'dd/MM/yyyy, HH:mm');
 }
 
+function resolveEstimationsForRoute(goodsType: string | null, units: number | null, lines: number | null, deliveryNotesCount: number | null): { lines: number | null; deliveryNotesCount: number | null; estimatedFields: string[] } {
+  const estimated: string[] = [];
+  let resolvedLines = lines;
+  let resolvedDN = deliveryNotesCount;
+
+  if (goodsType && units != null && units > 0) {
+    const category = normalizeCategory(goodsType);
+    if (category) {
+      if (resolvedLines == null) {
+        resolvedLines = estimateLines(category, units);
+        estimated.push("lines");
+      }
+      if (resolvedDN == null) {
+        resolvedDN = estimateDeliveryNotes(category);
+        estimated.push("deliveryNotesCount");
+      }
+    }
+  }
+
+  return { lines: resolvedLines, deliveryNotesCount: resolvedDN, estimatedFields: estimated };
+}
+
 async function upsertAppointmentInternal(data: {
   externalRef: string;
   providerId: string | null;
@@ -84,6 +107,8 @@ async function upsertAppointmentInternal(data: {
   lines: number | null;
   deliveryNotesCount: number | null;
 }) {
+  const est = resolveEstimationsForRoute(data.goodsType, data.units, data.lines, data.deliveryNotesCount);
+
   return prisma.$transaction(async (tx) => {
     const existing = await tx.appointment.findUnique({
       where: { externalRef: data.externalRef },
@@ -130,8 +155,9 @@ async function upsertAppointmentInternal(data: {
           forkliftsNeeded: data.forkliftsNeeded,
           goodsType: data.goodsType,
           units: data.units,
-          lines: data.lines,
-          deliveryNotesCount: data.deliveryNotesCount,
+          lines: est.lines,
+          deliveryNotesCount: est.deliveryNotesCount,
+          estimatedFields: est.estimatedFields.length > 0 ? JSON.stringify(est.estimatedFields) : null,
           size,
           pointsUsed,
           slotDate,
@@ -152,8 +178,9 @@ async function upsertAppointmentInternal(data: {
         forkliftsNeeded: data.forkliftsNeeded,
         goodsType: data.goodsType,
         units: data.units,
-        lines: data.lines,
-        deliveryNotesCount: data.deliveryNotesCount,
+        lines: est.lines,
+        deliveryNotesCount: est.deliveryNotesCount,
+        estimatedFields: est.estimatedFields.length > 0 ? JSON.stringify(est.estimatedFields) : null,
         externalRef: data.externalRef,
         size,
         pointsUsed,
@@ -886,6 +913,8 @@ router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNE
   try {
     const data = createAppointmentSchema.parse(req.body);
 
+    const est = resolveEstimationsForRoute(data.goodsType ?? null, data.units ?? null, data.lines ?? null, data.deliveryNotesCount ?? null);
+
     const { size, points: pointsUsed } = slotCapacityValidator.determineSizeAndPoints(data.workMinutesNeeded);
     const startDate = new Date(data.start);
     const slotDate = new Date(startDate);
@@ -926,8 +955,9 @@ router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNE
           forkliftsNeeded: data.forkliftsNeeded,
           goodsType: data.goodsType,
           units: data.units,
-          lines: data.lines,
-          deliveryNotesCount: data.deliveryNotesCount,
+          lines: est.lines,
+          deliveryNotesCount: est.deliveryNotesCount,
+          estimatedFields: est.estimatedFields.length > 0 ? JSON.stringify(est.estimatedFields) : null,
           externalRef: data.externalRef,
           size,
           pointsUsed,
@@ -1714,8 +1744,8 @@ router.post("/api/integration/calendar/book", integrationRateLimiter, authentica
         forkliftsNeeded: normalized.forkliftsNeeded,
         goodsType: normalized.goodsType || null,
         units: normalized.units || null,
-        lines: normalized.lines || null,
-        deliveryNotesCount: normalized.deliveryNotesCount || null,
+        lines: normalized.lines ? normalized.lines : null,
+        deliveryNotesCount: normalized.deliveryNotesCount ? normalized.deliveryNotesCount : null,
       });
 
       if (result.success) {
@@ -2215,6 +2245,11 @@ router.get("/api/slots/week", authenticateToken, async (req: AuthRequest, res) =
     console.error("Get slots/week error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
+});
+
+// Estimation ratios config (read-only)
+router.get("/api/config/estimation-ratios", authenticateToken, requireRole("ADMIN"), async (_req: AuthRequest, res) => {
+  res.json(ESTIMATION_RATIOS);
 });
 
 export default router;

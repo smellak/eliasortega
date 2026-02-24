@@ -4,6 +4,11 @@ import { slotCapacityValidator } from "../services/slot-validator";
 import { prisma } from "../db/client";
 import { logAudit } from "../services/audit-service";
 import { formatInTimeZone } from "date-fns-tz";
+import {
+  normalizeCategory,
+  estimateLines,
+  estimateDeliveryNotes,
+} from "../config/estimation-ratios";
 
 const DAY_NAMES_ES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 
@@ -39,11 +44,11 @@ const CALENDAR_AVAILABILITY_TOOL: Anthropic.Tool = {
       },
       lines: {
         type: "number",
-        description: "Número de líneas/referencias diferentes",
+        description: "Número de líneas/referencias diferentes (opcional — se estima si no se proporciona)",
       },
       albaranes: {
         type: "number",
-        description: "Número de albaranes/documentos de entrega",
+        description: "Número de albaranes/documentos de entrega (opcional — se estima si no se proporciona)",
       },
       workMinutesNeeded: {
         type: "number",
@@ -54,7 +59,7 @@ const CALENDAR_AVAILABILITY_TOOL: Anthropic.Tool = {
         description: "Número de carretillas necesarias (obtenido del calculator agent)",
       },
     },
-    required: ["from", "to", "duration_minutes", "providerName", "goodsType", "units", "lines", "albaranes", "workMinutesNeeded", "forkliftsNeeded"],
+    required: ["from", "to", "duration_minutes", "providerName", "goodsType", "units", "workMinutesNeeded", "forkliftsNeeded"],
   },
 };
 
@@ -86,11 +91,11 @@ const CALENDAR_BOOK_TOOL: Anthropic.Tool = {
       },
       lines: {
         type: "number",
-        description: "Número de líneas/referencias diferentes",
+        description: "Número de líneas/referencias diferentes (opcional — se estima si no se proporciona)",
       },
       albaranes: {
         type: "number",
-        description: "Número de albaranes/documentos de entrega",
+        description: "Número de albaranes/documentos de entrega (opcional — se estima si no se proporciona)",
       },
       workMinutesNeeded: {
         type: "number",
@@ -101,13 +106,13 @@ const CALENDAR_BOOK_TOOL: Anthropic.Tool = {
         description: "Número de carretillas necesarias (obtenido del calculator agent)",
       },
     },
-    required: ["start", "end", "providerName", "goodsType", "units", "lines", "albaranes", "workMinutesNeeded", "forkliftsNeeded"],
+    required: ["start", "end", "providerName", "goodsType", "units", "workMinutesNeeded", "forkliftsNeeded"],
   },
 };
 
 const CALCULATOR_TOOL: Anthropic.Tool = {
   name: "calculator",
-  description: "Calcula los recursos necesarios (tiempo, carretillas, operarios) para una entrega basándose en el tipo de mercancía, unidades, líneas y albaranes. Usa esta herramienta antes de buscar disponibilidad o reservar.",
+  description: "Calcula los recursos necesarios (tiempo, carretillas, operarios) para una entrega basándose en el tipo de mercancía y unidades. Líneas y albaranes son opcionales: si no se proporcionan, se estiman con datos históricos. Usa esta herramienta antes de buscar disponibilidad o reservar.",
   input_schema: {
     type: "object",
     properties: {
@@ -125,14 +130,14 @@ const CALCULATOR_TOOL: Anthropic.Tool = {
       },
       lines: {
         type: "number",
-        description: "Número de líneas/referencias diferentes en el pedido",
+        description: "Número de líneas/referencias diferentes (opcional — se estima si no se proporciona)",
       },
       albaranes: {
         type: "number",
-        description: "Número de albaranes/documentos de entrega",
+        description: "Número de albaranes/documentos de entrega (opcional — se estima si no se proporciona)",
       },
     },
-    required: ["goodsType", "units", "lines", "albaranes"],
+    required: ["goodsType", "units"],
   },
 };
 
@@ -207,6 +212,41 @@ async function executeCalendarAvailability(input: Record<string, any>): Promise<
 }
 
 /**
+ * Resolve lines and albaranes from input, estimating if not provided.
+ * Returns the resolved values and which fields were estimated.
+ */
+function resolveEstimations(input: Record<string, any>): {
+  lines: number | null;
+  albaranes: number | null;
+  estimatedFields: string[];
+} {
+  const estimatedFields: string[] = [];
+  const category = normalizeCategory(input.goodsType || "");
+  const units = input.units || 0;
+
+  let lines: number | null = input.lines ?? null;
+  let albaranes: number | null = input.albaranes ?? null;
+
+  if (lines == null || lines === undefined) {
+    if (category) {
+      lines = estimateLines(category, units);
+      estimatedFields.push("lines");
+      console.log(`[Agent] Estimated lines for ${category}: ${lines} (from ${units} units)`);
+    }
+  }
+
+  if (albaranes == null || albaranes === undefined) {
+    if (category) {
+      albaranes = estimateDeliveryNotes(category);
+      estimatedFields.push("deliveryNotes");
+      console.log(`[Agent] Estimated deliveryNotes for ${category}: ${albaranes}`);
+    }
+  }
+
+  return { lines, albaranes, estimatedFields };
+}
+
+/**
  * Execute calendar_book using prisma directly with slot validation.
  * If the requested slot is full, retries by searching for the next available slot.
  */
@@ -216,6 +256,9 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
   const providerName = input.providerName;
   const workMinutesNeeded = input.workMinutesNeeded || 60;
   const forkliftsNeeded = input.forkliftsNeeded || 0;
+
+  // Estimate missing lines/albaranes before saving
+  const { lines, albaranes, estimatedFields } = resolveEstimations(input);
 
   const { size, points: pointsUsed } = slotCapacityValidator.determineSizeAndPoints(workMinutesNeeded);
 
@@ -236,7 +279,7 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
     }).catch(() => {});
   }
 
-  const externalRef = `agent-${providerName}-${input.start}-${input.units}-${input.lines}`;
+  const externalRef = `agent-${providerName}-${input.start}-${input.units}-${lines ?? 0}`;
   const durationMs = endDate.getTime() - startDate.getTime();
 
   // Attempt to book in the requested slot first
@@ -271,46 +314,36 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
 
       const currentEnd = new Date(currentStart.getTime() + durationMs);
 
+      const appointmentData = {
+        providerId: provider!.id,
+        providerName,
+        startUtc: currentStart,
+        endUtc: currentEnd,
+        workMinutesNeeded,
+        forkliftsNeeded,
+        goodsType: input.goodsType || null,
+        units: input.units ?? null,
+        lines: lines ?? null,
+        deliveryNotesCount: albaranes ?? null,
+        size,
+        pointsUsed,
+        slotDate,
+        slotStartTime: slotValidation.slotStartTime,
+        estimatedFields: estimatedFields.length > 0 ? JSON.stringify(estimatedFields) : null,
+      };
+
       if (existing) {
         const appointment = await tx.appointment.update({
           where: { id: existing.id },
-          data: {
-            providerId: provider!.id,
-            providerName,
-            startUtc: currentStart,
-            endUtc: currentEnd,
-            workMinutesNeeded,
-            forkliftsNeeded,
-            goodsType: input.goodsType || null,
-            units: input.units || null,
-            lines: input.lines || null,
-            deliveryNotesCount: input.albaranes || null,
-            size,
-            pointsUsed,
-            slotDate,
-            slotStartTime: slotValidation.slotStartTime,
-          },
+          data: appointmentData,
         });
         return { success: true as const, action: "updated" as const, appointment };
       }
 
       const appointment = await tx.appointment.create({
         data: {
-          providerId: provider!.id,
-          providerName,
-          startUtc: currentStart,
-          endUtc: currentEnd,
-          workMinutesNeeded,
-          forkliftsNeeded,
-          goodsType: input.goodsType || null,
-          units: input.units || null,
-          lines: input.lines || null,
-          deliveryNotesCount: input.albaranes || null,
+          ...appointmentData,
           externalRef,
-          size,
-          pointsUsed,
-          slotDate,
-          slotStartTime: slotValidation.slotStartTime,
         },
       });
 
@@ -331,7 +364,7 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
         changes: { providerName, start: appointment.startUtc.toISOString(), end: appointment.endUtc.toISOString() },
       }).catch(() => {});
 
-      return JSON.stringify({
+      const responseObj: Record<string, any> = {
         success: true,
         confirmationHtml: `<b>Cita confirmada</b><br>Proveedor: ${providerName}<br>Tipo: ${input.goodsType}<br>Fecha: ${startLocal.split(",")[0]}<br>Hora: ${startLocal.split(", ")[1]}–${endLocal} (duración: ${duration} min)<br>Talla: ${size} (${pointsUsed} pts)`,
         providerName,
@@ -341,7 +374,13 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
         size,
         pointsUsed,
         id: appointment.id,
-      }, null, 2);
+      };
+
+      if (estimatedFields.length > 0) {
+        responseObj.note = `Nota: se han estimado ${estimatedFields.join(" y ")} a partir de datos históricos de ${input.goodsType}.`;
+      }
+
+      return JSON.stringify(responseObj, null, 2);
     }
 
     // Slot was full — try next available slot on the same or subsequent days
@@ -367,13 +406,11 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
       const prevTimeStr = formatInTimeZone(startDate, "Europe/Madrid", "yyyy-MM-dd HH:mm");
       const newTimeStr = formatInTimeZone(currentStart, "Europe/Madrid", "yyyy-MM-dd HH:mm");
       if (prevTimeStr === newTimeStr && nextDay.slots.length > 1) {
-        // Try the second slot instead
         const altSlot = nextDay.slots[1];
         const [h2, m2] = altSlot.startTime.split(":").map(Number);
         currentStart = new Date(nextDay.date + "T00:00:00");
         currentStart.setHours(h2, m2, 0, 0);
       } else if (prevTimeStr === newTimeStr) {
-        // Same slot, same day — skip to next day
         if (nextAvailable.length > 1) {
           const altDay = nextAvailable[1];
           const altSlot2 = altDay.slots[0];
@@ -381,11 +418,11 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
           currentStart = new Date(altDay.date + "T00:00:00");
           currentStart.setHours(h3, m3, 0, 0);
         } else {
-          break; // No more options
+          break;
         }
       }
     } else {
-      break; // No available slots found
+      break;
     }
   }
 
@@ -408,11 +445,16 @@ export async function executeToolCall(
           providerName: toolInput.providerName,
           goodsType: toolInput.goodsType,
           units: toolInput.units,
-          lines: toolInput.lines,
-          albaranes: toolInput.albaranes,
+          lines: toolInput.lines ?? undefined,
+          albaranes: toolInput.albaranes ?? undefined,
         };
         const calcResult = await runCalculator(calcInput);
-        return JSON.stringify(calcResult, null, 2);
+
+        const response: Record<string, any> = { ...calcResult };
+        if (calcResult.estimatedFields && calcResult.estimatedFields.length > 0) {
+          response.note = `Nota: se han estimado ${calcResult.estimatedFields.join(" y ")} a partir de datos históricos de ${calcResult.categoria_elegida}.`;
+        }
+        return JSON.stringify(response, null, 2);
       }
 
       case "calendar_availability":

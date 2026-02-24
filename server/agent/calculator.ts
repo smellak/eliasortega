@@ -1,13 +1,18 @@
 import { anthropic } from "./llm-clients";
 import { CALCULATOR_AGENT_SYSTEM_PROMPT } from "./prompts";
 import { z } from "zod";
+import {
+  normalizeCategory as normalizeCategoryFromRatios,
+  estimateLines,
+  estimateDeliveryNotes,
+} from "../config/estimation-ratios";
 
 const calculatorInputSchema = z.object({
   providerName: z.string().optional(),
   goodsType: z.string(),
   units: z.number().int().min(0),
-  lines: z.number().int().min(0),
-  albaranes: z.number().int().min(0),
+  lines: z.number().int().min(0).optional().nullable(),
+  albaranes: z.number().int().min(0).optional().nullable(),
 });
 
 const calculatorOutputSchema = z.object({
@@ -19,7 +24,17 @@ const calculatorOutputSchema = z.object({
 });
 
 export type CalculatorInput = z.infer<typeof calculatorInputSchema>;
-export type CalculatorOutput = z.infer<typeof calculatorOutputSchema>;
+
+export interface CalculatorOutput {
+  categoria_elegida: string;
+  work_minutes_needed: number;
+  forklifts_needed: number;
+  workers_needed: number;
+  duration_min: number;
+  estimatedFields?: string[];
+  usedLines: number;
+  usedAlbaranes: number;
+}
 
 interface CategoryCoefficients {
   TD: number;
@@ -75,7 +90,8 @@ function normalizeCategory(goodsType: string): string | null {
     }
   }
 
-  return null;
+  // Fallback to estimation-ratios normalizer
+  return normalizeCategoryFromRatios(goodsType);
 }
 
 function humanRound(minutes: number): number {
@@ -92,8 +108,27 @@ function calculateDeterministic(input: CalculatorInput): CalculatorOutput | null
 
   const coeff = CATEGORIES[category];
   const U = Math.max(0, input.units);
-  const A = Math.max(0, input.albaranes);
-  const L = Math.max(0, input.lines);
+  const estimatedFields: string[] = [];
+
+  // Resolve lines — use provided value or estimate
+  let L: number;
+  if (input.lines != null && input.lines >= 0) {
+    L = input.lines;
+  } else {
+    L = estimateLines(category, U);
+    estimatedFields.push("lines");
+    console.log(`[Calculator] Using estimated lines for ${category}: ${L} (from ${U} units)`);
+  }
+
+  // Resolve albaranes — use provided value or estimate
+  let A: number;
+  if (input.albaranes != null && input.albaranes >= 0) {
+    A = input.albaranes;
+  } else {
+    A = estimateDeliveryNotes(category);
+    estimatedFields.push("deliveryNotes");
+    console.log(`[Calculator] Using estimated deliveryNotes for ${category}: ${A}`);
+  }
 
   let rawMinutes: number;
   if (category === "Asientos") {
@@ -130,6 +165,9 @@ function calculateDeterministic(input: CalculatorInput): CalculatorOutput | null
     forklifts_needed: forkliftsNeeded,
     workers_needed: workersNeeded,
     duration_min: workMinutes,
+    estimatedFields: estimatedFields.length > 0 ? estimatedFields : undefined,
+    usedLines: L,
+    usedAlbaranes: A,
   };
 }
 
@@ -141,6 +179,18 @@ export async function runCalculator(input: CalculatorInput): Promise<CalculatorO
     return deterministicResult;
   }
 
+  // LLM fallback for unknown categories — fill in lines/albaranes with defaults
+  const estimatedFields: string[] = [];
+  const filledInput = { ...input };
+  if (filledInput.lines == null) {
+    filledInput.lines = Math.max(1, Math.round(input.units * 0.3));
+    estimatedFields.push("lines");
+  }
+  if (filledInput.albaranes == null) {
+    filledInput.albaranes = 1;
+    estimatedFields.push("deliveryNotes");
+  }
+
   try {
     const response = await anthropic.messages.create({
       model: CALCULATOR_MODEL,
@@ -148,7 +198,7 @@ export async function runCalculator(input: CalculatorInput): Promise<CalculatorO
       top_k: 1,
       system: CALCULATOR_AGENT_SYSTEM_PROMPT,
       messages: [
-        { role: "user", content: JSON.stringify(input) },
+        { role: "user", content: JSON.stringify(filledInput) },
       ],
     });
 
@@ -156,7 +206,13 @@ export async function runCalculator(input: CalculatorInput): Promise<CalculatorO
     if (!textBlock || textBlock.type !== "text") throw new Error("No response from calculator agent");
 
     const parsed = JSON.parse(textBlock.text);
-    return calculatorOutputSchema.parse(parsed);
+    const base = calculatorOutputSchema.parse(parsed);
+    return {
+      ...base,
+      estimatedFields: estimatedFields.length > 0 ? estimatedFields : undefined,
+      usedLines: filledInput.lines!,
+      usedAlbaranes: filledInput.albaranes!,
+    };
   } catch (error) {
     console.error("Calculator LLM fallback error:", error);
     return {
@@ -165,6 +221,9 @@ export async function runCalculator(input: CalculatorInput): Promise<CalculatorO
       forklifts_needed: 1,
       workers_needed: 2,
       duration_min: 60,
+      estimatedFields: estimatedFields.length > 0 ? estimatedFields : undefined,
+      usedLines: filledInput.lines!,
+      usedAlbaranes: filledInput.albaranes!,
     };
   }
 }

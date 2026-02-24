@@ -108,6 +108,7 @@ model Appointment {
   pointsUsed         Int?             @map("points_used")
   slotDate           DateTime?        @map("slot_date")
   slotStartTime      String?          @map("slot_start_time")
+  estimatedFields    String?          @map("estimated_fields")
   createdAt          DateTime         @default(now()) @map("created_at")
   updatedAt          DateTime         @updatedAt @map("updated_at")
 

@@ -30,18 +30,10 @@ CREATE TABLE IF NOT EXISTS "dock_slot_availability" (
 CREATE UNIQUE INDEX IF NOT EXISTS "dock_slot_availability_dock_id_slot_template_id_key" ON "dock_slot_availability"("dock_id", "slot_template_id");
 
 -- AddForeignKey
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'dock_slot_availability_dock_id_fkey') THEN
-    ALTER TABLE "dock_slot_availability" ADD CONSTRAINT "dock_slot_availability_dock_id_fkey" FOREIGN KEY ("dock_id") REFERENCES "docks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-  END IF;
-END $$;
+ALTER TABLE "dock_slot_availability" ADD CONSTRAINT "dock_slot_availability_dock_id_fkey" FOREIGN KEY ("dock_id") REFERENCES "docks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'dock_slot_availability_slot_template_id_fkey') THEN
-    ALTER TABLE "dock_slot_availability" ADD CONSTRAINT "dock_slot_availability_slot_template_id_fkey" FOREIGN KEY ("slot_template_id") REFERENCES "slot_templates"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-  END IF;
-END $$;
+ALTER TABLE "dock_slot_availability" ADD CONSTRAINT "dock_slot_availability_slot_template_id_fkey" FOREIGN KEY ("slot_template_id") REFERENCES "slot_templates"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- CreateTable: dock_overrides
 CREATE TABLE IF NOT EXISTS "dock_overrides" (
@@ -64,25 +56,13 @@ CREATE INDEX IF NOT EXISTS "dock_overrides_dock_id_date_idx" ON "dock_overrides"
 CREATE INDEX IF NOT EXISTS "dock_overrides_date_end_idx" ON "dock_overrides"("date_end");
 
 -- AddForeignKey
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'dock_overrides_dock_id_fkey') THEN
-    ALTER TABLE "dock_overrides" ADD CONSTRAINT "dock_overrides_dock_id_fkey" FOREIGN KEY ("dock_id") REFERENCES "docks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-  END IF;
-END $$;
+ALTER TABLE "dock_overrides" ADD CONSTRAINT "dock_overrides_dock_id_fkey" FOREIGN KEY ("dock_id") REFERENCES "docks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AlterTable: appointments - add dock_id
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'appointments' AND column_name = 'dock_id') THEN
-    ALTER TABLE "appointments" ADD COLUMN "dock_id" TEXT;
-  END IF;
-END $$;
+ALTER TABLE "appointments" ADD COLUMN IF NOT EXISTS "dock_id" TEXT;
 
 -- AddForeignKey
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'appointments_dock_id_fkey') THEN
-    ALTER TABLE "appointments" ADD CONSTRAINT "appointments_dock_id_fkey" FOREIGN KEY ("dock_id") REFERENCES "docks"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-  END IF;
-END $$;
+ALTER TABLE "appointments" ADD CONSTRAINT "appointments_dock_id_fkey" FOREIGN KEY ("dock_id") REFERENCES "docks"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- CreateIndex
 CREATE INDEX IF NOT EXISTS "appointments_dock_id_slot_date_start_utc_end_utc_idx" ON "appointments"("dock_id", "slot_date", "start_utc", "end_utc");

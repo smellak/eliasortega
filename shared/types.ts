@@ -207,6 +207,7 @@ export const createEmailRecipientSchema = z.object({
   receivesDailySummary: z.boolean().optional().default(true),
   receivesAlerts: z.boolean().optional().default(true),
   receivesUrgent: z.boolean().optional().default(true),
+  active: z.boolean().optional().default(true),
 });
 export type CreateEmailRecipientInput = z.infer<typeof createEmailRecipientSchema>;
 

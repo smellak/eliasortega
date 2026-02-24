@@ -31,6 +31,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { Gauge, AlertCircle, Plus, Trash2, Info, ChevronDown } from "lucide-react";
 import {
   Collapsible,

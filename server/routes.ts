@@ -1176,6 +1176,8 @@ router.put("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "PLA
     if (data.lines !== undefined) updateData.lines = data.lines;
     if (data.deliveryNotesCount !== undefined) updateData.deliveryNotesCount = data.deliveryNotesCount;
     if (data.externalRef !== undefined) updateData.externalRef = data.externalRef;
+    if (data.providerEmail !== undefined) updateData.providerEmail = data.providerEmail || null;
+    if (data.providerPhone !== undefined) updateData.providerPhone = data.providerPhone || null;
 
     const result = await prisma.$transaction(async (tx) => {
       const current = await tx.appointment.findUnique({

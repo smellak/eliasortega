@@ -41,7 +41,7 @@ function getFromAddress(): string {
 
 async function logEmail(
   recipientEmail: string,
-  type: string,
+  type: "DAILY_SUMMARY" | "ALERT",
   subject: string,
   status: "SENT" | "FAILED",
   error?: string
@@ -66,7 +66,7 @@ export async function sendEmail(
   to: string,
   subject: string,
   html: string,
-  type: string
+  type: "DAILY_SUMMARY" | "ALERT"
 ): Promise<boolean> {
   const t = getTransporter();
   if (!t) {

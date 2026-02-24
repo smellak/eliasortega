@@ -172,14 +172,16 @@ export interface SlotTemplate {
 }
 
 // Slot Override types
-export const createSlotOverrideSchema = z.object({
+const slotOverrideBaseSchema = z.object({
   date: z.string().datetime(),
   dateEnd: z.string().datetime().optional(),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
   maxPoints: z.number().int().min(0).default(0),
   reason: z.string().optional(),
-}).refine(
+});
+
+export const createSlotOverrideSchema = slotOverrideBaseSchema.refine(
   data => !data.dateEnd || new Date(data.dateEnd) >= new Date(data.date),
   {
     message: "dateEnd must be >= date",
@@ -188,7 +190,7 @@ export const createSlotOverrideSchema = z.object({
 );
 export type CreateSlotOverrideInput = z.infer<typeof createSlotOverrideSchema>;
 
-export const updateSlotOverrideSchema = createSlotOverrideSchema.partial();
+export const updateSlotOverrideSchema = slotOverrideBaseSchema.partial();
 export type UpdateSlotOverrideInput = z.infer<typeof updateSlotOverrideSchema>;
 
 export interface SlotOverride {

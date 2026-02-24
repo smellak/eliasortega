@@ -102,10 +102,10 @@ app.use((req, res, next) => {
 
     // Log error for debugging but don't crash the server
     console.error("Error handler caught:", err);
-    
+
     // Only send response if headers haven't been sent
     if (!res.headersSent) {
-      res.status(status).json({ message });
+      res.status(status).json({ error: message });
     }
   });
 

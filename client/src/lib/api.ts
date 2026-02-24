@@ -102,14 +102,24 @@ async function handleResponse<T>(response: Response, retryFn?: () => Promise<Res
     throw new Error("Session expired");
   }
 
-  const data = await response.json();
+  const text = await response.text();
+  let data: any;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(
+      !response.ok
+        ? `Error del servidor (${response.status})`
+        : "Respuesta inesperada del servidor"
+    );
+  }
 
   if (!response.ok) {
     if (response.status === 401) {
       clearAuth();
       window.location.href = "/login";
     }
-    throw new Error(data.error || "Request failed");
+    throw new Error(data.error || data.message || "Request failed");
   }
 
   return data;

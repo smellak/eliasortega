@@ -1708,6 +1708,8 @@ router.post("/api/integration/calendar/parse", integrationRateLimiter, authentic
       deliveryNotesCount: parsed.deliveryNotesCount ?? 0,
       workMinutesNeeded: parsed.workMinutesNeeded ?? 0,
       forkliftsNeeded: parsed.forkliftsNeeded ?? 0,
+      providerEmail: parsed.providerEmail ?? "",
+      providerPhone: parsed.providerPhone ?? "",
     };
 
     res.json({
@@ -1763,6 +1765,8 @@ router.post("/api/integration/calendar/availability", integrationRateLimiter, au
       deliveryNotesCount: parsed.deliveryNotesCount ?? 0,
       workMinutesNeeded: parsed.workMinutesNeeded ?? 0,
       forkliftsNeeded: parsed.forkliftsNeeded ?? 0,
+      providerEmail: parsed.providerEmail ?? "",
+      providerPhone: parsed.providerPhone ?? "",
     };
 
     if (!normalized.from || !normalized.to || !normalized.duration_minutes) {
@@ -1857,6 +1861,8 @@ router.post("/api/integration/calendar/book", integrationRateLimiter, authentica
       deliveryNotesCount: parsed.deliveryNotesCount ?? 0,
       workMinutesNeeded: parsed.workMinutesNeeded ?? 0,
       forkliftsNeeded: parsed.forkliftsNeeded ?? 0,
+      providerEmail: parsed.providerEmail ?? "",
+      providerPhone: parsed.providerPhone ?? "",
     };
 
     if (!normalized.start || !normalized.end || !normalized.providerName) {
@@ -1903,6 +1909,8 @@ router.post("/api/integration/calendar/book", integrationRateLimiter, authentica
         units: normalized.units || null,
         lines: normalized.lines ? normalized.lines : null,
         deliveryNotesCount: normalized.deliveryNotesCount ? normalized.deliveryNotesCount : null,
+        providerEmail: normalized.providerEmail || null,
+        providerPhone: normalized.providerPhone || null,
       });
 
       if (result.success) {
@@ -1915,6 +1923,13 @@ router.post("/api/integration/calendar/book", integrationRateLimiter, authentica
           actorType: "INTEGRATION",
           changes: { providerName: normalized.providerName, start: currentStart.toISOString(), end: currentEnd.toISOString() },
         }).catch(() => {});
+
+        // Send confirmation email if provider email was provided
+        if (appointment.providerEmail) {
+          sendAppointmentConfirmation(appointment.id).catch((e) =>
+            console.error("[EMAIL] Provider confirmation error (integration):", e)
+          );
+        }
 
         const startLocal = formatToMadridLocal(currentStart);
         const endLocal = formatToMadridLocal(currentEnd);

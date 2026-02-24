@@ -353,6 +353,8 @@ export const rawCalendarQuerySchema = z.object({
   deliveryNotesCount: z.coerce.number().int().min(0).optional(),
   workMinutesNeeded: z.coerce.number().int().min(0).optional(),
   forkliftsNeeded: z.coerce.number().int().min(0).optional(),
+  providerEmail: z.string().email().optional(),
+  providerPhone: z.string().optional(),
 });
 export type RawCalendarQuery = z.infer<typeof rawCalendarQuerySchema>;
 
@@ -370,6 +372,8 @@ export interface NormalizedCalendarQuery {
   deliveryNotesCount: number;
   workMinutesNeeded: number;
   forkliftsNeeded: number;
+  providerEmail: string;
+  providerPhone: string;
 }
 
 // Appointment confirmation (public)

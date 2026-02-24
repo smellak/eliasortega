@@ -278,7 +278,8 @@ router.get("/api/appointments/confirm/:token", publicRateLimiter, async (req, re
       include: { dock: true },
     });
 
-    const contactPhone = (await prisma.appConfig.findUnique({ where: { key: "provider_email_contact_phone" } }))?.value || "";
+    let contactPhone = "";
+    try { contactPhone = (await prisma.appConfig.findUnique({ where: { key: "provider_email_contact_phone" } }))?.value || ""; } catch { /* appConfig may not exist */ }
 
     if (!appt) {
       return res.type("html").send(buildConfirmationPage("error", null, contactPhone));

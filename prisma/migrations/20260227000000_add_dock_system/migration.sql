@@ -29,10 +29,12 @@ CREATE TABLE IF NOT EXISTS "dock_slot_availability" (
 -- CreateIndex
 CREATE UNIQUE INDEX IF NOT EXISTS "dock_slot_availability_dock_id_slot_template_id_key" ON "dock_slot_availability"("dock_id", "slot_template_id");
 
--- AddForeignKey
+-- AddForeignKey (idempotent: drop if exists, then add)
+ALTER TABLE "dock_slot_availability" DROP CONSTRAINT IF EXISTS "dock_slot_availability_dock_id_fkey";
 ALTER TABLE "dock_slot_availability" ADD CONSTRAINT "dock_slot_availability_dock_id_fkey" FOREIGN KEY ("dock_id") REFERENCES "docks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
--- AddForeignKey
+-- AddForeignKey (idempotent: drop if exists, then add)
+ALTER TABLE "dock_slot_availability" DROP CONSTRAINT IF EXISTS "dock_slot_availability_slot_template_id_fkey";
 ALTER TABLE "dock_slot_availability" ADD CONSTRAINT "dock_slot_availability_slot_template_id_fkey" FOREIGN KEY ("slot_template_id") REFERENCES "slot_templates"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- CreateTable: dock_overrides
@@ -55,13 +57,15 @@ CREATE INDEX IF NOT EXISTS "dock_overrides_dock_id_date_idx" ON "dock_overrides"
 -- CreateIndex
 CREATE INDEX IF NOT EXISTS "dock_overrides_date_end_idx" ON "dock_overrides"("date_end");
 
--- AddForeignKey
+-- AddForeignKey (idempotent: drop if exists, then add)
+ALTER TABLE "dock_overrides" DROP CONSTRAINT IF EXISTS "dock_overrides_dock_id_fkey";
 ALTER TABLE "dock_overrides" ADD CONSTRAINT "dock_overrides_dock_id_fkey" FOREIGN KEY ("dock_id") REFERENCES "docks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AlterTable: appointments - add dock_id
 ALTER TABLE "appointments" ADD COLUMN IF NOT EXISTS "dock_id" TEXT;
 
--- AddForeignKey
+-- AddForeignKey (idempotent: drop if exists, then add)
+ALTER TABLE "appointments" DROP CONSTRAINT IF EXISTS "appointments_dock_id_fkey";
 ALTER TABLE "appointments" ADD CONSTRAINT "appointments_dock_id_fkey" FOREIGN KEY ("dock_id") REFERENCES "docks"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- CreateIndex

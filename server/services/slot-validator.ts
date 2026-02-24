@@ -87,13 +87,19 @@ export class SlotCapacityValidator {
     if (this.bufferCache && Date.now() < this.bufferCache.expiresAt) {
       return this.bufferCache.value;
     }
-    const client = this.getClient(tx);
-    const config = await client.appConfig.findUnique({
-      where: { key: "dock_buffer_minutes" },
-    });
-    const value = config ? parseInt(config.value, 10) : 15;
-    this.bufferCache = { value, expiresAt: Date.now() + SlotCapacityValidator.CACHE_TTL_MS };
-    return value;
+    try {
+      const client = this.getClient(tx);
+      const config = await client.appConfig.findUnique({
+        where: { key: "dock_buffer_minutes" },
+      });
+      const value = config ? parseInt(config.value, 10) : 15;
+      this.bufferCache = { value, expiresAt: Date.now() + SlotCapacityValidator.CACHE_TTL_MS };
+      return value;
+    } catch {
+      // appConfig table might not exist yet; use default
+      this.bufferCache = { value: 15, expiresAt: Date.now() + SlotCapacityValidator.CACHE_TTL_MS };
+      return 15;
+    }
   }
 
   determineSizeFromDuration(durationMin: number): "S" | "M" | "L" {
@@ -128,79 +134,85 @@ export class SlotCapacityValidator {
     slotStartTime: string,
     tx?: PrismaTransactionClient
   ): Promise<DockInfo[]> {
-    const client = this.getClient(tx);
-    const dayOfWeek = getMadridDayOfWeek(date);
+    try {
+      const client = this.getClient(tx);
+      const dayOfWeek = getMadridDayOfWeek(date);
 
-    // Find the SlotTemplate for this day + time
-    const template = await client.slotTemplate.findFirst({
-      where: { dayOfWeek, startTime: slotStartTime, active: true },
-    });
-
-    if (!template) return [];
-
-    // Get docks with availability for this template
-    const availabilities = await client.dockSlotAvailability.findMany({
-      where: { slotTemplateId: template.id, isActive: true },
-      include: { dock: true },
-    });
-
-    // Start with docks that are globally active AND have active availability for this template
-    const baseDocks = availabilities
-      .filter((a) => a.dock.active)
-      .map((a) => a.dock);
-
-    // Apply DockOverrides for this specific date
-    const dateStart = getMadridMidnight(date);
-    const dateEnd = getMadridEndOfDay(date);
-
-    const overrides = await client.dockOverride.findMany({
-      where: {
-        OR: [
-          { date: { gte: dateStart, lte: dateEnd }, dateEnd: null },
-          { date: { lte: dateEnd }, dateEnd: { gte: dateStart } },
-        ],
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    // Build override map: dockId → isActive (first match wins = most recent due to orderBy)
-    const overrideMap = new Map<string, boolean>();
-    for (const ov of overrides) {
-      if (!overrideMap.has(ov.dockId)) {
-        overrideMap.set(ov.dockId, ov.isActive);
-      }
-    }
-
-    // Apply overrides
-    const activeDocks: DockInfo[] = [];
-    for (const dock of baseDocks) {
-      const overrideActive = overrideMap.get(dock.id);
-      if (overrideActive === false) continue; // Override disables this dock
-      activeDocks.push({
-        id: dock.id,
-        name: dock.name,
-        code: dock.code,
-        sortOrder: dock.sortOrder,
+      // Find the SlotTemplate for this day + time
+      const template = await client.slotTemplate.findFirst({
+        where: { dayOfWeek, startTime: slotStartTime, active: true },
       });
-    }
 
-    // Also check if any override ENABLES a dock that wasn't in baseDocks
-    // (e.g., dock disabled in template but enabled by override for this date)
-    for (const [dockId, isActive] of Array.from(overrideMap.entries())) {
-      if (isActive && !activeDocks.find((d) => d.id === dockId)) {
-        const dock = await client.dock.findUnique({ where: { id: dockId } });
-        if (dock && dock.active) {
-          activeDocks.push({
-            id: dock.id,
-            name: dock.name,
-            code: dock.code,
-            sortOrder: dock.sortOrder,
-          });
+      if (!template) return [];
+
+      // Get docks with availability for this template
+      const availabilities = await client.dockSlotAvailability.findMany({
+        where: { slotTemplateId: template.id, isActive: true },
+        include: { dock: true },
+      });
+
+      // Start with docks that are globally active AND have active availability for this template
+      const baseDocks = availabilities
+        .filter((a) => a.dock.active)
+        .map((a) => a.dock);
+
+      // Apply DockOverrides for this specific date
+      const dateStart = getMadridMidnight(date);
+      const dateEnd = getMadridEndOfDay(date);
+
+      const overrides = await client.dockOverride.findMany({
+        where: {
+          OR: [
+            { date: { gte: dateStart, lte: dateEnd }, dateEnd: null },
+            { date: { lte: dateEnd }, dateEnd: { gte: dateStart } },
+          ],
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      // Build override map: dockId → isActive (first match wins = most recent due to orderBy)
+      const overrideMap = new Map<string, boolean>();
+      for (const ov of overrides) {
+        if (!overrideMap.has(ov.dockId)) {
+          overrideMap.set(ov.dockId, ov.isActive);
         }
       }
-    }
 
-    return activeDocks.sort((a, b) => a.sortOrder - b.sortOrder);
+      // Apply overrides
+      const activeDocks: DockInfo[] = [];
+      for (const dock of baseDocks) {
+        const overrideActive = overrideMap.get(dock.id);
+        if (overrideActive === false) continue; // Override disables this dock
+        activeDocks.push({
+          id: dock.id,
+          name: dock.name,
+          code: dock.code,
+          sortOrder: dock.sortOrder,
+        });
+      }
+
+      // Also check if any override ENABLES a dock that wasn't in baseDocks
+      // (e.g., dock disabled in template but enabled by override for this date)
+      for (const [dockId, isActive] of Array.from(overrideMap.entries())) {
+        if (isActive && !activeDocks.find((d) => d.id === dockId)) {
+          const dock = await client.dock.findUnique({ where: { id: dockId } });
+          if (dock && dock.active) {
+            activeDocks.push({
+              id: dock.id,
+              name: dock.name,
+              code: dock.code,
+              sortOrder: dock.sortOrder,
+            });
+          }
+        }
+      }
+
+      return activeDocks.sort((a, b) => a.sortOrder - b.sortOrder);
+    } catch (error) {
+      // Dock tables might not exist yet — gracefully return empty
+      console.warn("[SlotValidator] getActiveDocks failed (dock tables may not exist):", (error as Error).message);
+      return [];
+    }
   }
 
   /**
@@ -539,24 +551,40 @@ export class SlotCapacityValidator {
       };
     }
 
-    // FILTER 2: Find a free physical dock
-    const assignedDock = await this.findFreeDock(
-      date, slot.startTime, startUtc, endUtc, excludeId, tx
-    );
+    // FILTER 2: Find a free physical dock (if docks are configured)
+    const activeDocks = await this.getActiveDocks(date, slot.startTime, tx);
+    const docksConfigured = activeDocks.length > 0;
 
-    if (!assignedDock) {
+    if (docksConfigured) {
+      const assignedDock = await this.findFreeDock(
+        date, slot.startTime, startUtc, endUtc, excludeId, tx
+      );
+
+      if (!assignedDock) {
+        return {
+          valid: false,
+          reason: "NO_DOCK",
+          error: `Todos los muelles están ocupados de ${slot.startTime} a ${slot.endTime}. Prueba otro horario dentro de la franja.`,
+          pointsUsed,
+          maxPoints: slot.maxPoints,
+          pointsAvailable,
+          slotStartTime: slot.startTime,
+          slotEndTime: slot.endTime,
+        };
+      }
+
       return {
-        valid: false,
-        reason: "NO_DOCK",
-        error: `Todos los muelles están ocupados de ${slot.startTime} a ${slot.endTime}. Prueba otro horario dentro de la franja.`,
+        valid: true,
         pointsUsed,
         maxPoints: slot.maxPoints,
         pointsAvailable,
         slotStartTime: slot.startTime,
         slotEndTime: slot.endTime,
+        assignedDock,
       };
     }
 
+    // No docks configured — allow appointment without dock assignment
     return {
       valid: true,
       pointsUsed,
@@ -564,7 +592,6 @@ export class SlotCapacityValidator {
       pointsAvailable,
       slotStartTime: slot.startTime,
       slotEndTime: slot.endTime,
-      assignedDock,
     };
   }
 
@@ -599,16 +626,21 @@ export class SlotCapacityValidator {
         const pointsUsed = await this.getSlotUsage(current, slot.startTime);
         const pointsAvailable = slot.maxPoints - pointsUsed;
 
-        const docksAvailable = await this.getDocksAvailableInSlot(current, slot.startTime);
+        if (pointsAvailable < pointsNeeded) continue;
 
-        if (pointsAvailable >= pointsNeeded && docksAvailable > 0) {
-          availableSlots.push({
-            ...slot,
-            pointsUsed,
-            pointsAvailable,
-            docksAvailable,
-          });
-        }
+        const docksAvailable = await this.getDocksAvailableInSlot(current, slot.startTime);
+        // If docks are configured, require at least one available dock.
+        // If no docks are configured at all (activeDocks == 0), skip dock check.
+        const anyDocksConfigured = slot.activeDocks > 0;
+
+        if (anyDocksConfigured && docksAvailable === 0) continue;
+
+        availableSlots.push({
+          ...slot,
+          pointsUsed,
+          pointsAvailable,
+          docksAvailable: anyDocksConfigured ? docksAvailable : 0,
+        });
       }
 
       if (availableSlots.length > 0) {

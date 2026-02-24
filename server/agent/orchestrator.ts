@@ -29,14 +29,18 @@ export class AgentOrchestrator {
       
       // Limit history to prevent token overflow
       // Keep only the most recent messages (last 10 exchanges = 20 messages)
-      const recentHistory = history.slice(0, 20);
+      const recentHistory = history.slice(-20);
       
       const anthropicMessages: Anthropic.MessageParam[] = recentHistory.map((msg) => {
         let content = msg.content;
         
         // Truncate very long content (e.g., large tool results) to prevent prompt bloat
-        if (content.length > 2000) {
-          content = content.substring(0, 1900) + "... [truncado por tamaño]";
+        if (content.length > 3000) {
+          // Try to truncate at a safe boundary (newline or closing brace) to avoid corrupting JSON
+          let cutPoint = 2800;
+          const newlineIdx = content.lastIndexOf("\n", cutPoint);
+          if (newlineIdx > 2000) cutPoint = newlineIdx;
+          content = content.substring(0, cutPoint) + "\n... [truncado por tamaño]";
         }
         
         return {

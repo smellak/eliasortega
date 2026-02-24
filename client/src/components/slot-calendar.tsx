@@ -7,7 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChevronLeft, ChevronRight, Plus, Clock, Check, X } from "lucide-react";
 import { format, addDays, addWeeks, subWeeks, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, getDay } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import { es } from "date-fns/locale";
+
+const MADRID_TZ = "Europe/Madrid";
+
+/** Format a Date to YYYY-MM-DD in Madrid timezone (matches backend getMadridDateStr) */
+function toMadridDateStr(date: Date): string {
+  return formatInTimeZone(date, MADRID_TZ, "yyyy-MM-dd");
+}
 
 export type CalendarViewType = "week" | "day" | "month";
 
@@ -120,6 +128,11 @@ function AppointmentCard({
               {appt.size} · {pts}pts
             </span>
           )}
+          {appt.dockCode && (
+            <span className="text-[9px] px-1 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-mono">
+              {appt.dockCode}
+            </span>
+          )}
           <span className="text-muted-foreground">~{appt.workMinutesNeeded} min</span>
         </div>
       </button>
@@ -142,6 +155,11 @@ function AppointmentCard({
           <Badge variant="outline" className={`text-[10px] ${getSizeBadgeColor(appt.size)}`}>
             {appt.size} · {pts} pts
           </Badge>
+        )}
+        {appt.dockCode && (
+          <span className="text-[9px] px-1 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-mono">
+            {appt.dockCode}
+          </span>
         )}
       </div>
       {appt.goodsType && (
@@ -211,7 +229,7 @@ function WeekView({
     );
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = toMadridDateStr(new Date());
 
   return (
     <Card className="overflow-x-auto">
@@ -267,7 +285,16 @@ function WeekView({
                       onClick={() => canClick && onSlotClick?.(day.date, slot.startTime, slot.endTime)}
                     >
                       <div className="min-h-[60px]">
-                        <PointsBar used={slot.usedPoints} max={slot.maxPoints} />
+                        <div className="flex items-center gap-1">
+                          <div className="flex-1">
+                            <PointsBar used={slot.usedPoints} max={slot.maxPoints} />
+                          </div>
+                          {slot.activeDocks !== undefined && slot.activeDocks > 0 && (
+                            <span className="text-[10px] text-muted-foreground ml-1">
+                              {slot.activeDocks}M
+                            </span>
+                          )}
+                        </div>
                         <div className="mt-1 space-y-0.5">
                           {slot.appointments.map((appt) => (
                             <AppointmentCard
@@ -313,7 +340,7 @@ function DayView({
   readOnly?: boolean;
   isLoading: boolean;
 }) {
-  const dateStr = currentDate.toISOString().split("T")[0];
+  const dateStr = toMadridDateStr(currentDate);
   const dayData = weekData.find((d) => d.date === dateStr);
 
   if (isLoading) {
@@ -354,6 +381,11 @@ function DayView({
                 <Badge variant="outline" className="text-xs">
                   {slot.usedPoints}/{slot.maxPoints} puntos
                 </Badge>
+                {slot.activeDocks !== undefined && slot.activeDocks > 0 && (
+                  <span className="text-[10px] text-muted-foreground ml-1">
+                    {slot.activeDocks}M
+                  </span>
+                )}
               </div>
               {!readOnly && (
                 <TooltipProvider>
@@ -461,7 +493,7 @@ function MonthView({
     return weeks;
   }, [monthStart, monthEnd]);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = toMadridDateStr(new Date());
   const dayHeaders = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
   return (
@@ -474,7 +506,7 @@ function MonthView({
         ))}
         {calendarWeeks.map((week, wi) =>
           week.map((day, di) => {
-            const dateStr = day.toISOString().split("T")[0];
+            const dateStr = toMadridDateStr(day);
             const isCurrentMonth = day.getMonth() === currentDate.getMonth();
             const isToday = dateStr === today;
             const info = dayLookup.get(dateStr);
@@ -524,15 +556,10 @@ export function SlotCalendar({
   currentView,
   onViewChange,
 }: SlotCalendarProps) {
-  // Determine the date to query for the week endpoint
+  // Determine the date to query for the week endpoint (Madrid timezone)
   const queryDate = useMemo(() => {
-    if (currentView === "month") {
-      // For month view, we need multiple weeks. We'll use slots/usage instead or multiple week calls.
-      // For now, just use the 1st of the month.
-      return currentDate.toISOString().split("T")[0];
-    }
-    return currentDate.toISOString().split("T")[0];
-  }, [currentDate, currentView]);
+    return toMadridDateStr(currentDate);
+  }, [currentDate]);
 
   // For month view, we fetch usage data instead
   const { data: weekData = [], isLoading: weekLoading } = useQuery<WeekDay[]>({
@@ -551,7 +578,7 @@ export function SlotCalendar({
     const startDay = startOfWeek(mStart, { weekStartsOn: 1 });
     let cursor = new Date(startDay);
     while (cursor <= mEnd) {
-      dates.push(cursor.toISOString().split("T")[0]);
+      dates.push(toMadridDateStr(cursor));
       cursor = addDays(cursor, 7);
     }
     return dates;

@@ -6,9 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { AppointmentDialog } from "@/components/appointment-dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { Search, Pencil, Trash2, Plus, List, CalendarDays } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, List, CalendarDays, Check, X } from "lucide-react";
 import { format } from "date-fns";
-import { fromZonedTime } from "date-fns-tz";
 import { appointmentsApi, providersApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -200,13 +199,38 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
 
       <div className="space-y-3">
         {filteredAppointments.map((appointment) => (
-          <Card key={appointment.id} className="p-4 hover-elevate border-l-4 border-l-blue-500 rounded-xl transition-all duration-200" data-testid={`card-appointment-${appointment.id}`}>
+          <Card key={appointment.id} className={`p-4 hover-elevate border-l-4 rounded-xl transition-all duration-200 ${
+            appointment.confirmationStatus === "cancelled" ? "border-l-red-400 opacity-70" :
+            appointment.confirmationStatus === "confirmed" ? "border-l-green-500" :
+            "border-l-blue-500"
+          }`} data-testid={`card-appointment-${appointment.id}`}>
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-2 flex-wrap">
-                  <h3 className="font-semibold text-lg">{appointment.providerName}</h3>
+                  <h3 className={`font-semibold text-lg flex items-center gap-1.5 ${appointment.confirmationStatus === "cancelled" ? "line-through text-muted-foreground" : ""}`}>
+                    {appointment.confirmationStatus === "confirmed" && <Check className="h-4 w-4 text-green-600 shrink-0" />}
+                    {appointment.confirmationStatus === "cancelled" && <X className="h-4 w-4 text-red-500 shrink-0" />}
+                    {appointment.providerName}
+                  </h3>
                   {appointment.goodsType && (
                     <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border-0">{appointment.goodsType}</Badge>
+                  )}
+                  {appointment.size && (
+                    <Badge variant="outline" className={`text-xs ${
+                      appointment.size === "S" ? "bg-blue-50 text-blue-800 dark:bg-blue-950 dark:text-blue-300" :
+                      appointment.size === "M" ? "bg-orange-50 text-orange-800 dark:bg-orange-950 dark:text-orange-300" :
+                      "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-300"
+                    }`}>
+                      {appointment.size}{appointment.pointsUsed ? ` · ${appointment.pointsUsed} pts` : ""}
+                    </Badge>
+                  )}
+                  {appointment.confirmationStatus && appointment.confirmationStatus !== "pending" && (
+                    <Badge variant="outline" className={`text-xs ${
+                      appointment.confirmationStatus === "confirmed" ? "bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400" :
+                      "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400"
+                    }`}>
+                      {appointment.confirmationStatus === "confirmed" ? "Confirmada" : "Cancelada"}
+                    </Badge>
                   )}
                 </div>
                 <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
@@ -219,6 +243,14 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
                   <div>Carretillas: {appointment.forkliftsNeeded}</div>
                   {appointment.units !== null && <div>Unidades: {appointment.units}</div>}
                   {appointment.lines !== null && <div>Líneas: {appointment.lines}</div>}
+                  {appointment.dockCode && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-mono">
+                        {appointment.dockCode}
+                      </span>
+                      {appointment.dockName && <span className="text-xs">{appointment.dockName}</span>}
+                    </div>
+                  )}
                 </div>
               </div>
               {!isReadOnly && (

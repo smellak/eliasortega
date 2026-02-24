@@ -49,6 +49,7 @@ function appointmentSummaryHtml(appt: {
   units: number | null;
   size: string | null;
   workMinutesNeeded: number;
+  dock?: { name: string; code: string } | null;
 }): string {
   const dateStr = formatInTimeZone(appt.startUtc, "Europe/Madrid", "dd/MM/yyyy");
   const startTime = formatInTimeZone(appt.startUtc, "Europe/Madrid", "HH:mm");
@@ -60,6 +61,7 @@ function appointmentSummaryHtml(appt: {
       <tr><td style="padding:8px 12px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;width:40%;">Proveedor</td><td style="padding:8px 12px;border:1px solid #e2e8f0;">${escapeHtml(appt.providerName)}</td></tr>
       <tr><td style="padding:8px 12px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Fecha</td><td style="padding:8px 12px;border:1px solid #e2e8f0;">${dateStr}</td></tr>
       <tr><td style="padding:8px 12px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Horario</td><td style="padding:8px 12px;border:1px solid #e2e8f0;">${startTime} — ${endTime}</td></tr>
+      ${appt.dock ? `<tr><td style="padding:8px 12px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Muelle asignado</td><td style="padding:8px 12px;border:1px solid #e2e8f0;">${escapeHtml(appt.dock.name)}</td></tr>` : ""}
       ${appt.goodsType ? `<tr><td style="padding:8px 12px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Mercancía</td><td style="padding:8px 12px;border:1px solid #e2e8f0;">${escapeHtml(appt.goodsType)}</td></tr>` : ""}
       ${appt.units != null ? `<tr><td style="padding:8px 12px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Unidades</td><td style="padding:8px 12px;border:1px solid #e2e8f0;">${appt.units}</td></tr>` : ""}
       <tr><td style="padding:8px 12px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Tamaño</td><td style="padding:8px 12px;border:1px solid #e2e8f0;">${sizeLabel}</td></tr>
@@ -129,7 +131,7 @@ async function getProviderEmailConfig(): Promise<{ extraText: string; contactPho
 
 export async function sendAppointmentConfirmation(appointmentId: string): Promise<boolean> {
   try {
-    const appt = await prisma.appointment.findUnique({ where: { id: appointmentId } });
+    const appt = await prisma.appointment.findUnique({ where: { id: appointmentId }, include: { dock: true } });
     if (!appt || !appt.providerEmail) {
       console.warn("[PROVIDER-EMAIL] No email for appointment", appointmentId);
       return false;
@@ -142,13 +144,30 @@ export async function sendAppointmentConfirmation(appointmentId: string): Promis
     }
 
     const token = randomUUID();
-    await prisma.appointment.update({
-      where: { id: appointmentId },
-      data: { confirmationToken: token, confirmationSentAt: new Date() },
-    });
 
+    // Atomic: only set token if none exists yet (prevents race condition with concurrent calls)
+    // If a token already exists, reuse it to avoid invalidating a previously sent email.
+    if (!appt.confirmationToken) {
+      const updated = await prisma.appointment.updateMany({
+        where: { id: appointmentId, confirmationToken: null },
+        data: { confirmationToken: token, confirmationSentAt: new Date() },
+      });
+      if (updated.count === 0) {
+        // Another concurrent call already set the token — re-read and use that
+        const refreshed = await prisma.appointment.findUnique({ where: { id: appointmentId } });
+        if (!refreshed?.confirmationToken) return false;
+        const baseUrl = getBaseUrl();
+        const confirmUrl = `${baseUrl}/api/appointments/confirm/${refreshed.confirmationToken}`;
+        const html = buildConfirmationEmailHtml(appt, confirmUrl, config.extraText, config.contactPhone);
+        const subject = "Confirmación de cita de descarga — Centro Hogar Sánchez";
+        await sendEmail(appt.providerEmail, subject, html, "ALERT");
+        return true;
+      }
+    }
+
+    const activeToken = appt.confirmationToken || token;
     const baseUrl = getBaseUrl();
-    const confirmUrl = `${baseUrl}/api/appointments/confirm/${token}`;
+    const confirmUrl = `${baseUrl}/api/appointments/confirm/${activeToken}`;
     const html = buildConfirmationEmailHtml(appt, confirmUrl, config.extraText, config.contactPhone);
     const subject = "Confirmación de cita de descarga — Centro Hogar Sánchez";
 
@@ -165,7 +184,7 @@ export async function sendAppointmentConfirmation(appointmentId: string): Promis
 
 export async function sendAppointmentReminder(appointmentId: string): Promise<boolean> {
   try {
-    const appt = await prisma.appointment.findUnique({ where: { id: appointmentId } });
+    const appt = await prisma.appointment.findUnique({ where: { id: appointmentId }, include: { dock: true } });
     if (!appt || !appt.providerEmail) return false;
     if (appt.confirmationStatus === "cancelled") return false;
     if (appt.reminderSentAt) return false;
@@ -212,6 +231,7 @@ export async function processAppointmentCancellation(appointmentId: string, reas
       cancelledAt: new Date(),
       cancellationReason: reason || null,
     },
+    include: { dock: true },
   });
 
   // Alert admin recipients
@@ -223,6 +243,7 @@ export async function processAppointmentCancellation(appointmentId: string, reas
     pointsUsed: appt.pointsUsed,
     goodsType: appt.goodsType,
     workMinutesNeeded: appt.workMinutesNeeded,
+    dockName: appt.dock?.name || null,
   }).catch((e) => console.error("[PROVIDER-EMAIL] Alert error:", e));
 }
 

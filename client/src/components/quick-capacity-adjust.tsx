@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, Zap } from "lucide-react";
 import { useState } from "react";
+import { formatInTimeZone } from "date-fns-tz";
 
 type AdjustLevel = "slightly_less" | "much_less" | "minimum" | "slightly_more" | "reset";
 type StatusLevel = TodayStatusResponse["quickAdjustLevel"];
@@ -60,7 +61,7 @@ export function QuickCapacityAdjust({ date }: QuickCapacityAdjustProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
 
-  const dateStr = date.toISOString().split("T")[0];
+  const dateStr = formatInTimeZone(date, "Europe/Madrid", "yyyy-MM-dd");
 
   const { data: status, isLoading } = useQuery<TodayStatusResponse>({
     queryKey: ["/api/capacity/today-status", dateStr],

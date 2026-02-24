@@ -1,3 +1,12 @@
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 interface DailySummaryData {
   date: string;
   totalAppointments: number;
@@ -10,6 +19,7 @@ interface DailySummaryData {
     slotStartTime?: string | null;
     goodsType?: string | null;
     workMinutesNeeded: number;
+    dockCode?: string | null;
   }>;
   slotUsage?: Array<{
     startTime: string;
@@ -29,6 +39,7 @@ interface AlertData {
     pointsUsed?: number | null;
     goodsType?: string | null;
     workMinutesNeeded: number;
+    dockName?: string | null;
   };
   message?: string;
 }
@@ -38,11 +49,12 @@ export function buildDailySummaryHtml(data: DailySummaryData): string {
     .map(
       (a) => `
       <tr>
-        <td style="padding:8px;border-bottom:1px solid #eee;">${a.providerName}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee;">${a.startTime} - ${a.endTime}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee;">${a.size || "-"}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(a.providerName)}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(a.startTime)} - ${escapeHtml(a.endTime)}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(a.dockCode || "\u2014")}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(a.size || "-")}</td>
         <td style="padding:8px;border-bottom:1px solid #eee;">${a.pointsUsed ?? "-"}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee;">${a.goodsType || "-"}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(a.goodsType || "-")}</td>
         <td style="padding:8px;border-bottom:1px solid #eee;">${a.workMinutesNeeded} min</td>
       </tr>`
     )
@@ -70,7 +82,7 @@ export function buildDailySummaryHtml(data: DailySummaryData): string {
 <body style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto;padding:20px;">
   <div style="background:#1e40af;color:#fff;padding:20px;border-radius:8px 8px 0 0;">
     <h1 style="margin:0;font-size:20px;">Centro Hogar Sanchez - Resumen Diario</h1>
-    <p style="margin:8px 0 0;opacity:0.9;">${data.date}</p>
+    <p style="margin:8px 0 0;opacity:0.9;">${escapeHtml(data.date)}</p>
   </div>
   <div style="background:#f8fafc;padding:20px;border:1px solid #e2e8f0;">
     <p style="margin:0 0 12px;color:#64748b;font-size:14px;">Este es el resumen de citas programadas para mañana.</p>
@@ -84,6 +96,7 @@ export function buildDailySummaryHtml(data: DailySummaryData): string {
               <tr style="background:#e2e8f0;">
                 <th style="padding:8px;text-align:left;">Proveedor</th>
                 <th style="padding:8px;text-align:left;">Horario</th>
+                <th style="padding:8px;text-align:left;">Muelle</th>
                 <th style="padding:8px;text-align:left;">Talla</th>
                 <th style="padding:8px;text-align:left;">Puntos</th>
                 <th style="padding:8px;text-align:left;">Tipo</th>
@@ -142,11 +155,12 @@ export function buildAlertHtml(data: AlertData): string {
   const appointmentInfo = data.appointment
     ? `
     <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:12px;">
-      <tr><td style="padding:6px;font-weight:bold;width:140px;">Proveedor:</td><td style="padding:6px;">${data.appointment.providerName}</td></tr>
-      <tr><td style="padding:6px;font-weight:bold;">Horario:</td><td style="padding:6px;">${data.appointment.startTime} - ${data.appointment.endTime}</td></tr>
-      ${data.appointment.size ? `<tr><td style="padding:6px;font-weight:bold;">Talla:</td><td style="padding:6px;">${data.appointment.size}</td></tr>` : ""}
+      <tr><td style="padding:6px;font-weight:bold;width:140px;">Proveedor:</td><td style="padding:6px;">${escapeHtml(data.appointment.providerName)}</td></tr>
+      <tr><td style="padding:6px;font-weight:bold;">Horario:</td><td style="padding:6px;">${escapeHtml(data.appointment.startTime)} - ${escapeHtml(data.appointment.endTime)}</td></tr>
+      ${data.appointment.size ? `<tr><td style="padding:6px;font-weight:bold;">Talla:</td><td style="padding:6px;">${escapeHtml(data.appointment.size)}</td></tr>` : ""}
       ${data.appointment.pointsUsed != null ? `<tr><td style="padding:6px;font-weight:bold;">Puntos:</td><td style="padding:6px;">${data.appointment.pointsUsed}</td></tr>` : ""}
-      ${data.appointment.goodsType ? `<tr><td style="padding:6px;font-weight:bold;">Tipo mercancía:</td><td style="padding:6px;">${data.appointment.goodsType}</td></tr>` : ""}
+      ${data.appointment.goodsType ? `<tr><td style="padding:6px;font-weight:bold;">Tipo mercancía:</td><td style="padding:6px;">${escapeHtml(data.appointment.goodsType)}</td></tr>` : ""}
+      ${data.appointment.dockName ? `<tr><td style="padding:6px;font-weight:bold;">Muelle:</td><td style="padding:6px;">${escapeHtml(data.appointment.dockName)}</td></tr>` : ""}
       <tr><td style="padding:6px;font-weight:bold;">Duración:</td><td style="padding:6px;">${data.appointment.workMinutesNeeded} min</td></tr>
     </table>`
     : "";
@@ -160,7 +174,7 @@ export function buildAlertHtml(data: AlertData): string {
     <h2 style="margin:0;font-size:18px;">${label}</h2>
   </div>
   <div style="background:#f8fafc;padding:20px;border:1px solid #e2e8f0;">
-    ${data.message ? `<p style="margin:0 0 12px;color:#334155;">${data.message}</p>` : ""}
+    ${data.message ? `<p style="margin:0 0 12px;color:#334155;">${escapeHtml(data.message)}</p>` : ""}
     ${appointmentInfo}
   </div>
   <div style="padding:12px;text-align:center;color:#94a3b8;font-size:12px;">

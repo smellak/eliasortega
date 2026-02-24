@@ -7,7 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CalendarPlus, Mail, RotateCcw } from "lucide-react";
 import { slotsApi, appointmentsApi } from "@/lib/api";
+import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { formatInTimeZone } from "date-fns-tz";
 
 interface SlotAvailability {
   startTime: string;
@@ -34,10 +36,13 @@ interface AppointmentDialogProps {
     units?: number;
     lines?: number;
     deliveryNotesCount?: number;
-    estimatedFields?: string | null;
+    estimatedFields?: string | string[] | null;
     providerEmail?: string | null;
     providerPhone?: string | null;
     confirmationStatus?: string;
+    dockId?: string | null;
+    dockCode?: string | null;
+    dockName?: string | null;
   };
   providers: Array<{ id: string; name: string }>;
   onSave: (data: any) => void;
@@ -87,7 +92,9 @@ export function AppointmentDialog({
   const isFieldEstimated = (field: string): boolean => {
     if (!appointment?.estimatedFields) return false;
     try {
-      const fields = JSON.parse(appointment.estimatedFields);
+      const fields = Array.isArray(appointment.estimatedFields)
+        ? appointment.estimatedFields
+        : JSON.parse(appointment.estimatedFields);
       return Array.isArray(fields) && fields.includes(field);
     } catch { return false; }
   };
@@ -135,8 +142,7 @@ export function AppointmentDialog({
           providerPhone: appointment.providerPhone || "",
         });
       } else {
-        const now = new Date();
-        const today = now.toISOString().split("T")[0];
+        const today = formatInTimeZone(new Date(), "Europe/Madrid", "yyyy-MM-dd");
         setFormData({
           providerId: "",
           startDate: today,
@@ -562,6 +568,20 @@ export function AppointmentDialog({
               />
             </div>
 
+            {appointment && (appointment.dockName || appointment.dockCode) && (
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Muelle asignado</div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 font-mono">
+                    {appointment.dockCode}
+                  </Badge>
+                  {appointment.dockName && (
+                    <span className="text-sm text-muted-foreground">{appointment.dockName}</span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {appointment && (
               <div className="space-y-2">
                 <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado Confirmación</div>
@@ -576,6 +596,8 @@ export function AppointmentDialog({
                         setResending(true);
                         try {
                           await appointmentsApi.resendConfirmation(appointment.id);
+                          queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/slots/week"] });
                           toast({ title: "Enviado", description: "Email de confirmación reenviado" });
                         } catch (err: any) {
                           toast({ title: "Error", description: err.message || "No se pudo reenviar", variant: "destructive" });
@@ -596,6 +618,10 @@ export function AppointmentDialog({
                       onClick={async () => {
                         try {
                           await appointmentsApi.reactivate(appointment.id);
+                          queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/slots/week"] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/slots/week-month"] });
+                          onOpenChange(false);
                           toast({ title: "Reactivada", description: "Cita reactivada correctamente" });
                         } catch (err: any) {
                           toast({ title: "Error", description: err.message || "No se pudo reactivar", variant: "destructive" });

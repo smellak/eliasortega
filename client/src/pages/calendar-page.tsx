@@ -7,7 +7,7 @@ import { AppointmentDialog } from "@/components/appointment-dialog";
 import { ConflictErrorDialog } from "@/components/conflict-error-dialog";
 import { Button } from "@/components/ui/button";
 import { Plus, Calendar } from "lucide-react";
-import { appointmentsApi, providersApi, capacityApi } from "@/lib/api";
+import { appointmentsApi, providersApi, capacityApi, ApiError } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Appointment, Provider, CreateAppointmentInput, UpdateAppointmentInput, UserRole, SlotUtilization } from "@shared/types";
@@ -79,18 +79,9 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
       });
     },
     onError: (error: any) => {
-      if (error.message?.includes("Capacity conflict")) {
-        try {
-          const errorData = JSON.parse(error.message.split(": ")[1]);
-          setConflictError(errorData);
-          setConflictErrorOpen(true);
-        } catch {
-          toast({
-            title: "Error",
-            description: error.message || "Error al crear la cita",
-            variant: "destructive",
-          });
-        }
+      if (error instanceof ApiError && error.status === 409 && error.data?.conflict) {
+        setConflictError(error.data.conflict);
+        setConflictErrorOpen(true);
       } else {
         toast({
           title: "Error",
@@ -118,18 +109,9 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
       });
     },
     onError: (error: any) => {
-      if (error.message?.includes("Capacity conflict")) {
-        try {
-          const errorData = JSON.parse(error.message.split(": ")[1]);
-          setConflictError(errorData);
-          setConflictErrorOpen(true);
-        } catch {
-          toast({
-            title: "Error",
-            description: error.message || "Error al actualizar la cita",
-            variant: "destructive",
-          });
-        }
+      if (error instanceof ApiError && error.status === 409 && error.data?.conflict) {
+        setConflictError(error.data.conflict);
+        setConflictErrorOpen(true);
       } else {
         toast({
           title: "Error",
@@ -172,6 +154,9 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
       providerEmail: appt.providerEmail,
       providerPhone: appt.providerPhone,
       confirmationStatus: appt.confirmationStatus,
+      dockId: appt.dockId,
+      dockCode: appt.dockCode,
+      dockName: appt.dockName,
     });
     setPrefilledSlot(null);
     setAppointmentDialogOpen(true);

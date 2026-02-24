@@ -16,6 +16,7 @@ interface SlotConflictError {
   maxPoints: number;
   pointsUsed: number;
   pointsNeeded: number;
+  reason?: "NO_POINTS" | "NO_DOCK" | "NO_SLOT";
   message: string;
 }
 
@@ -69,10 +70,20 @@ export function ConflictErrorDialog({ open, onOpenChange, error }: ConflictError
           <div className="rounded-xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200/50 dark:border-blue-800/30 p-4">
             <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-100">Acciones Sugeridas</h4>
             <ul className="list-disc list-inside space-y-1 text-sm text-blue-800 dark:text-blue-200">
-              <li>Selecciona un slot con capacidad disponible</li>
-              <li>Reduce los minutos de trabajo para reducir el tamaño de la cita</li>
-              <li>Mueve la cita a otro horario o fecha</li>
-              <li>Contacta un administrador para ajustar la capacidad del slot</li>
+              {error.reason === "NO_DOCK" ? (
+                <>
+                  <li>Todos los muelles están ocupados en ese horario</li>
+                  <li>Prueba un horario diferente dentro de la misma franja</li>
+                  <li>Mueve la cita a otro día con muelles disponibles</li>
+                </>
+              ) : (
+                <>
+                  <li>Selecciona un slot con capacidad disponible</li>
+                  <li>Reduce los minutos de trabajo para reducir el tamaño de la cita</li>
+                  <li>Mueve la cita a otro horario o fecha</li>
+                </>
+              )}
+              <li>Contacta un administrador para ajustar la capacidad</li>
             </ul>
           </div>
         </div>

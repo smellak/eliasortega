@@ -1,5 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import path from "path";
 import { z } from "zod";
 import {
@@ -23,6 +24,9 @@ import {
   updateEmailRecipientSchema,
   changePasswordSchema,
   confirmAppointmentSchema,
+  createDockSchema,
+  updateDockSchema,
+  createDockOverrideSchema,
 } from "../shared/types";
 import { getMadridDayOfWeek, getMadridMidnight, getMadridEndOfDay, getMadridDateStr } from "./utils/madrid-date";
 import { authenticateToken, requireRole, generateToken, generateRefreshToken, saveRefreshToken, validateRefreshToken, clearRefreshToken, authenticateJwtOrApiKey, AuthRequest } from "./middleware/auth";
@@ -38,12 +42,17 @@ import type { Request, Response, NextFunction } from "express";
 
 const INTEGRATION_API_KEY = process.env.INTEGRATION_API_KEY || "";
 
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
+
 function authenticateIntegration(req: Request, res: Response, next: NextFunction) {
   if (!INTEGRATION_API_KEY) {
     return res.status(403).json({ success: false, error: "Integration API is disabled. Set INTEGRATION_API_KEY to enable." });
   }
   const apiKey = req.headers["x-api-key"] as string;
-  if (!apiKey || apiKey !== INTEGRATION_API_KEY) {
+  if (!apiKey || !timingSafeEqual(apiKey, INTEGRATION_API_KEY)) {
     return res.status(401).json({ success: false, error: "Invalid or missing API key" });
   }
   next();
@@ -121,6 +130,19 @@ function resolveEstimationsForRoute(goodsType: string | null, units: number | nu
   return { lines: resolvedLines, deliveryNotesCount: resolvedDN, estimatedFields: estimated };
 }
 
+/** Normalize a Prisma appointment (with dock relation) to the flat shape the frontend expects. */
+function normalizeAppointmentResponse(a: any) {
+  return {
+    ...a,
+    dockCode: a.dock?.code || null,
+    dockName: a.dock?.name || null,
+    dock: undefined,
+    estimatedFields: a.estimatedFields && typeof a.estimatedFields === "string"
+      ? JSON.parse(a.estimatedFields)
+      : a.estimatedFields || null,
+  };
+}
+
 async function upsertAppointmentInternal(data: {
   externalRef: string;
   providerId: string | null;
@@ -149,10 +171,14 @@ async function upsertAppointmentInternal(data: {
     const resolvedSlotStart = await slotCapacityValidator.resolveSlotStartTime(startDate, tx);
     const slotStartTime = resolvedSlotStart || formatInTimeZone(startDate, 'Europe/Madrid', 'HH:mm');
 
+    const startUtcDate = new Date(data.start);
+    const endUtcDate = new Date(data.end);
     const slotValidation = await slotCapacityValidator.validateSlotCapacity(
       slotDate,
       slotStartTime,
       pointsUsed,
+      startUtcDate,
+      endUtcDate,
       existing?.id,
       tx
     );
@@ -166,6 +192,7 @@ async function upsertAppointmentInternal(data: {
           maxPoints: slotValidation.maxPoints,
           pointsUsed: slotValidation.pointsUsed,
           pointsNeeded: pointsUsed,
+          reason: slotValidation.reason,
           message: slotValidation.error || "Slot sin capacidad disponible",
         },
       };
@@ -192,10 +219,12 @@ async function upsertAppointmentInternal(data: {
           pointsUsed,
           slotDate,
           slotStartTime: slotValidation.slotStartTime,
+          dockId: slotValidation.assignedDock?.id || null,
         },
+        include: { dock: true },
       });
 
-      return { success: true as const, action: "updated" as const, appointment };
+      return { success: true as const, action: "updated" as const, appointment, assignedDock: slotValidation.assignedDock };
     }
 
     const appointment = await tx.appointment.create({
@@ -218,10 +247,12 @@ async function upsertAppointmentInternal(data: {
         pointsUsed,
         slotDate,
         slotStartTime: slotValidation.slotStartTime,
+        dockId: slotValidation.assignedDock?.id || null,
       },
+      include: { dock: true },
     });
 
-    return { success: true as const, action: "created" as const, appointment };
+    return { success: true as const, action: "created" as const, appointment, assignedDock: slotValidation.assignedDock };
   }, { isolationLevel: "Serializable" });
 }
 const router = Router();
@@ -244,6 +275,7 @@ router.get("/api/appointments/confirm/:token", publicRateLimiter, async (req, re
   try {
     const appt = await prisma.appointment.findUnique({
       where: { confirmationToken: req.params.token },
+      include: { dock: true },
     });
 
     const contactPhone = (await prisma.appConfig.findUnique({ where: { key: "provider_email_contact_phone" } }))?.value || "";
@@ -336,6 +368,7 @@ function buildConfirmationPage(status: string, appt: any, contactPhone: string):
     <tr><td style="padding:10px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Horario</td><td style="padding:10px;border:1px solid #e2e8f0;">${startTime} — ${endTime}</td></tr>
     ${appt.goodsType ? `<tr><td style="padding:10px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Mercancía</td><td style="padding:10px;border:1px solid #e2e8f0;">${escapeHtml(appt.goodsType || "")}</td></tr>` : ""}
     ${sizeLabel ? `<tr><td style="padding:10px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Tamaño</td><td style="padding:10px;border:1px solid #e2e8f0;">${sizeLabel}</td></tr>` : ""}
+    ${appt.dock ? `<tr><td style="padding:10px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Muelle</td><td style="padding:10px;border:1px solid #e2e8f0;">${escapeHtml(appt.dock.name)}</td></tr>` : ""}
   </table>`;
 
   if (status === "confirmed") {
@@ -379,14 +412,14 @@ function buildConfirmationPage(status: string, appt: any, contactPhone: string):
           if(d.success){
             if(action==='confirm'){document.getElementById('result').innerHTML='<p style="font-size:24px;">✅</p><p style="font-size:18px;color:#16a34a;font-weight:600;">¡Cita confirmada!</p><p style="color:#64748b;">Nos vemos el día de la descarga.</p>';}
             else{document.getElementById('result').innerHTML='<p style="font-size:24px;">❌</p><p style="font-size:18px;color:#dc2626;font-weight:600;">Cita anulada</p><p style="color:#64748b;">Hemos informado al almacén.</p>';}
-          }else{document.getElementById('result').innerHTML='<p style="color:#dc2626;">'+d.error+'</p>';document.getElementById('actions').style.display='block';}
+          }else{var e=document.createElement('p');e.style.color='#dc2626';e.textContent=d.error||'Error desconocido';document.getElementById('result').innerHTML='';document.getElementById('result').appendChild(e);document.getElementById('actions').style.display='block';}
         })
         .catch(function(){document.getElementById('result').innerHTML='<p style="color:#dc2626;">Error de conexión. Inténtalo de nuevo.</p>';document.getElementById('actions').style.display='block';});
       }
     </script>`);
 }
 
-router.post("/api/chat/message", async (req, res) => {
+router.post("/api/chat/message", publicRateLimiter, async (req, res) => {
   try {
     const { sessionId, message } = req.body;
     
@@ -681,6 +714,7 @@ router.post("/api/capacity-shifts", authenticateToken, requireRole("ADMIN", "PLA
       },
     });
 
+    slotCapacityValidator.clearCache();
     res.status(201).json(shift);
   } catch (error: any) {
     if (error.name === "ZodError") {
@@ -707,6 +741,7 @@ router.put("/api/capacity-shifts/:id", authenticateToken, requireRole("ADMIN", "
       data: updateData,
     });
 
+    slotCapacityValidator.clearCache();
     res.json(shift);
   } catch (error: any) {
     if (error.name === "ZodError") {
@@ -726,6 +761,7 @@ router.delete("/api/capacity-shifts/:id", authenticateToken, requireRole("ADMIN"
       where: { id: req.params.id },
     });
 
+    slotCapacityValidator.clearCache();
     res.status(204).send();
   } catch (error: any) {
     if (error.code === "P2025") {
@@ -754,6 +790,8 @@ router.post("/api/slot-templates", authenticateToken, requireRole("ADMIN", "PLAN
     const data = createSlotTemplateSchema.parse(req.body);
 
     const template = await prisma.slotTemplate.create({ data });
+
+    slotCapacityValidator.clearCache();
 
     logAudit({
       entityType: "SLOT_TEMPLATE",
@@ -785,6 +823,8 @@ router.put("/api/slot-templates/:id", authenticateToken, requireRole("ADMIN", "P
       data,
     });
 
+    slotCapacityValidator.clearCache();
+
     logAudit({
       entityType: "SLOT_TEMPLATE",
       entityId: template.id,
@@ -812,6 +852,8 @@ router.delete("/api/slot-templates/:id", authenticateToken, requireRole("ADMIN",
     await prisma.slotTemplate.delete({
       where: { id: req.params.id },
     });
+
+    slotCapacityValidator.clearCache();
 
     logAudit({
       entityType: "SLOT_TEMPLATE",
@@ -884,6 +926,8 @@ router.post("/api/slot-overrides", authenticateToken, requireRole("ADMIN", "PLAN
       },
     });
 
+    slotCapacityValidator.clearCache();
+
     logAudit({
       entityType: "SLOT_OVERRIDE",
       entityId: override.id,
@@ -929,6 +973,8 @@ router.put("/api/slot-overrides/:id", authenticateToken, requireRole("ADMIN", "P
       data: updateData,
     });
 
+    slotCapacityValidator.clearCache();
+
     logAudit({
       entityType: "SLOT_OVERRIDE",
       entityId: override.id,
@@ -956,6 +1002,8 @@ router.delete("/api/slot-overrides/:id", authenticateToken, requireRole("ADMIN",
     await prisma.slotOverride.delete({
       where: { id: req.params.id },
     });
+
+    slotCapacityValidator.clearCache();
 
     logAudit({
       entityType: "SLOT_OVERRIDE",
@@ -1026,7 +1074,7 @@ router.get("/api/slots/usage", authenticateToken, async (req: AuthRequest, res) 
     const endDate = new Date(to as string);
     const results: Array<{ date: string; slots: Array<{ startTime: string; endTime: string; maxPoints: number; pointsUsed: number; pointsAvailable: number }> }> = [];
 
-    const current = getMadridMidnight(new Date(from as string));
+    let current = getMadridMidnight(new Date(from as string));
     const end = getMadridEndOfDay(new Date(to as string));
 
     while (current <= end) {
@@ -1049,7 +1097,8 @@ router.get("/api/slots/usage", authenticateToken, async (req: AuthRequest, res) 
         slots: daySlots,
       });
 
-      current.setDate(current.getDate() + 1);
+      // DST-safe: advance 25h then snap to Madrid midnight
+      current = getMadridMidnight(new Date(current.getTime() + 25 * 60 * 60 * 1000));
     }
 
     res.json(results);
@@ -1076,13 +1125,11 @@ router.get("/api/appointments", authenticateToken, async (req: AuthRequest, res)
 
     const appointments = await prisma.appointment.findMany({
       where,
+      include: { dock: true },
       orderBy: { startUtc: "asc" },
     });
 
-    const parsed = appointments.map((a: any) => ({
-      ...a,
-      estimatedFields: a.estimatedFields ? JSON.parse(a.estimatedFields) : null,
-    }));
+    const parsed = appointments.map(normalizeAppointmentResponse);
     res.json(parsed);
   } catch (error) {
     console.error("Get appointments error:", error);
@@ -1107,10 +1154,14 @@ router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNE
       const resolvedSlotStart = await slotCapacityValidator.resolveSlotStartTime(startDate, tx);
       const slotStartTime = resolvedSlotStart || formatInTimeZone(startDate, 'Europe/Madrid', 'HH:mm');
 
+      const startUtcDate = new Date(data.start);
+      const endUtcDate = new Date(data.end);
       const slotValidation = await slotCapacityValidator.validateSlotCapacity(
         slotDate,
         slotStartTime,
         pointsUsed,
+        startUtcDate,
+        endUtcDate,
         undefined,
         tx
       );
@@ -1123,6 +1174,7 @@ router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNE
             maxPoints: slotValidation.maxPoints,
             pointsUsed: slotValidation.pointsUsed,
             pointsNeeded: pointsUsed,
+            reason: slotValidation.reason,
             message: slotValidation.error || "Slot sin capacidad disponible",
           },
         };
@@ -1148,10 +1200,12 @@ router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNE
           pointsUsed,
           slotDate,
           slotStartTime: slotValidation.slotStartTime,
+          dockId: slotValidation.assignedDock?.id || null,
         },
+        include: { dock: true },
       });
 
-      return { appointment };
+      return { appointment, assignedDock: slotValidation.assignedDock };
     }, { isolationLevel: "Serializable" });
 
     if ("conflict" in result) {
@@ -1182,9 +1236,10 @@ router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNE
       pointsUsed: result.appointment.pointsUsed,
       goodsType: result.appointment.goodsType,
       workMinutesNeeded: result.appointment.workMinutesNeeded,
+      dockName: result.assignedDock?.name || null,
     }).catch((e) => console.error("[EMAIL] Alert error:", e));
 
-    res.status(201).json(result.appointment);
+    res.status(201).json(normalizeAppointmentResponse(result.appointment));
   } catch (error: any) {
     if (error.name === "ZodError") {
       return res.status(400).json({ error: "Invalid input", details: error.errors });
@@ -1233,10 +1288,13 @@ router.put("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "PLA
       const resolvedSlotStart = await slotCapacityValidator.resolveSlotStartTime(effectiveStart, tx);
       const slotStartTime = resolvedSlotStart || formatInTimeZone(effectiveStart, 'Europe/Madrid', 'HH:mm');
 
+      const effectiveEnd = updateData.endUtc || current.endUtc;
       const slotValidation = await slotCapacityValidator.validateSlotCapacity(
         slotDate,
         slotStartTime,
         pointsUsed,
+        effectiveStart,
+        effectiveEnd,
         req.params.id,
         tx
       );
@@ -1249,6 +1307,7 @@ router.put("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "PLA
             maxPoints: slotValidation.maxPoints,
             pointsUsed: slotValidation.pointsUsed,
             pointsNeeded: pointsUsed,
+            reason: slotValidation.reason,
             message: slotValidation.error || "Slot sin capacidad disponible",
           },
         };
@@ -1258,13 +1317,15 @@ router.put("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "PLA
       updateData.pointsUsed = pointsUsed;
       updateData.slotDate = slotDate;
       updateData.slotStartTime = slotValidation.slotStartTime;
+      updateData.dockId = slotValidation.assignedDock?.id || null;
 
       const appointment = await tx.appointment.update({
         where: { id: req.params.id },
         data: updateData,
+        include: { dock: true },
       });
 
-      return { appointment, before: current };
+      return { appointment, before: current, assignedDock: slotValidation.assignedDock };
     }, { isolationLevel: "Serializable" });
 
     if ("notFound" in result) {
@@ -1291,9 +1352,10 @@ router.put("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "PLA
       pointsUsed: result.appointment.pointsUsed,
       goodsType: result.appointment.goodsType,
       workMinutesNeeded: result.appointment.workMinutesNeeded,
+      dockName: result.assignedDock?.name || null,
     }).catch((e) => console.error("[EMAIL] Alert error:", e));
 
-    res.json(result.appointment);
+    res.json(normalizeAppointmentResponse(result.appointment));
   } catch (error: any) {
     if (error.name === "ZodError") {
       return res.status(400).json({ error: "Invalid input", details: error.errors });
@@ -1313,6 +1375,7 @@ router.delete("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "
   try {
     const appointment = await prisma.appointment.findUnique({
       where: { id: req.params.id },
+      include: { dock: true },
     });
 
     if (!appointment) {
@@ -1340,6 +1403,7 @@ router.delete("/api/appointments/:id", authenticateToken, requireRole("ADMIN", "
       pointsUsed: appointment.pointsUsed,
       goodsType: appointment.goodsType,
       workMinutesNeeded: appointment.workMinutesNeeded,
+      dockName: appointment.dock?.name || null,
     }).catch((e) => console.error("[EMAIL] Alert error:", e));
 
     res.status(204).send();
@@ -1395,7 +1459,7 @@ router.get("/api/capacity/utilization", authenticateToken, async (req: AuthReque
     const from = new Date(startDate as string);
     const to = new Date(endDate as string);
 
-    const current = getMadridMidnight(new Date(from));
+    let current = getMadridMidnight(new Date(from));
     const end = getMadridEndOfDay(new Date(to));
 
     const allSlots: Array<{
@@ -1405,6 +1469,7 @@ router.get("/api/capacity/utilization", authenticateToken, async (req: AuthReque
       maxPoints: number;
       pointsUsed: number;
       pointsAvailable: number;
+      activeDocks: number;
     }> = [];
 
     let totalMaxPoints = 0;
@@ -1426,6 +1491,7 @@ router.get("/api/capacity/utilization", authenticateToken, async (req: AuthReque
           maxPoints: slot.maxPoints,
           pointsUsed,
           pointsAvailable,
+          activeDocks: slot.activeDocks,
         });
 
         totalMaxPoints += slot.maxPoints;
@@ -1439,7 +1505,8 @@ router.get("/api/capacity/utilization", authenticateToken, async (req: AuthReque
         }
       }
 
-      current.setDate(current.getDate() + 1);
+      // DST-safe: advance 25h then snap to Madrid midnight
+      current = getMadridMidnight(new Date(current.getTime() + 25 * 60 * 60 * 1000));
     }
 
     // Count appointments in range
@@ -1654,6 +1721,7 @@ router.get("/api/capacity/today-status", authenticateToken, async (req: AuthRequ
           maxPoints: slot.maxPoints,
           usedPoints,
           availablePoints: slot.maxPoints - usedPoints,
+          activeDocks: slot.activeDocks,
         };
       })
     );
@@ -1688,7 +1756,7 @@ router.post("/api/integration/appointments/upsert", integrationRateLimiter, auth
     }
 
     const statusCode = result.action === "created" ? 201 : 200;
-    res.status(statusCode).json({ success: true, data: { action: result.action, appointment: result.appointment } });
+    res.status(statusCode).json({ success: true, data: { action: result.action, appointment: normalizeAppointmentResponse(result.appointment) } });
   } catch (error: any) {
     if (error.name === "ZodError") {
       return res.status(400).json({ success: false, error: "Invalid input", details: error.errors });
@@ -1824,7 +1892,7 @@ router.post("/api/integration/calendar/availability", integrationRateLimiter, au
       });
     }
 
-    const formattedSlots: Array<{ date: string; slotStartTime: string; slotEndTime: string; pointsAvailable: number; size: string }> = [];
+    const formattedSlots: Array<{ date: string; slotStartTime: string; slotEndTime: string; pointsAvailable: number; docksAvailable: number; size: string }> = [];
     for (const day of availableSlots) {
       for (const slot of day.slots) {
         formattedSlots.push({
@@ -1832,6 +1900,7 @@ router.post("/api/integration/calendar/availability", integrationRateLimiter, au
           slotStartTime: slot.startTime,
           slotEndTime: slot.endTime,
           pointsAvailable: slot.pointsAvailable,
+          docksAvailable: slot.docksAvailable,
           size,
         });
       }
@@ -1965,7 +2034,8 @@ router.post("/api/integration/calendar/book", integrationRateLimiter, authentica
         const endLocal = formatToMadridLocal(currentEnd);
         const duration = Math.round((currentEnd.getTime() - currentStart.getTime()) / 60000);
 
-        const confirmationHtml = `<b>Cita confirmada</b><br>Proveedor: ${normalized.providerName}<br>Tipo: ${normalized.goodsType}<br>Fecha: ${startLocal.split(',')[0]}<br>Hora: ${startLocal.split(', ')[1]}–${endLocal.split(', ')[1]} (duración: ${duration} min)<br>Muelles/Carretillas: validado`;
+        const dockLabel = result.assignedDock ? `Muelle: ${result.assignedDock.name}` : "Muelle: asignado";
+        const confirmationHtml = `<b>Cita confirmada</b><br>Proveedor: ${normalized.providerName}<br>Tipo: ${normalized.goodsType}<br>Fecha: ${startLocal.split(',')[0]}<br>Hora: ${startLocal.split(', ')[1]}–${endLocal.split(', ')[1]} (duración: ${duration} min)<br>${dockLabel}`;
 
         return res.json({
           success: true,
@@ -1980,6 +2050,9 @@ router.post("/api/integration/calendar/book", integrationRateLimiter, authentica
           id: appointment.id,
           size: appointment.size,
           pointsUsed: appointment.pointsUsed,
+          dockId: appointment.dockId,
+          dockName: result.assignedDock?.name || null,
+          dockCode: result.assignedDock?.code || null,
         });
       }
 
@@ -2015,13 +2088,14 @@ router.get("/api/integration/appointments/by-external-ref/:externalRef", authent
   try {
     const appointment = await prisma.appointment.findUnique({
       where: { externalRef: req.params.externalRef },
+      include: { dock: true },
     });
 
     if (!appointment) {
       return res.status(404).json({ success: false, error: "Appointment not found" });
     }
 
-    res.json({ success: true, data: appointment });
+    res.json({ success: true, data: normalizeAppointmentResponse(appointment) });
   } catch (error) {
     console.error("Get appointment by external ref error:", error);
     res.status(500).json({ success: false, error: "Internal server error" });
@@ -2353,11 +2427,10 @@ router.get("/api/slots/week", authenticateToken, async (req: AuthRequest, res) =
     monday.setDate(monday.getDate() + diffToMonday);
     const mondayMidnight = getMadridMidnight(monday);
 
-    // Generate Mon-Sat (6 days)
+    // Generate Mon-Sat (6 days) — DST-safe via 25h offset + snap
     const days: Date[] = [];
     for (let i = 0; i < 6; i++) {
-      const d = new Date(mondayMidnight);
-      d.setDate(d.getDate() + i);
+      const d = i === 0 ? mondayMidnight : getMadridMidnight(new Date(mondayMidnight.getTime() + i * 25 * 60 * 60 * 1000));
       days.push(d);
     }
 
@@ -2404,6 +2477,7 @@ router.get("/api/slots/week", authenticateToken, async (req: AuthRequest, res) =
         where: {
           slotDate: { gte: dateStart, lte: dateEnd },
         },
+        include: { dock: true },
         orderBy: { startUtc: "asc" },
       });
 
@@ -2420,7 +2494,8 @@ router.get("/api/slots/week", authenticateToken, async (req: AuthRequest, res) =
           maxPoints: slot.maxPoints,
           usedPoints,
           availablePoints: slot.maxPoints - usedPoints,
-          appointments: slotAppts.map((a) => ({
+          activeDocks: slot.activeDocks,
+          appointments: slotAppts.map((a: any) => ({
             id: a.id,
             providerId: a.providerId,
             providerName: a.providerName,
@@ -2437,6 +2512,9 @@ router.get("/api/slots/week", authenticateToken, async (req: AuthRequest, res) =
             confirmationStatus: a.confirmationStatus,
             providerEmail: a.providerEmail,
             providerPhone: a.providerPhone,
+            dockId: a.dockId,
+            dockCode: a.dock?.code || null,
+            dockName: a.dock?.name || null,
           })),
         });
       }
@@ -2530,6 +2608,7 @@ router.post("/api/appointments/:id/reactivate", authenticateToken, requireRole("
     const updated = await prisma.appointment.update({
       where: { id: appt.id },
       data: { confirmationStatus: "pending", cancelledAt: null, cancellationReason: null },
+      include: { dock: true },
     });
 
     logAudit({
@@ -2541,9 +2620,307 @@ router.post("/api/appointments/:id/reactivate", authenticateToken, requireRole("
       changes: { confirmationStatus: { from: "cancelled", to: "pending" } },
     }).catch(() => {});
 
-    res.json(updated);
+    res.json(normalizeAppointmentResponse(updated));
   } catch (error) {
     console.error("Reactivate appointment error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// --- Docks CRUD (ADMIN/PLANNER) ---
+router.get("/api/docks", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const docks = await prisma.dock.findMany({
+      orderBy: { sortOrder: "asc" },
+      include: {
+        availabilities: { include: { slotTemplate: true } },
+      },
+    });
+    res.json(docks);
+  } catch (error) {
+    console.error("Get docks error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/api/docks", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
+  try {
+    const data = createDockSchema.parse(req.body);
+    const dock = await prisma.dock.create({ data });
+
+    logAudit({
+      entityType: "DOCK",
+      entityId: dock.id,
+      action: "CREATE",
+      actorType: "USER",
+      actorId: req.user?.id,
+      changes: data as Record<string, unknown>,
+    }).catch(() => {});
+
+    res.status(201).json(dock);
+  } catch (error: any) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({ error: "Invalid input", details: error.errors });
+    }
+    if (error.code === "P2002") {
+      return res.status(409).json({ error: "Dock code already exists" });
+    }
+    console.error("Create dock error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/api/docks/:id", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
+  try {
+    const data = updateDockSchema.parse(req.body);
+    const before = await prisma.dock.findUnique({ where: { id: req.params.id } });
+    const dock = await prisma.dock.update({
+      where: { id: req.params.id },
+      data,
+    });
+
+    logAudit({
+      entityType: "DOCK",
+      entityId: dock.id,
+      action: "UPDATE",
+      actorType: "USER",
+      actorId: req.user?.id,
+      changes: before ? computeChanges(before as any, dock as any) : (data as Record<string, unknown>),
+    }).catch(() => {});
+
+    // Clear slot validator cache since dock changes affect availability
+    slotCapacityValidator.clearCache();
+
+    res.json(dock);
+  } catch (error: any) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({ error: "Invalid input", details: error.errors });
+    }
+    if (error.code === "P2025") {
+      return res.status(404).json({ error: "Dock not found" });
+    }
+    if (error.code === "P2002") {
+      return res.status(409).json({ error: "Dock code already exists" });
+    }
+    console.error("Update dock error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/api/docks/:id", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
+  try {
+    await prisma.dock.delete({ where: { id: req.params.id } });
+
+    logAudit({
+      entityType: "DOCK",
+      entityId: req.params.id,
+      action: "DELETE",
+      actorType: "USER",
+      actorId: req.user?.id,
+    }).catch(() => {});
+
+    slotCapacityValidator.clearCache();
+    res.status(204).send();
+  } catch (error: any) {
+    if (error.code === "P2025") {
+      return res.status(404).json({ error: "Dock not found" });
+    }
+    console.error("Delete dock error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// --- Dock Slot Availability (ADMIN) ---
+router.put("/api/docks/:dockId/availability", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
+  try {
+    const { dockId } = req.params;
+    const { slotTemplateId, isActive } = req.body;
+
+    if (!slotTemplateId || typeof isActive !== "boolean") {
+      return res.status(400).json({ error: "slotTemplateId and isActive are required" });
+    }
+
+    const result = await prisma.dockSlotAvailability.upsert({
+      where: {
+        dockId_slotTemplateId: { dockId, slotTemplateId },
+      },
+      update: { isActive },
+      create: { dockId, slotTemplateId, isActive },
+    });
+
+    slotCapacityValidator.clearCache();
+    res.json(result);
+  } catch (error: any) {
+    console.error("Update dock availability error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/api/docks/:dockId/availability/bulk", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
+  try {
+    const { dockId } = req.params;
+    const { updates } = req.body; // Array of { slotTemplateId, isActive }
+
+    if (!Array.isArray(updates)) {
+      return res.status(400).json({ error: "updates array is required" });
+    }
+
+    const results = await prisma.$transaction(
+      updates.map((u: { slotTemplateId: string; isActive: boolean }) =>
+        prisma.dockSlotAvailability.upsert({
+          where: {
+            dockId_slotTemplateId: { dockId, slotTemplateId: u.slotTemplateId },
+          },
+          update: { isActive: u.isActive },
+          create: { dockId, slotTemplateId: u.slotTemplateId, isActive: u.isActive },
+        })
+      )
+    );
+
+    slotCapacityValidator.clearCache();
+    res.json({ updated: results.length });
+  } catch (error: any) {
+    console.error("Bulk update dock availability error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// --- Dock Overrides (ADMIN/PLANNER) ---
+router.get("/api/dock-overrides", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const { from, to, dockId } = req.query;
+    const where: any = {};
+    if (dockId) where.dockId = dockId as string;
+    if (from || to) {
+      const conditions: any[] = [];
+      if (to) conditions.push({ date: { lte: new Date(to as string) } });
+      if (from) {
+        const fromDate = new Date(from as string);
+        conditions.push({
+          OR: [
+            { dateEnd: { gte: fromDate } },
+            { dateEnd: null, date: { gte: fromDate } },
+          ],
+        });
+      }
+      if (conditions.length > 0) where.AND = conditions;
+    }
+
+    const overrides = await prisma.dockOverride.findMany({
+      where,
+      include: { dock: true },
+      orderBy: { date: "asc" },
+    });
+    res.json(overrides);
+  } catch (error) {
+    console.error("Get dock overrides error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/api/dock-overrides", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
+  try {
+    const data = createDockOverrideSchema.parse(req.body);
+
+    if (data.dateEnd && new Date(data.dateEnd) < new Date(data.date)) {
+      return res.status(400).json({ error: "dateEnd must be >= date" });
+    }
+
+    const override = await prisma.dockOverride.create({
+      data: {
+        dockId: data.dockId,
+        date: new Date(data.date),
+        dateEnd: data.dateEnd ? new Date(data.dateEnd) : null,
+        isActive: data.isActive ?? false,
+        reason: data.reason || null,
+      },
+    });
+
+    logAudit({
+      entityType: "DOCK_OVERRIDE",
+      entityId: override.id,
+      action: "CREATE",
+      actorType: "USER",
+      actorId: req.user?.id,
+      changes: data as Record<string, unknown>,
+    }).catch(() => {});
+
+    slotCapacityValidator.clearCache();
+    res.status(201).json(override);
+  } catch (error: any) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({ error: "Invalid input", details: error.errors });
+    }
+    console.error("Create dock override error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/api/dock-overrides/:id", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
+  try {
+    await prisma.dockOverride.delete({ where: { id: req.params.id } });
+
+    logAudit({
+      entityType: "DOCK_OVERRIDE",
+      entityId: req.params.id,
+      action: "DELETE",
+      actorType: "USER",
+      actorId: req.user?.id,
+    }).catch(() => {});
+
+    slotCapacityValidator.clearCache();
+    res.status(204).send();
+  } catch (error: any) {
+    if (error.code === "P2025") {
+      return res.status(404).json({ error: "Dock override not found" });
+    }
+    console.error("Delete dock override error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// --- Dock Timeline (Gantt view data) ---
+router.get("/api/docks/timeline", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const dateParam = req.query.date as string | undefined;
+    const targetDate = dateParam ? new Date(dateParam) : new Date();
+    const dateStart = getMadridMidnight(targetDate);
+    const dateEnd = getMadridEndOfDay(targetDate);
+
+    const docks = await prisma.dock.findMany({
+      where: { active: true },
+      orderBy: { sortOrder: "asc" },
+    });
+
+    const appointments = await prisma.appointment.findMany({
+      where: {
+        dockId: { not: null },
+        slotDate: { gte: dateStart, lte: dateEnd },
+      },
+      orderBy: { startUtc: "asc" },
+    });
+
+    const timeline = docks.map((dock) => ({
+      dockId: dock.id,
+      dockName: dock.name,
+      dockCode: dock.code,
+      appointments: appointments
+        .filter((a) => a.dockId === dock.id)
+        .map((a) => ({
+          id: a.id,
+          providerName: a.providerName,
+          goodsType: a.goodsType,
+          startUtc: a.startUtc.toISOString(),
+          endUtc: a.endUtc.toISOString(),
+          size: a.size,
+          pointsUsed: a.pointsUsed,
+          confirmationStatus: a.confirmationStatus,
+        })),
+    }));
+
+    res.json({ date: getMadridDateStr(targetDate), docks: timeline });
+  } catch (error) {
+    console.error("Get dock timeline error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

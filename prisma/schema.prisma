@@ -63,8 +63,58 @@ model SlotTemplate {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  dockAvailabilities DockSlotAvailability[]
+
   @@index([dayOfWeek])
   @@map("slot_templates")
+}
+
+model Dock {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  sortOrder Int      @default(0) @map("sort_order")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  availabilities DockSlotAvailability[]
+  overrides      DockOverride[]
+  appointments   Appointment[]
+
+  @@map("docks")
+}
+
+model DockSlotAvailability {
+  id             String   @id @default(cuid())
+  dockId         String   @map("dock_id")
+  slotTemplateId String   @map("slot_template_id")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  dock         Dock         @relation(fields: [dockId], references: [id], onDelete: Cascade)
+  slotTemplate SlotTemplate @relation(fields: [slotTemplateId], references: [id], onDelete: Cascade)
+
+  @@unique([dockId, slotTemplateId])
+  @@map("dock_slot_availability")
+}
+
+model DockOverride {
+  id        String    @id @default(cuid())
+  dockId    String    @map("dock_id")
+  date      DateTime
+  dateEnd   DateTime? @map("date_end")
+  isActive  Boolean   @default(false) @map("is_active")
+  reason    String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  dock Dock @relation(fields: [dockId], references: [id], onDelete: Cascade)
+
+  @@index([dockId, date])
+  @@index([dateEnd])
+  @@map("dock_overrides")
 }
 
 model SlotOverride {
@@ -109,6 +159,8 @@ model Appointment {
   slotDate           DateTime?        @map("slot_date")
   slotStartTime      String?          @map("slot_start_time")
   estimatedFields    String?          @map("estimated_fields")
+  dockId             String?          @map("dock_id")
+  dock               Dock?            @relation(fields: [dockId], references: [id], onDelete: SetNull)
   providerEmail      String?          @map("provider_email")
   providerPhone      String?          @map("provider_phone")
   confirmationStatus String           @default("pending") @map("confirmation_status")
@@ -126,6 +178,7 @@ model Appointment {
   @@index([providerName])
   @@index([slotDate, slotStartTime])
   @@index([confirmationStatus])
+  @@index([dockId, slotDate, startUtc, endUtc])
   @@map("appointments")
 }
 

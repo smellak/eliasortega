@@ -15,6 +15,7 @@ import ProvidersPage from "@/pages/providers-page";
 import UsersPage from "@/pages/users-page";
 import NotificationsPage from "@/pages/notifications-page";
 import AuditPage from "@/pages/audit-page";
+import DocksPage from "@/pages/docks-page";
 import ChatPublic from "@/pages/chat-public";
 import NotFound from "@/pages/not-found";
 import { authApi, getAuthToken, clearAuth } from "@/lib/api";
@@ -69,6 +70,7 @@ function Router({ user }: { user: UserResponse }) {
       <Route path="/" component={() => <CalendarPage userRole={user.role} />} />
       <Route path="/appointments" component={() => <AppointmentsPage userRole={user.role} />} />
       <Route path="/capacity" component={() => <CapacityPage userRole={user.role} />} />
+      <Route path="/docks" component={() => <DocksPage userRole={user.role} />} />
       <Route path="/providers" component={() => <ProvidersPage userRole={user.role} />} />
       {user.role === "ADMIN" && <Route path="/notifications" component={() => <NotificationsPage userRole={user.role} />} />}
       {user.role === "ADMIN" && <Route path="/users" component={UsersPage} />}

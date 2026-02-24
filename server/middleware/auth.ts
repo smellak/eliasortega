@@ -138,7 +138,8 @@ export function authenticateJwtOrApiKey(req: AuthRequest, res: Response, next: N
     if (!INTEGRATION_API_KEY) {
       return res.status(503).json({ error: "Integration API is disabled. Set INTEGRATION_API_KEY to enable." });
     }
-    if (apiKey === INTEGRATION_API_KEY) {
+    if (apiKey.length === INTEGRATION_API_KEY.length &&
+        crypto.timingSafeEqual(Buffer.from(apiKey), Buffer.from(INTEGRATION_API_KEY))) {
       return next();
     }
     return res.status(401).json({ error: "Invalid API key" });

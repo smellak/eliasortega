@@ -27,6 +27,18 @@ import type {
 
 const API_BASE = "/api";
 
+export class ApiError extends Error {
+  status: number;
+  data: any;
+
+  constructor(message: string, status: number, data: any) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.data = data;
+  }
+}
+
 let authToken: string | null = localStorage.getItem("authToken");
 let refreshToken: string | null = localStorage.getItem("refreshToken");
 
@@ -119,7 +131,7 @@ async function handleResponse<T>(response: Response, retryFn?: () => Promise<Res
       clearAuth();
       window.location.href = "/login";
     }
-    throw new Error(data.error || data.message || "Request failed");
+    throw new ApiError(data.error || data.message || "Request failed", response.status, data);
   }
 
   return data;
@@ -343,6 +355,7 @@ export interface TodayStatusResponse {
     maxPoints: number;
     usedPoints: number;
     availablePoints: number;
+    activeDocks?: number;
   }>;
 }
 
@@ -530,6 +543,9 @@ export interface WeekSlotAppointment {
   confirmationStatus?: string;
   providerEmail?: string | null;
   providerPhone?: string | null;
+  dockId?: string | null;
+  dockCode?: string | null;
+  dockName?: string | null;
 }
 
 export interface WeekSlot {
@@ -538,6 +554,7 @@ export interface WeekSlot {
   maxPoints: number;
   usedPoints: number;
   availablePoints: number;
+  activeDocks?: number;
   appointments: WeekSlotAppointment[];
 }
 
@@ -680,5 +697,178 @@ export const auditApi = {
       headers: getHeaders(),
     });
     return handleResponse(response);
+  },
+};
+
+export interface DockWithAvailabilities {
+  id: string;
+  name: string;
+  code: string;
+  sortOrder: number;
+  active: boolean;
+  availabilities: Array<{
+    id: string;
+    slotTemplateId: string;
+    isActive: boolean;
+    slotTemplate: {
+      id: string;
+      dayOfWeek: number;
+      startTime: string;
+      endTime: string;
+      maxPoints: number;
+    };
+  }>;
+}
+
+export interface DockTimelineEntry {
+  dockId: string;
+  dockName: string;
+  dockCode: string;
+  appointments: Array<{
+    id: string;
+    providerName: string;
+    goodsType: string | null;
+    startUtc: string;
+    endUtc: string;
+    size: string | null;
+    pointsUsed: number | null;
+    confirmationStatus: string;
+  }>;
+}
+
+export const docksApi = {
+  list: async (): Promise<DockWithAvailabilities[]> => {
+    const response = await fetch(`${API_BASE}/docks`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<DockWithAvailabilities[]>(response, () =>
+      fetch(`${API_BASE}/docks`, { headers: getHeaders() })
+    );
+  },
+
+  create: async (input: { name: string; code: string; sortOrder?: number; active?: boolean }): Promise<any> => {
+    const response = await fetch(`${API_BASE}/docks`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify(input),
+    });
+    return handleResponse(response);
+  },
+
+  update: async (id: string, input: { name?: string; code?: string; sortOrder?: number; active?: boolean }): Promise<any> => {
+    const response = await fetch(`${API_BASE}/docks/${id}`, {
+      method: "PUT",
+      headers: getHeaders(),
+      body: JSON.stringify(input),
+    });
+    return handleResponse(response);
+  },
+
+  delete: async (id: string): Promise<void> => {
+    const response = await fetch(`${API_BASE}/docks/${id}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+    return handleResponse<void>(response);
+  },
+
+  updateAvailability: async (dockId: string, slotTemplateId: string, isActive: boolean): Promise<any> => {
+    const response = await fetch(`${API_BASE}/docks/${dockId}/availability`, {
+      method: "PUT",
+      headers: getHeaders(),
+      body: JSON.stringify({ slotTemplateId, isActive }),
+    });
+    return handleResponse(response);
+  },
+
+  bulkUpdateAvailability: async (dockId: string, updates: Array<{ slotTemplateId: string; isActive: boolean }>): Promise<any> => {
+    const response = await fetch(`${API_BASE}/docks/${dockId}/availability/bulk`, {
+      method: "PUT",
+      headers: getHeaders(),
+      body: JSON.stringify({ updates }),
+    });
+    return handleResponse(response);
+  },
+
+  getTimeline: async (date?: string): Promise<{ date: string; docks: DockTimelineEntry[] }> => {
+    const query = new URLSearchParams();
+    if (date) query.append("date", date);
+    const response = await fetch(`${API_BASE}/docks/timeline?${query}`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(response, () =>
+      fetch(`${API_BASE}/docks/timeline?${query}`, { headers: getHeaders() })
+    );
+  },
+};
+
+export interface DockOverrideResponse {
+  id: string;
+  dockId: string;
+  date: string;
+  dateEnd: string | null;
+  isActive: boolean;
+  reason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const dockOverridesApi = {
+  list: async (params?: { dockId?: string; from?: string; to?: string }): Promise<DockOverrideResponse[]> => {
+    const query = new URLSearchParams();
+    if (params?.dockId) query.append("dockId", params.dockId);
+    if (params?.from) query.append("from", params.from);
+    if (params?.to) query.append("to", params.to);
+
+    const response = await fetch(`${API_BASE}/dock-overrides?${query}`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<DockOverrideResponse[]>(response, () =>
+      fetch(`${API_BASE}/dock-overrides?${query}`, { headers: getHeaders() })
+    );
+  },
+
+  create: async (input: { dockId: string; date: string; dateEnd?: string; isActive?: boolean; reason?: string }): Promise<DockOverrideResponse> => {
+    const response = await fetch(`${API_BASE}/dock-overrides`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify(input),
+    });
+    return handleResponse<DockOverrideResponse>(response);
+  },
+
+  delete: async (id: string): Promise<void> => {
+    const response = await fetch(`${API_BASE}/dock-overrides/${id}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+    return handleResponse<void>(response);
+  },
+};
+
+export interface ProviderEmailConfig {
+  confirmation_email_enabled: string;
+  reminder_email_enabled: string;
+  provider_email_extra_text: string;
+  provider_email_contact_phone: string;
+}
+
+export const providerEmailConfigApi = {
+  get: async (): Promise<ProviderEmailConfig> => {
+    const response = await fetch(`${API_BASE}/config/provider-emails`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<ProviderEmailConfig>(response, () =>
+      fetch(`${API_BASE}/config/provider-emails`, { headers: getHeaders() })
+    );
+  },
+
+  update: async (config: Partial<ProviderEmailConfig>): Promise<ProviderEmailConfig> => {
+    const response = await fetch(`${API_BASE}/config/provider-emails`, {
+      method: "PUT",
+      headers: getHeaders(),
+      body: JSON.stringify(config),
+    });
+    return handleResponse<ProviderEmailConfig>(response);
   },
 };

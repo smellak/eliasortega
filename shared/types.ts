@@ -140,6 +140,9 @@ export interface Appointment {
   confirmedAt: string | null;
   cancelledAt: string | null;
   cancellationReason: string | null;
+  dockId: string | null;
+  dockCode: string | null;
+  dockName: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -205,6 +208,66 @@ export interface SlotOverride {
   createdAt: string;
   updatedAt: string;
 }
+
+// Dock types
+export interface Dock {
+  id: string;
+  name: string;
+  code: string;
+  sortOrder: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const createDockSchema = z.object({
+  name: z.string().min(1),
+  code: z.string().min(1).max(10),
+  sortOrder: z.number().int().min(0).optional(),
+  active: z.boolean().optional(),
+});
+export type CreateDockInput = z.infer<typeof createDockSchema>;
+
+export const updateDockSchema = createDockSchema.partial();
+export type UpdateDockInput = z.infer<typeof updateDockSchema>;
+
+export interface DockSlotAvailability {
+  id: string;
+  dockId: string;
+  slotTemplateId: string;
+  isActive: boolean;
+}
+
+export const updateDockAvailabilitySchema = z.object({
+  dockId: z.string(),
+  slotTemplateId: z.string(),
+  isActive: z.boolean(),
+});
+
+export const bulkUpdateDockAvailabilitySchema = z.object({
+  updates: z.array(updateDockAvailabilitySchema),
+});
+export type BulkUpdateDockAvailabilityInput = z.infer<typeof bulkUpdateDockAvailabilitySchema>;
+
+export interface DockOverride {
+  id: string;
+  dockId: string;
+  date: string;
+  dateEnd: string | null;
+  isActive: boolean;
+  reason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const createDockOverrideSchema = z.object({
+  dockId: z.string(),
+  date: z.string().datetime(),
+  dateEnd: z.string().datetime().optional(),
+  isActive: z.boolean().default(false),
+  reason: z.string().optional(),
+});
+export type CreateDockOverrideInput = z.infer<typeof createDockOverrideSchema>;
 
 // Slot Capacity Conflict
 export interface SlotCapacityConflict {
@@ -299,6 +362,7 @@ export interface SlotConflictError {
   maxPoints: number;
   pointsUsed: number;
   pointsNeeded: number;
+  reason: 'NO_POINTS' | 'NO_DOCK';
   message: string; // human-readable Spanish error
 }
 

@@ -107,6 +107,8 @@ async function seed() {
     { key: "reminder_email_enabled", value: "true", description: "Enviar recordatorio 48h antes de la cita" },
     { key: "provider_email_extra_text", value: "", description: "Texto adicional en emails al proveedor" },
     { key: "provider_email_contact_phone", value: "", description: "Teléfono de contacto del almacén en emails" },
+    { key: "dock_buffer_minutes", value: "15", description: "Minutos de buffer entre descargas en el mismo muelle" },
+    { key: "dock_assignment_enabled", value: "true", description: "Activar asignación automática de muelles" },
   ];
 
   var configCreated = 0;
@@ -122,6 +124,60 @@ async function seed() {
     console.log("[seed] Creadas " + configCreated + " configuraciones nuevas.");
   } else {
     console.log("[seed] Todas las configuraciones ya existen.");
+  }
+
+  // --- Docks ---
+  var DEFAULT_DOCKS = [
+    { name: "Muelle 1", code: "M1", sortOrder: 1 },
+    { name: "Muelle 2", code: "M2", sortOrder: 2 },
+    { name: "Muelle 3", code: "M3", sortOrder: 3 },
+  ];
+
+  for (var di = 0; di < DEFAULT_DOCKS.length; di++) {
+    var d = DEFAULT_DOCKS[di];
+    await prisma.dock.upsert({
+      where: { code: d.code },
+      update: {},
+      create: { name: d.name, code: d.code, sortOrder: d.sortOrder },
+    });
+  }
+  console.log("[seed] Docks upserted: " + DEFAULT_DOCKS.length);
+
+  // --- DockSlotAvailability ---
+  var allTemplates = await prisma.slotTemplate.findMany({ where: { active: true } });
+  var allDocks = await prisma.dock.findMany();
+  var availCreated = 0;
+  for (var ti = 0; ti < allTemplates.length; ti++) {
+    var tpl = allTemplates[ti];
+    for (var dj = 0; dj < allDocks.length; dj++) {
+      var dock = allDocks[dj];
+      var existing = await prisma.dockSlotAvailability.findUnique({
+        where: { dockId_slotTemplateId: { dockId: dock.id, slotTemplateId: tpl.id } },
+      });
+      if (!existing) {
+        await prisma.dockSlotAvailability.create({
+          data: { dockId: dock.id, slotTemplateId: tpl.id, isActive: true },
+        });
+        availCreated++;
+      }
+    }
+  }
+  console.log("[seed] Dock availabilities: " + availCreated + " created");
+
+  // --- Round-robin dock assignment for existing appointments without dockId ---
+  var unassigned = await prisma.appointment.findMany({
+    where: { dockId: null },
+    orderBy: { startUtc: "asc" },
+  });
+  if (unassigned.length > 0) {
+    for (var ai = 0; ai < unassigned.length; ai++) {
+      var assignDock = allDocks[ai % allDocks.length];
+      await prisma.appointment.update({
+        where: { id: unassigned[ai].id },
+        data: { dockId: assignDock.id },
+      });
+    }
+    console.log("[seed] Assigned docks to " + unassigned.length + " existing appointments (round-robin)");
   }
 
   console.log("[seed] Seed completado.");

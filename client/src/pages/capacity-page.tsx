@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { slotTemplatesApi, slotOverridesApi } from "@/lib/api";
+import { slotTemplatesApi, slotOverridesApi, docksApi, dockOverridesApi } from "@/lib/api";
+import type { DockWithAvailabilities, DockOverrideResponse } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type {
@@ -32,7 +33,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Gauge, AlertCircle, Plus, Trash2, Info, ChevronDown } from "lucide-react";
+import { Gauge, Plus, Trash2, Info, ChevronDown, Check, X, Warehouse } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -745,6 +746,400 @@ function SlotOverridesTab({ isReadOnly }: { isReadOnly: boolean }) {
   );
 }
 
+const DOCK_WEEKDAY_NAMES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+function DockAvailabilityTab({ isReadOnly }: { isReadOnly: boolean }) {
+  const { toast } = useToast();
+  const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
+  const [overrideForm, setOverrideForm] = useState({ dockId: "", date: "", dateEnd: "", isActive: false, reason: "" });
+  const [dockDialogOpen, setDockDialogOpen] = useState(false);
+  const [editingDock, setEditingDock] = useState<DockWithAvailabilities | null>(null);
+  const [dockForm, setDockForm] = useState({ name: "", code: "", sortOrder: 0, active: true });
+  const [deleteOverrideId, setDeleteOverrideId] = useState<string | null>(null);
+
+  const { data: docks = [], isLoading: docksLoading } = useQuery({
+    queryKey: ["docks"],
+    queryFn: docksApi.list,
+  });
+
+  const { data: slotTemplates = [] } = useQuery<SlotTemplate[]>({
+    queryKey: ["/api/slot-templates"],
+    queryFn: () => slotTemplatesApi.list(),
+  });
+
+  const { data: overrides = [] } = useQuery({
+    queryKey: ["dock-overrides"],
+    queryFn: () => dockOverridesApi.list(),
+  });
+
+  const createDock = useMutation({
+    mutationFn: (input: { name: string; code: string; sortOrder?: number; active?: boolean }) => docksApi.create(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["docks"] });
+      setDockDialogOpen(false);
+      toast({ title: "Muelle creado" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const updateDock = useMutation({
+    mutationFn: ({ id, ...input }: { id: string; name?: string; code?: string; sortOrder?: number; active?: boolean }) => docksApi.update(id, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["docks"] });
+      setDockDialogOpen(false);
+      setEditingDock(null);
+      toast({ title: "Muelle actualizado" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const toggleAvailability = useMutation({
+    mutationFn: ({ dockId, slotTemplateId, isActive }: { dockId: string; slotTemplateId: string; isActive: boolean }) =>
+      docksApi.updateAvailability(dockId, slotTemplateId, isActive),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["docks"] });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const createOverride = useMutation({
+    mutationFn: (input: { dockId: string; date: string; dateEnd?: string; isActive?: boolean; reason?: string }) =>
+      dockOverridesApi.create(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dock-overrides"] });
+      setOverrideDialogOpen(false);
+      toast({ title: "Excepción de muelle creada" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const deleteOverride = useMutation({
+    mutationFn: (id: string) => dockOverridesApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dock-overrides"] });
+      toast({ title: "Excepción eliminada" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  // Group slot templates by day
+  const templatesByDay = slotTemplates.reduce<Record<number, SlotTemplate[]>>((acc, t) => {
+    if (!acc[t.dayOfWeek]) acc[t.dayOfWeek] = [];
+    acc[t.dayOfWeek].push(t);
+    return acc;
+  }, {});
+  Object.values(templatesByDay).forEach(arr => arr.sort((a, b) => a.startTime.localeCompare(b.startTime)));
+  const sortedDays = Object.keys(templatesByDay).map(Number).sort((a, b) => a - b);
+
+  function getAvailability(dock: DockWithAvailabilities, slotTemplateId: string): boolean {
+    const av = dock.availabilities.find(a => a.slotTemplateId === slotTemplateId);
+    return av ? av.isActive : true;
+  }
+
+  function openCreateDock() {
+    setEditingDock(null);
+    setDockForm({ name: "", code: "", sortOrder: docks.length, active: true });
+    setDockDialogOpen(true);
+  }
+
+  function openEditDock(dock: DockWithAvailabilities) {
+    setEditingDock(dock);
+    setDockForm({ name: dock.name, code: dock.code, sortOrder: dock.sortOrder, active: dock.active });
+    setDockDialogOpen(true);
+  }
+
+  function handleSaveDock() {
+    if (editingDock) {
+      updateDock.mutate({ id: editingDock.id, ...dockForm });
+    } else {
+      createDock.mutate(dockForm);
+    }
+  }
+
+  if (docksLoading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2].map((i) => (
+          <Card key={i} className="p-4">
+            <div className="h-16 rounded skeleton-shimmer" />
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Dock list + create */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <Warehouse className="h-5 w-5" />
+          Muelles ({docks.length})
+        </h3>
+        {!isReadOnly && (
+          <Button size="sm" onClick={openCreateDock}>
+            <Plus className="h-4 w-4 mr-1" />
+            Nuevo muelle
+          </Button>
+        )}
+      </div>
+
+      {docks.length === 0 ? (
+        <Card className="p-8 text-center text-muted-foreground">
+          No hay muelles configurados. Crea el primer muelle para gestionar su disponibilidad por franja.
+        </Card>
+      ) : (
+        <>
+          {/* Dock badges */}
+          <div className="flex flex-wrap gap-2">
+            {docks.map(dock => (
+              <button
+                key={dock.id}
+                onClick={() => !isReadOnly && openEditDock(dock)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm transition-colors ${
+                  dock.active
+                    ? "bg-green-50 border-green-200 text-green-800 dark:bg-green-950/30 dark:border-green-800 dark:text-green-300"
+                    : "bg-red-50 border-red-200 text-red-800 dark:bg-red-950/30 dark:border-red-800 dark:text-red-300"
+                } ${!isReadOnly ? "hover:shadow-sm cursor-pointer" : ""}`}
+              >
+                <span className="font-mono font-semibold">{dock.code}</span>
+                <span>{dock.name}</span>
+                {dock.active ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+              </button>
+            ))}
+          </div>
+
+          {/* Availability Matrix */}
+          {slotTemplates.length === 0 ? (
+            <Card className="p-8 text-center text-muted-foreground">
+              Primero configura plantillas de franja en la pestaña "Plantillas" para poder asignar muelles.
+            </Card>
+          ) : (
+            <Card className="overflow-x-auto">
+              <div className="p-3 border-b bg-muted/30">
+                <p className="text-sm text-muted-foreground">
+                  Marca en qué franjas está disponible cada muelle. <span className="text-green-600 font-medium">Verde = activo</span>, <span className="text-red-600 font-medium">Rojo = inactivo</span>.
+                </p>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="sticky left-0 bg-background z-10 min-w-[100px]">Muelle</TableHead>
+                    {sortedDays.flatMap(day =>
+                      templatesByDay[day].map(t => (
+                        <TableHead key={t.id} className="text-center text-xs whitespace-nowrap px-2">
+                          <div>{DOCK_WEEKDAY_NAMES[day]}</div>
+                          <div className="font-mono text-[10px]">{t.startTime}-{t.endTime}</div>
+                        </TableHead>
+                      ))
+                    )}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {docks.map(dock => (
+                    <TableRow key={dock.id}>
+                      <TableCell className="sticky left-0 bg-background z-10 font-medium whitespace-nowrap">
+                        <Badge variant="outline" className="font-mono mr-1">{dock.code}</Badge>
+                        {dock.name}
+                      </TableCell>
+                      {sortedDays.flatMap(day =>
+                        templatesByDay[day].map(t => {
+                          const isActive = getAvailability(dock, t.id);
+                          return (
+                            <TableCell key={t.id} className="text-center px-2">
+                              {isReadOnly ? (
+                                isActive ? <Check className="h-4 w-4 text-green-600 mx-auto" /> : <X className="h-4 w-4 text-red-500 mx-auto" />
+                              ) : (
+                                <button
+                                  className={`h-7 w-7 rounded-md flex items-center justify-center transition-colors ${
+                                    isActive
+                                      ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200"
+                                      : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200"
+                                  }`}
+                                  onClick={() => toggleAvailability.mutate({ dockId: dock.id, slotTemplateId: t.id, isActive: !isActive })}
+                                >
+                                  {isActive ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                                </button>
+                              )}
+                            </TableCell>
+                          );
+                        })
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          )}
+
+          {/* Dock Overrides */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold">Excepciones de Muelles</h3>
+              {!isReadOnly && (
+                <Button size="sm" onClick={() => {
+                  setOverrideForm({ dockId: docks[0]?.id || "", date: "", dateEnd: "", isActive: false, reason: "" });
+                  setOverrideDialogOpen(true);
+                }}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Nueva excepción
+                </Button>
+              )}
+            </div>
+            {overrides.length === 0 ? (
+              <Card className="p-6 text-center text-muted-foreground text-sm">
+                Sin excepciones. Usa excepciones para desactivar o reactivar un muelle en fechas concretas.
+              </Card>
+            ) : (
+              <Card className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Muelle</TableHead>
+                      <TableHead>Desde</TableHead>
+                      <TableHead>Hasta</TableHead>
+                      <TableHead className="text-center">Estado</TableHead>
+                      <TableHead>Motivo</TableHead>
+                      {!isReadOnly && <TableHead className="text-right">Acciones</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {overrides.map((ov: DockOverrideResponse) => {
+                      const dock = docks.find(d => d.id === ov.dockId);
+                      return (
+                        <TableRow key={ov.id}>
+                          <TableCell>
+                            <Badge variant="outline" className="font-mono">{dock?.code || "?"}</Badge>
+                            {" "}{dock?.name || "Desconocido"}
+                          </TableCell>
+                          <TableCell>{new Date(ov.date).toLocaleDateString("es-ES")}</TableCell>
+                          <TableCell>{ov.dateEnd ? new Date(ov.dateEnd).toLocaleDateString("es-ES") : "—"}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant={ov.isActive ? "default" : "destructive"}>
+                              {ov.isActive ? "Activo" : "Inactivo"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{ov.reason || "—"}</TableCell>
+                          {!isReadOnly && (
+                            <TableCell className="text-right">
+                              <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setDeleteOverrideId(ov.id)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </Card>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Dock Create/Edit Dialog */}
+      <Dialog open={dockDialogOpen} onOpenChange={setDockDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingDock ? "Editar muelle" : "Nuevo muelle"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="cap-dock-code">Código</Label>
+              <Input id="cap-dock-code" placeholder="M1" value={dockForm.code} onChange={e => setDockForm(f => ({ ...f, code: e.target.value }))} />
+            </div>
+            <div>
+              <Label htmlFor="cap-dock-name">Nombre</Label>
+              <Input id="cap-dock-name" placeholder="Muelle 1" value={dockForm.name} onChange={e => setDockForm(f => ({ ...f, name: e.target.value }))} />
+            </div>
+            <div>
+              <Label htmlFor="cap-dock-order">Orden</Label>
+              <Input id="cap-dock-order" type="number" value={dockForm.sortOrder} onChange={e => setDockForm(f => ({ ...f, sortOrder: parseInt(e.target.value) || 0 }))} />
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={dockForm.active} onCheckedChange={active => setDockForm(f => ({ ...f, active }))} />
+              <Label>Activo</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDockDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSaveDock} disabled={!dockForm.name.trim() || !dockForm.code.trim() || createDock.isPending || updateDock.isPending}>
+              {editingDock ? "Guardar" : "Crear"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Override Create Dialog */}
+      <Dialog open={overrideDialogOpen} onOpenChange={setOverrideDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nueva excepción de muelle</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Muelle</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={overrideForm.dockId}
+                onChange={e => setOverrideForm(f => ({ ...f, dockId: e.target.value }))}
+              >
+                {docks.map(d => <option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Desde</Label>
+                <Input type="date" value={overrideForm.date} onChange={e => setOverrideForm(f => ({ ...f, date: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Hasta (opcional)</Label>
+                <Input type="date" value={overrideForm.dateEnd} onChange={e => setOverrideForm(f => ({ ...f, dateEnd: e.target.value }))} />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={overrideForm.isActive} onCheckedChange={isActive => setOverrideForm(f => ({ ...f, isActive }))} />
+              <Label>{overrideForm.isActive ? "Reactivar muelle" : "Desactivar muelle"}</Label>
+            </div>
+            <div>
+              <Label>Motivo (opcional)</Label>
+              <Input placeholder="Mantenimiento, avería..." value={overrideForm.reason} onChange={e => setOverrideForm(f => ({ ...f, reason: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOverrideDialogOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                createOverride.mutate({
+                  dockId: overrideForm.dockId,
+                  date: new Date(overrideForm.date + "T00:00:00").toISOString(),
+                  dateEnd: overrideForm.dateEnd ? new Date(overrideForm.dateEnd + "T23:59:59").toISOString() : undefined,
+                  isActive: overrideForm.isActive,
+                  reason: overrideForm.reason || undefined,
+                });
+              }}
+              disabled={!overrideForm.dockId || !overrideForm.date || createOverride.isPending}
+            >
+              Crear
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Override Confirmation */}
+      <ConfirmDialog
+        open={!!deleteOverrideId}
+        onOpenChange={open => !open && setDeleteOverrideId(null)}
+        title="Eliminar excepción"
+        description="¿Eliminar esta excepción de muelle?"
+        confirmLabel="Eliminar"
+        onConfirm={() => { if (deleteOverrideId) deleteOverride.mutate(deleteOverrideId); setDeleteOverrideId(null); }}
+      />
+    </div>
+  );
+}
+
 export default function CapacityPage({ userRole }: CapacityPageProps) {
   const isReadOnly = userRole === "BASIC_READONLY";
 
@@ -757,6 +1152,9 @@ export default function CapacityPage({ userRole }: CapacityPageProps) {
           <TabsTrigger value="templates" data-testid="tab-templates">
             Plantillas de Franja
           </TabsTrigger>
+          <TabsTrigger value="docks" data-testid="tab-docks">
+            Muelles
+          </TabsTrigger>
           <TabsTrigger value="overrides" data-testid="tab-overrides">
             Excepciones
           </TabsTrigger>
@@ -764,6 +1162,10 @@ export default function CapacityPage({ userRole }: CapacityPageProps) {
 
         <TabsContent value="templates" className="mt-4">
           <SlotTemplatesTab isReadOnly={isReadOnly} />
+        </TabsContent>
+
+        <TabsContent value="docks" className="mt-4">
+          <DockAvailabilityTab isReadOnly={isReadOnly} />
         </TabsContent>
 
         <TabsContent value="overrides" className="mt-4">

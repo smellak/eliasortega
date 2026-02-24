@@ -5,7 +5,7 @@ import { prisma } from "../db/client";
 import { logAudit } from "../services/audit-service";
 import { sendAppointmentConfirmation } from "../services/provider-email-service";
 import { formatInTimeZone } from "date-fns-tz";
-import { getMadridDayOfWeek, getMadridMidnight } from "../utils/madrid-date";
+import { getMadridDayOfWeek, getMadridMidnight, getMadridDateStr } from "../utils/madrid-date";
 import {
   normalizeCategory,
   estimateLines,
@@ -179,6 +179,7 @@ async function executeCalendarAvailability(input: Record<string, any>): Promise<
     slotStartTime: string;
     slotEndTime: string;
     pointsAvailable: number;
+    docksAvailable: number;
     size: string;
   }> = [];
 
@@ -190,12 +191,13 @@ async function executeCalendarAvailability(input: Record<string, any>): Promise<
 
     const slotTexts: string[] = [];
     for (const slot of day.slots) {
-      slotTexts.push(`franja ${slot.startTime}-${slot.endTime} (${slot.pointsAvailable} puntos libres)`);
+      slotTexts.push(`franja ${slot.startTime}-${slot.endTime} (${slot.pointsAvailable} puntos libres, ${slot.docksAvailable} muelles)`);
       formattedSlots.push({
         date: day.date,
         slotStartTime: slot.startTime,
         slotEndTime: slot.endTime,
         pointsAvailable: slot.pointsAvailable,
+        docksAvailable: slot.docksAvailable,
         size,
       });
     }
@@ -300,19 +302,21 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
         where: { externalRef },
       });
 
+      const currentEnd = new Date(currentStart.getTime() + durationMs);
+
       const slotValidation = await slotCapacityValidator.validateSlotCapacity(
         slotDate,
         slotStartTime,
         pointsUsed,
+        currentStart,
+        currentEnd,
         existing?.id,
         tx
       );
 
       if (!slotValidation.valid) {
-        return { success: false as const, error: slotValidation.error || "Slot sin capacidad" };
+        return { success: false as const, error: slotValidation.error || "Slot sin capacidad", reason: slotValidation.reason };
       }
-
-      const currentEnd = new Date(currentStart.getTime() + durationMs);
 
       const appointmentData = {
         providerId: provider!.id,
@@ -332,6 +336,7 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
         estimatedFields: estimatedFields.length > 0 ? JSON.stringify(estimatedFields) : null,
         providerEmail: input.providerEmail || null,
         providerPhone: input.providerPhone || null,
+        dockId: slotValidation.assignedDock?.id || null,
       };
 
       if (existing) {
@@ -339,7 +344,7 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
           where: { id: existing.id },
           data: appointmentData,
         });
-        return { success: true as const, action: "updated" as const, appointment };
+        return { success: true as const, action: "updated" as const, appointment, assignedDock: slotValidation.assignedDock };
       }
 
       const appointment = await tx.appointment.create({
@@ -349,11 +354,12 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
         },
       });
 
-      return { success: true as const, action: "created" as const, appointment };
+      return { success: true as const, action: "created" as const, appointment, assignedDock: slotValidation.assignedDock };
     }, { isolationLevel: "Serializable" });
 
     if (result.success) {
       const appointment = result.appointment;
+      const assignedDock = result.assignedDock;
       const startLocal = formatInTimeZone(appointment.startUtc, "Europe/Madrid", "dd/MM/yyyy, HH:mm");
       const endLocal = formatInTimeZone(appointment.endUtc, "Europe/Madrid", "HH:mm");
       const duration = Math.round((appointment.endUtc.getTime() - appointment.startUtc.getTime()) / 60000);
@@ -371,9 +377,10 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
         sendAppointmentConfirmation(appointment.id).catch(() => {});
       }
 
+      const dockLabel = assignedDock ? ` — Muelle: ${assignedDock.name}` : "";
       const responseObj: Record<string, any> = {
         success: true,
-        confirmationHtml: `<b>Cita confirmada</b><br>Proveedor: ${providerName}<br>Tipo: ${input.goodsType}<br>Fecha: ${startLocal.split(",")[0]}<br>Hora: ${startLocal.split(", ")[1]}–${endLocal} (duración: ${duration} min)<br>Talla: ${size} (${pointsUsed} pts)`,
+        confirmationHtml: `<b>Cita confirmada</b><br>Proveedor: ${providerName}<br>Tipo: ${input.goodsType}<br>Fecha: ${startLocal.split(",")[0]}<br>Hora: ${startLocal.split(", ")[1]}–${endLocal} (duración: ${duration} min)<br>Talla: ${size} (${pointsUsed} pts)${dockLabel}`,
         providerName,
         goodsType: input.goodsType,
         startLocal,
@@ -381,6 +388,9 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
         size,
         pointsUsed,
         id: appointment.id,
+        dockId: appointment.dockId,
+        dockName: assignedDock?.name || null,
+        dockCode: assignedDock?.code || null,
       };
 
       if (estimatedFields.length > 0) {

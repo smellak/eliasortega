@@ -107,6 +107,7 @@ export async function sendDailySummary(targetDate?: Date): Promise<number> {
     where: {
       startUtc: { gte: dayStart, lte: dayEnd },
     },
+    include: { dock: true },
     orderBy: { startUtc: "asc" },
   });
 
@@ -128,6 +129,7 @@ export async function sendDailySummary(targetDate?: Date): Promise<number> {
     slotStartTime: a.slotStartTime,
     goodsType: a.goodsType,
     workMinutesNeeded: a.workMinutesNeeded,
+    dockCode: a.dock?.code ?? null,
   }));
 
   const html = buildDailySummaryHtml({
@@ -158,6 +160,7 @@ export async function sendAppointmentAlert(
     pointsUsed?: number | null;
     goodsType?: string | null;
     workMinutesNeeded: number;
+    dockName?: string | null;
   }
 ): Promise<number> {
   const recipients = await prisma.emailRecipient.findMany({
@@ -176,6 +179,7 @@ export async function sendAppointmentAlert(
       pointsUsed: appointment.pointsUsed,
       goodsType: appointment.goodsType,
       workMinutesNeeded: appointment.workMinutesNeeded,
+      dockName: appointment.dockName,
     },
   };
 
@@ -203,6 +207,7 @@ export async function sendTestEmail(to: string): Promise<boolean> {
       pointsUsed: 2,
       goodsType: "General",
       workMinutesNeeded: 60,
+      dockName: "Muelle 1",
     },
   });
 

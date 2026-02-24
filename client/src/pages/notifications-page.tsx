@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { emailRecipientsApi, emailApi } from "@/lib/api";
+import { emailRecipientsApi, emailApi, providerEmailConfigApi } from "@/lib/api";
+import type { ProviderEmailConfig } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type {
@@ -720,6 +721,127 @@ function SettingsTab() {
   );
 }
 
+function ProviderEmailTab() {
+  const { toast } = useToast();
+
+  const { data: config, isLoading } = useQuery<ProviderEmailConfig>({
+    queryKey: ["provider-email-config"],
+    queryFn: providerEmailConfigApi.get,
+  });
+
+  const [confirmationEnabled, setConfirmationEnabled] = useState(true);
+  const [reminderEnabled, setReminderEnabled] = useState(true);
+  const [extraText, setExtraText] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [loaded, setLoaded] = useState(false);
+
+  // Sync form with fetched data
+  if (config && !loaded) {
+    setConfirmationEnabled(config.confirmation_email_enabled !== "false");
+    setReminderEnabled(config.reminder_email_enabled !== "false");
+    setExtraText(config.provider_email_extra_text || "");
+    setContactPhone(config.provider_email_contact_phone || "");
+    setLoaded(true);
+  }
+
+  const updateMutation = useMutation({
+    mutationFn: (data: Partial<ProviderEmailConfig>) => providerEmailConfigApi.update(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["provider-email-config"] });
+      toast({ title: "Configuración guardada" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const handleSave = () => {
+    updateMutation.mutate({
+      confirmation_email_enabled: confirmationEnabled ? "true" : "false",
+      reminder_email_enabled: reminderEnabled ? "true" : "false",
+      provider_email_extra_text: extraText,
+      provider_email_contact_phone: contactPhone,
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2].map(i => (
+          <Card key={i} className="p-4">
+            <div className="h-5 rounded w-1/3 skeleton-shimmer" />
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card className="p-6 space-y-5">
+        <div>
+          <h3 className="font-medium mb-1">Emails de confirmación a proveedores</h3>
+          <p className="text-sm text-muted-foreground mb-3">
+            Cuando se crea una cita con email del proveedor, el sistema envía un email de confirmación
+            con un enlace para confirmar o cancelar la asistencia.
+          </p>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <p className="text-sm font-medium">Email de confirmación</p>
+                <p className="text-xs text-muted-foreground">Enviar al crear una cita con email del proveedor</p>
+              </div>
+              <Switch checked={confirmationEnabled} onCheckedChange={setConfirmationEnabled} />
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <p className="text-sm font-medium">Recordatorio 48h antes</p>
+                <p className="text-xs text-muted-foreground">Enviar recordatorio automático si no ha confirmado</p>
+              </div>
+              <Switch checked={reminderEnabled} onCheckedChange={setReminderEnabled} />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3 border-t pt-4">
+          <div>
+            <Label htmlFor="contact-phone">Teléfono de contacto del almacén</Label>
+            <Input
+              id="contact-phone"
+              type="tel"
+              placeholder="+34 600 000 000"
+              value={contactPhone}
+              onChange={e => setContactPhone(e.target.value)}
+              className="max-w-xs mt-1"
+            />
+            <p className="text-xs text-muted-foreground mt-1">Se incluye en los emails enviados al proveedor.</p>
+          </div>
+
+          <div>
+            <Label htmlFor="extra-text">Texto adicional en emails</Label>
+            <Input
+              id="extra-text"
+              placeholder="Instrucciones especiales, normas del almacén..."
+              value={extraText}
+              onChange={e => setExtraText(e.target.value)}
+              className="mt-1"
+            />
+            <p className="text-xs text-muted-foreground mt-1">Se muestra en un recuadro destacado en los emails de confirmación y recordatorio.</p>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <Button onClick={handleSave} disabled={updateMutation.isPending}>
+            {updateMutation.isPending ? "Guardando..." : "Guardar cambios"}
+          </Button>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
 export default function NotificationsPage({ userRole }: NotificationsPageProps) {
   const isReadOnly = userRole === "BASIC_READONLY";
 
@@ -747,6 +869,9 @@ export default function NotificationsPage({ userRole }: NotificationsPageProps) 
           <TabsTrigger value="log" data-testid="tab-email-log">
             Historial de Correos
           </TabsTrigger>
+          <TabsTrigger value="provider-email" data-testid="tab-provider-email">
+            Proveedor
+          </TabsTrigger>
           <TabsTrigger value="settings" data-testid="tab-settings">
             Configuración
           </TabsTrigger>
@@ -758,6 +883,10 @@ export default function NotificationsPage({ userRole }: NotificationsPageProps) 
 
         <TabsContent value="log" className="mt-4">
           <EmailLogTab />
+        </TabsContent>
+
+        <TabsContent value="provider-email" className="mt-4">
+          <ProviderEmailTab />
         </TabsContent>
 
         <TabsContent value="settings" className="mt-4">

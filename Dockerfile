@@ -22,7 +22,8 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./
+COPY --from=builder /app/seed-production.js ./
 
 EXPOSE 5000
 
-CMD ["sh", "-c", "npx prisma migrate resolve --applied 20251028223225_init 2>/dev/null; npx prisma migrate resolve --applied 20251029000000_full_schema 2>/dev/null; npx prisma migrate resolve --applied 20260224000000_add_slot_override_source 2>/dev/null; npx prisma migrate resolve --applied 20260224100000_add_slot_override_date_range 2>/dev/null; npx prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate resolve --applied 20251028223225_init 2>/dev/null; npx prisma migrate resolve --applied 20251029000000_full_schema 2>/dev/null; npx prisma migrate resolve --applied 20260224000000_add_slot_override_source 2>/dev/null; npx prisma migrate resolve --applied 20260224100000_add_slot_override_date_range 2>/dev/null; npx prisma migrate deploy && node seed-production.js && node dist/index.js"]

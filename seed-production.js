@@ -1,93 +1,88 @@
 #!/usr/bin/env node
 /**
- * Script para crear usuarios en la base de datos de PRODUCCION
+ * Production seed script — creates admin user and default slot templates.
+ * Safe to run multiple times: skips resources that already exist.
  *
- * IMPORTANTE: Este script debe ejecutarse contra la base de datos de PRODUCCION
- * CAMBIAR EN PRODUCCION: Las passwords por defecto deben cambiarse inmediatamente
- * despues del primer login usando PUT /api/auth/change-password
- *
- * Para ejecutar:
- * 1. Asegurate de que DATABASE_URL apunte a produccion
- * 2. Ejecuta: node seed-production.js
+ * Usage: node seed-production.js
+ * Requires: DATABASE_URL environment variable
  */
 
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
+const { PrismaClient } = require("@prisma/client");
+const bcrypt = require("bcryptjs");
 
 const prisma = new PrismaClient();
 
-async function seedProduction() {
-  console.log("Iniciando seed de base de datos de PRODUCCION...");
-  console.log("ADVERTENCIA: Este script modificara la base de datos de PRODUCCION");
-  console.log("");
+const DEFAULT_SLOTS = [
+  // Lunes a Viernes: 08:00-10:00, 10:00-12:00, 12:00-14:00 (6 pts)
+  { dayOfWeek: 1, startTime: "08:00", endTime: "10:00", maxPoints: 6 },
+  { dayOfWeek: 1, startTime: "10:00", endTime: "12:00", maxPoints: 6 },
+  { dayOfWeek: 1, startTime: "12:00", endTime: "14:00", maxPoints: 6 },
+  { dayOfWeek: 2, startTime: "08:00", endTime: "10:00", maxPoints: 6 },
+  { dayOfWeek: 2, startTime: "10:00", endTime: "12:00", maxPoints: 6 },
+  { dayOfWeek: 2, startTime: "12:00", endTime: "14:00", maxPoints: 6 },
+  { dayOfWeek: 3, startTime: "08:00", endTime: "10:00", maxPoints: 6 },
+  { dayOfWeek: 3, startTime: "10:00", endTime: "12:00", maxPoints: 6 },
+  { dayOfWeek: 3, startTime: "12:00", endTime: "14:00", maxPoints: 6 },
+  { dayOfWeek: 4, startTime: "08:00", endTime: "10:00", maxPoints: 6 },
+  { dayOfWeek: 4, startTime: "10:00", endTime: "12:00", maxPoints: 6 },
+  { dayOfWeek: 4, startTime: "12:00", endTime: "14:00", maxPoints: 6 },
+  { dayOfWeek: 5, startTime: "08:00", endTime: "10:00", maxPoints: 6 },
+  { dayOfWeek: 5, startTime: "10:00", endTime: "12:00", maxPoints: 6 },
+  { dayOfWeek: 5, startTime: "12:00", endTime: "14:00", maxPoints: 6 },
+  // Sabado: 08:00-11:00, 11:00-14:00 (4 pts)
+  { dayOfWeek: 6, startTime: "08:00", endTime: "11:00", maxPoints: 4 },
+  { dayOfWeek: 6, startTime: "11:00", endTime: "14:00", maxPoints: 4 },
+];
 
-  try {
-    // CAMBIAR EN PRODUCCION — cambiar password tras primer login
-    const adminPassword = await bcrypt.hash("CHS-Admin-2026!", 10);
-    const admin = await prisma.user.upsert({
-      where: { email: "admin@example.com" },
-      update: {
-        passwordHash: adminPassword,
-        role: "ADMIN"
-      },
-      create: {
-        email: "admin@example.com",
-        passwordHash: adminPassword,
+async function seed() {
+  console.log("[seed] Iniciando seed de produccion...");
+
+  // 1. Usuario admin
+  const existingAdmin = await prisma.user.findUnique({
+    where: { email: "admin@admin.com" },
+  });
+
+  if (existingAdmin) {
+    console.log("[seed] Usuario admin@admin.com ya existe, saltando.");
+  } else {
+    const hash = await bcrypt.hash("admin123", 10);
+    await prisma.user.create({
+      data: {
+        email: "admin@admin.com",
+        passwordHash: hash,
         role: "ADMIN",
       },
     });
-    console.log("Usuario admin creado/actualizado:", admin.email);
-
-    // CAMBIAR EN PRODUCCION
-    const plannerPassword = await bcrypt.hash("CHS-Planner-2026!", 10);
-    const planner = await prisma.user.upsert({
-      where: { email: "planner@example.com" },
-      update: {
-        passwordHash: plannerPassword,
-        role: "PLANNER"
-      },
-      create: {
-        email: "planner@example.com",
-        passwordHash: plannerPassword,
-        role: "PLANNER",
-      },
-    });
-    console.log("Usuario planner creado/actualizado:", planner.email);
-
-    // CAMBIAR EN PRODUCCION
-    const viewerPassword = await bcrypt.hash("CHS-Viewer-2026!", 10);
-    const viewer = await prisma.user.upsert({
-      where: { email: "viewer@example.com" },
-      update: {
-        passwordHash: viewerPassword,
-        role: "BASIC_READONLY"
-      },
-      create: {
-        email: "viewer@example.com",
-        passwordHash: viewerPassword,
-        role: "BASIC_READONLY",
-      },
-    });
-    console.log("Usuario viewer creado/actualizado:", viewer.email);
-
-    console.log("");
-    console.log("Seed de produccion completado exitosamente!");
-    console.log("");
-    console.log("Credenciales de acceso (CAMBIAR TRAS PRIMER LOGIN):");
-    console.log("   Admin:    admin@example.com / CHS-Admin-2026!");
-    console.log("   Planner:  planner@example.com / CHS-Planner-2026!");
-    console.log("   Viewer:   viewer@example.com / CHS-Viewer-2026!");
-
-  } catch (error) {
-    console.error("Error al hacer seed:", error);
-    throw error;
-  } finally {
-    await prisma.$disconnect();
+    console.log("[seed] Usuario admin creado: admin@admin.com");
   }
+
+  // 2. Plantillas de slots
+  const slotCount = await prisma.slotTemplate.count();
+  if (slotCount > 0) {
+    console.log("[seed] Ya existen " + slotCount + " plantillas de slots, saltando.");
+  } else {
+    for (const slot of DEFAULT_SLOTS) {
+      await prisma.slotTemplate.create({
+        data: {
+          dayOfWeek: slot.dayOfWeek,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          maxPoints: slot.maxPoints,
+          active: true,
+        },
+      });
+    }
+    console.log("[seed] Creadas " + DEFAULT_SLOTS.length + " plantillas de slots.");
+  }
+
+  console.log("[seed] Seed completado.");
 }
 
-seedProduction()
-  .catch((error) => {
-    console.error(error);
+seed()
+  .catch(function (err) {
+    console.error("[seed] Error:", err);
     process.exit(1);
+  })
+  .finally(function () {
+    return prisma.$disconnect();
   });

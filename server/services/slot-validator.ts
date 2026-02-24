@@ -1,6 +1,6 @@
 import { prisma } from "../db/client";
 import { formatInTimeZone } from "date-fns-tz";
-import { getMadridDayOfWeek, getMadridMidnight, getMadridEndOfDay } from "../utils/madrid-date";
+import { getMadridDayOfWeek, getMadridMidnight, getMadridEndOfDay, getMadridDateStr } from "../utils/madrid-date";
 
 type PrismaTransactionClient = Omit<
   typeof prisma,
@@ -335,7 +335,7 @@ export class SlotCapacityValidator {
 
       if (availableSlots.length > 0) {
         results.push({
-          date: current.toISOString().split("T")[0],
+          date: getMadridDateStr(current),
           slots: availableSlots,
         });
       }

@@ -24,7 +24,7 @@ import {
   changePasswordSchema,
   confirmAppointmentSchema,
 } from "../shared/types";
-import { getMadridDayOfWeek, getMadridMidnight, getMadridEndOfDay } from "./utils/madrid-date";
+import { getMadridDayOfWeek, getMadridMidnight, getMadridEndOfDay, getMadridDateStr } from "./utils/madrid-date";
 import { authenticateToken, requireRole, generateToken, generateRefreshToken, saveRefreshToken, validateRefreshToken, clearRefreshToken, authenticateJwtOrApiKey, AuthRequest } from "./middleware/auth";
 import { slotCapacityValidator } from "./services/slot-validator";
 import { logAudit, computeChanges } from "./services/audit-service";
@@ -1045,7 +1045,7 @@ router.get("/api/slots/usage", authenticateToken, async (req: AuthRequest, res) 
       }
 
       results.push({
-        date: current.toISOString().split("T")[0],
+        date: getMadridDateStr(current),
         slots: daySlots,
       });
 
@@ -1412,7 +1412,7 @@ router.get("/api/capacity/utilization", authenticateToken, async (req: AuthReque
     let peakSlot: { date: string; startTime: string; percentage: number } | null = null;
 
     while (current <= end) {
-      const dateStr = current.toISOString().split("T")[0];
+      const dateStr = getMadridDateStr(current);
       const slots = await slotCapacityValidator.getSlotsForDate(current);
 
       for (const slot of slots) {
@@ -1518,15 +1518,15 @@ router.post("/api/capacity/quick-adjust", authenticateToken, requireRole("ADMIN"
 
       await logAudit({
         entityType: "SLOT_OVERRIDE",
-        entityId: targetDate.toISOString().split("T")[0],
+        entityId: getMadridDateStr(targetDate),
         action: "DELETE",
         actorType: "USER",
         actorId: req.user?.id || null,
-        changes: { level: "reset", date: targetDate.toISOString().split("T")[0] },
+        changes: { level: "reset", date: getMadridDateStr(targetDate) },
       });
 
       return res.json({
-        date: targetDate.toISOString().split("T")[0],
+        date: getMadridDateStr(targetDate),
         level: "reset",
         adjustedSlots: templates.map((t) => ({
           startTime: t.startTime,
@@ -1574,15 +1574,15 @@ router.post("/api/capacity/quick-adjust", authenticateToken, requireRole("ADMIN"
 
     await logAudit({
       entityType: "SLOT_OVERRIDE",
-      entityId: targetDate.toISOString().split("T")[0],
+      entityId: getMadridDateStr(targetDate),
       action: "CREATE",
       actorType: "USER",
       actorId: req.user?.id || null,
-      changes: { level, date: targetDate.toISOString().split("T")[0], adjustedSlots },
+      changes: { level, date: getMadridDateStr(targetDate), adjustedSlots },
     });
 
     res.json({
-      date: targetDate.toISOString().split("T")[0],
+      date: getMadridDateStr(targetDate),
       level,
       adjustedSlots,
     });
@@ -1659,7 +1659,7 @@ router.get("/api/capacity/today-status", authenticateToken, async (req: AuthRequ
     );
 
     res.json({
-      date: midnightTarget.toISOString().split("T")[0],
+      date: getMadridDateStr(midnightTarget),
       quickAdjustLevel,
       slots: slotsWithUsage,
     });
@@ -2393,7 +2393,7 @@ router.get("/api/slots/week", authenticateToken, async (req: AuthRequest, res) =
     const dayNames = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
     for (const dayDate of days) {
-      const dateStr = dayDate.toISOString().split("T")[0];
+      const dateStr = getMadridDateStr(dayDate);
       const slots = await slotCapacityValidator.getSlotsForDate(dayDate);
 
       const dateStart = getMadridMidnight(dayDate);

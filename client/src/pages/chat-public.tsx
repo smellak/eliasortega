@@ -68,7 +68,7 @@ export default function ChatPublic() {
     {
       id: "welcome",
       role: "assistant",
-      content: "¡Hola! Soy Elías Ortega, tu asistente del almacén Centro Hogar Sanchez. ¿En qué puedo ayudarte hoy? Puedo ayudarte a programar una cita de entrega.",
+      content: "Hola, soy Elías, del almacén de Centro Hogar Sánchez. ¿En qué te puedo ayudar? Si necesitas programar una entrega, dime qué traes y buscamos hueco.",
       timestamp: new Date(),
     },
   ]);
@@ -238,7 +238,7 @@ export default function ChatPublic() {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <h2 className="text-base sm:text-lg font-semibold text-white truncate">Elías Ortega</h2>
+                <h2 className="text-base sm:text-lg font-semibold text-white truncate">Elías</h2>
                 <p className="text-xs sm:text-sm text-blue-100">Asistente Virtual</p>
               </div>
               <Badge variant="secondary" className="bg-green-500 text-white border-0 text-xs sm:text-sm">

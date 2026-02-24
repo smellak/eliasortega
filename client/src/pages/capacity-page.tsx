@@ -37,8 +37,16 @@ interface CapacityPageProps {
   userRole: "ADMIN" | "PLANNER" | "BASIC_READONLY";
 }
 
-const DAY_NAMES = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-const DAY_INDICES = [1, 2, 3, 4, 5, 6];
+const WEEKDAY_DAYS = [
+  { name: "Lun", idx: 1 },
+  { name: "Mar", idx: 2 },
+  { name: "Mié", idx: 3 },
+  { name: "Jue", idx: 4 },
+  { name: "Vie", idx: 5 },
+];
+const SATURDAY_DAYS = [{ name: "Sáb", idx: 6 }];
+const SUNDAY_DAYS = [{ name: "Dom", idx: 0 }];
+const ALL_DAY_INDICES = [1, 2, 3, 4, 5, 6, 0];
 
 function PageHeader() {
   return (
@@ -103,7 +111,31 @@ function SlotTemplatesTab({ isReadOnly }: { isReadOnly: boolean }) {
     },
   });
 
-  const timeSlots = Array.from(
+  const weekdayTimeSlots = Array.from(
+    new Set(
+      templates
+        .filter((t) => t.dayOfWeek >= 1 && t.dayOfWeek <= 5)
+        .map((t) => `${t.startTime}-${t.endTime}`)
+    )
+  ).sort();
+
+  const saturdayTimeSlots = Array.from(
+    new Set(
+      templates
+        .filter((t) => t.dayOfWeek === 6)
+        .map((t) => `${t.startTime}-${t.endTime}`)
+    )
+  ).sort();
+
+  const sundayTimeSlots = Array.from(
+    new Set(
+      templates
+        .filter((t) => t.dayOfWeek === 0)
+        .map((t) => `${t.startTime}-${t.endTime}`)
+    )
+  ).sort();
+
+  const allTimeSlots = Array.from(
     new Set(templates.map((t) => `${t.startTime}-${t.endTime}`))
   ).sort();
 
@@ -126,7 +158,7 @@ function SlotTemplatesTab({ isReadOnly }: { isReadOnly: boolean }) {
   };
 
   const handleAddTemplates = () => {
-    DAY_INDICES.forEach((day) => {
+    ALL_DAY_INDICES.forEach((day) => {
       createMutation.mutate({
         dayOfWeek: day,
         startTime: newStartTime,
@@ -157,6 +189,84 @@ function SlotTemplatesTab({ isReadOnly }: { isReadOnly: boolean }) {
     }
   };
 
+  const renderSlotGrid = (
+    title: string,
+    days: { name: string; idx: number }[],
+    timeSlots: string[],
+  ) => (
+    <div>
+      <h3 className="text-lg font-semibold mb-2">{title}</h3>
+      <Card className="overflow-x-auto">
+        <Table data-testid={`table-slot-templates-${title.toLowerCase().replace(/\s+/g, "-")}`}>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="min-w-[120px]">Franja</TableHead>
+              {days.map((day) => (
+                <TableHead key={day.idx} className="text-center min-w-[90px]" data-testid={`header-day-${day.idx}`}>
+                  {day.name}
+                </TableHead>
+              ))}
+              {!isReadOnly && <TableHead className="w-[60px]" />}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {timeSlots.map((timeKey) => {
+              const [startTime, endTime] = timeKey.split("-");
+              return (
+                <TableRow key={timeKey} data-testid={`row-template-${timeKey}`}>
+                  <TableCell className="font-medium whitespace-nowrap">
+                    {startTime} - {endTime}
+                  </TableCell>
+                  {days.map((day) => {
+                    const template = getTemplate(timeKey, day.idx);
+                    return (
+                      <TableCell key={day.idx} className="text-center">
+                        {template ? (
+                          <div className="flex flex-col items-center gap-1">
+                            <Input
+                              type="number"
+                              min={0}
+                              value={template.maxPoints}
+                              onChange={(e) => handleMaxPointsChange(template.id, e.target.value)}
+                              disabled={isReadOnly}
+                              className="w-16 text-center"
+                              data-testid={`input-maxpoints-${template.id}`}
+                            />
+                            <Switch
+                              checked={template.active}
+                              onCheckedChange={(checked) => handleToggleActive(template.id, checked)}
+                              disabled={isReadOnly}
+                              data-testid={`switch-active-${template.id}`}
+                            />
+                          </div>
+                        ) : null}
+                      </TableCell>
+                    );
+                  })}
+                  {!isReadOnly && (
+                    <TableCell>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => {
+                          setTemplateToDelete(timeKey);
+                          setDeleteConfirmOpen(true);
+                        }}
+                        data-testid={`button-delete-template-${timeKey}`}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </TableCell>
+                  )}
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </Card>
+    </div>
+  );
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -186,83 +296,18 @@ function SlotTemplatesTab({ isReadOnly }: { isReadOnly: boolean }) {
         </div>
       )}
 
-      {timeSlots.length === 0 ? (
+      {allTimeSlots.length === 0 ? (
         <Card className="p-8">
           <div className="flex flex-col items-center gap-3 text-center">
             <p className="text-muted-foreground">No hay plantillas de franja definidas.</p>
           </div>
         </Card>
       ) : (
-        <Card className="overflow-x-auto">
-          <Table data-testid="table-slot-templates">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="min-w-[120px]">Franja</TableHead>
-                {DAY_NAMES.map((day, i) => (
-                  <TableHead key={day} className="text-center min-w-[90px]" data-testid={`header-day-${DAY_INDICES[i]}`}>
-                    {day}
-                  </TableHead>
-                ))}
-                {!isReadOnly && <TableHead className="w-[60px]" />}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {timeSlots.map((timeKey) => {
-                const [startTime, endTime] = timeKey.split("-");
-                return (
-                  <TableRow key={timeKey} data-testid={`row-template-${timeKey}`}>
-                    <TableCell className="font-medium whitespace-nowrap">
-                      {startTime} - {endTime}
-                    </TableCell>
-                    {DAY_INDICES.map((day) => {
-                      const template = getTemplate(timeKey, day);
-                      return (
-                        <TableCell key={day} className="text-center">
-                          {template ? (
-                            <div className="flex flex-col items-center gap-1">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={template.maxPoints}
-                                onChange={(e) => handleMaxPointsChange(template.id, e.target.value)}
-                                disabled={isReadOnly}
-                                className="w-16 text-center"
-                                data-testid={`input-maxpoints-${template.id}`}
-                              />
-                              <Switch
-                                checked={template.active}
-                                onCheckedChange={(checked) => handleToggleActive(template.id, checked)}
-                                disabled={isReadOnly}
-                                data-testid={`switch-active-${template.id}`}
-                              />
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                      );
-                    })}
-                    {!isReadOnly && (
-                      <TableCell>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => {
-                            setTemplateToDelete(timeKey);
-                            setDeleteConfirmOpen(true);
-                          }}
-                          data-testid={`button-delete-template-${timeKey}`}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </Card>
+        <div className="space-y-6">
+          {weekdayTimeSlots.length > 0 && renderSlotGrid("Lunes a Viernes", WEEKDAY_DAYS, weekdayTimeSlots)}
+          {saturdayTimeSlots.length > 0 && renderSlotGrid("Sábado", SATURDAY_DAYS, saturdayTimeSlots)}
+          {sundayTimeSlots.length > 0 && renderSlotGrid("Domingo", SUNDAY_DAYS, sundayTimeSlots)}
+        </div>
       )}
 
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
@@ -305,7 +350,7 @@ function SlotTemplatesTab({ isReadOnly }: { isReadOnly: boolean }) {
               />
             </div>
             <p className="text-sm text-muted-foreground">
-              Se creará una plantilla para cada día (Lun-Sáb) con estos valores.
+              Se creará una plantilla para cada día (Lun-Dom) con estos valores.
             </p>
           </div>
           <DialogFooter>

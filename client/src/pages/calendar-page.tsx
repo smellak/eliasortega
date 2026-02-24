@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { CalendarView } from "@/components/calendar-view";
+import { SlotCalendar, type CalendarViewType } from "@/components/slot-calendar";
 import { CapacityIndicators } from "@/components/capacity-indicators";
 import { QuickCapacityAdjust } from "@/components/quick-capacity-adjust";
 import { AppointmentDialog } from "@/components/appointment-dialog";
@@ -11,7 +11,8 @@ import { appointmentsApi, providersApi, capacityApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Appointment, Provider, CreateAppointmentInput, UpdateAppointmentInput, UserRole, SlotUtilization } from "@shared/types";
-import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import type { WeekSlotAppointment } from "@/lib/api";
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 
 interface CalendarPageProps {
   userRole: UserRole;
@@ -22,31 +23,29 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
   const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
   const [conflictErrorOpen, setConflictErrorOpen] = useState(false);
   const [conflictError, setConflictError] = useState<any>(null);
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [currentView, setCurrentView] = useState<"dayGridMonth" | "timeGridWeek" | "timeGridDay">("timeGridWeek");
-  
-  // Store the actual date range from FullCalendar
-  const [dateRange, setDateRange] = useState<{ startDate: Date; endDate: Date }>(() => {
-    // Initialize with week range for default view
-    return {
-      startDate: startOfWeek(new Date(), { weekStartsOn: 1 }),
-      endDate: endOfWeek(new Date(), { weekStartsOn: 1 }),
-    };
-  });
+  const [currentView, setCurrentView] = useState<CalendarViewType>("week");
+  // Pre-fill slot info when user clicks on a slot cell
+  const [prefilledSlot, setPrefilledSlot] = useState<{ date: string; startTime: string; endTime: string } | null>(null);
 
   const isReadOnly = userRole === "BASIC_READONLY";
 
-  // Use the date range from FullCalendar
-  const { startDate, endDate } = dateRange;
+  // Date range for capacity utilization query
+  const getDateRange = () => {
+    if (currentView === "month") {
+      return {
+        startDate: startOfMonth(currentDate),
+        endDate: endOfMonth(currentDate),
+      };
+    }
+    return {
+      startDate: startOfWeek(currentDate, { weekStartsOn: 1 }),
+      endDate: endOfWeek(currentDate, { weekStartsOn: 1 }),
+    };
+  };
 
-  const { data: appointments = [] } = useQuery<Appointment[]>({
-    queryKey: ["/api/appointments", startDate.toISOString(), endDate.toISOString()],
-    queryFn: () => appointmentsApi.list({
-      from: startDate.toISOString(),
-      to: endDate.toISOString(),
-    }),
-  });
+  const { startDate, endDate } = getDateRange();
 
   // Fetch providers
   const { data: providers = [] } = useQuery<Provider[]>({
@@ -54,7 +53,7 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
     queryFn: () => providersApi.list(),
   });
 
-  // Fetch capacity utilization for current date range (slot-based)
+  // Fetch capacity utilization for current date range
   const { data: capacityUtilization } = useQuery<SlotUtilization>({
     queryKey: ["/api/capacity/utilization", startDate.toISOString(), endDate.toISOString()],
     queryFn: () => capacityApi.getUtilization({
@@ -68,17 +67,18 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
     mutationFn: (input: CreateAppointmentInput) => appointmentsApi.create(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
-      // Invalidate all capacity queries
+      queryClient.invalidateQueries({ queryKey: ["/api/slots/week"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/slots/week-month"] });
       queryClient.invalidateQueries({ queryKey: ["/api/capacity/utilization"], exact: false });
       setAppointmentDialogOpen(false);
-      setSelectedEvent(null);
+      setSelectedAppointment(null);
+      setPrefilledSlot(null);
       toast({
-        title: "Éxito",
-        description: "Cita creada correctamente",
+        title: "Cita creada",
+        description: "La cita se ha creado correctamente",
       });
     },
     onError: (error: any) => {
-      // Check if it's a capacity conflict error
       if (error.message?.includes("Capacity conflict")) {
         try {
           const errorData = JSON.parse(error.message.split(": ")[1]);
@@ -107,17 +107,17 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
       appointmentsApi.update(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
-      // Invalidate all capacity queries
+      queryClient.invalidateQueries({ queryKey: ["/api/slots/week"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/slots/week-month"] });
       queryClient.invalidateQueries({ queryKey: ["/api/capacity/utilization"], exact: false });
       setAppointmentDialogOpen(false);
-      setSelectedEvent(null);
+      setSelectedAppointment(null);
       toast({
-        title: "Éxito",
-        description: "Cita actualizada correctamente",
+        title: "Cita actualizada",
+        description: "La cita se ha actualizado correctamente",
       });
     },
     onError: (error: any) => {
-      // Check if it's a capacity conflict error
       if (error.message?.includes("Capacity conflict")) {
         try {
           const errorData = JSON.parse(error.message.split(": ")[1]);
@@ -140,92 +140,59 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
     },
   });
 
-  // Convert appointments to FullCalendar events
-  const events = appointments.map(apt => ({
-    id: apt.id,
-    title: apt.providerName,
-    start: apt.startUtc,
-    end: apt.endUtc,
-    backgroundColor: '#0066cc',
-    borderColor: '#0052a3',
-    extendedProps: {
-      ...apt,
-    },
-  }));
-
-  const handleEventClick = (eventClickInfo: any) => {
-    if (!isReadOnly) {
-      setSelectedEvent(eventClickInfo.event);
-      setAppointmentDialogOpen(true);
-    }
-  };
-
-  const handleDateSelect = (selectInfo: any) => {
-    if (!isReadOnly) {
-      setSelectedEvent(null);
-      setAppointmentDialogOpen(true);
-    }
-  };
-
-  const handleEventDrop = (eventDropInfo: any) => {
-    const event = eventDropInfo.event;
-    const appointmentId = event.id;
-    
-    // Update appointment with new start and end times
-    updateMutation.mutate({
-      id: appointmentId,
-      input: {
-        start: event.start.toISOString(),
-        end: event.end.toISOString(),
-      },
-    }, {
-      onError: () => {
-        // Revert the drop if there's an error
-        eventDropInfo.revert();
-      },
-    });
-  };
-
   const handleSaveAppointment = (data: any) => {
-    if (selectedEvent && selectedEvent.id) {
-      // Update existing appointment
-      updateMutation.mutate({ id: selectedEvent.id, input: data });
+    if (selectedAppointment?.id) {
+      updateMutation.mutate({ id: selectedAppointment.id, input: data });
     } else {
-      // Create new appointment
       createMutation.mutate(data);
     }
   };
 
-  // Callback handlers for calendar navigation
-  const handleViewChange = (view: "dayGridMonth" | "timeGridWeek" | "timeGridDay") => {
-    setCurrentView(view);
+  const handleSlotClick = (date: string, startTime: string, endTime: string) => {
+    setSelectedAppointment(null);
+    setPrefilledSlot({ date, startTime, endTime });
+    setAppointmentDialogOpen(true);
   };
 
-  const handleDateChange = (date: Date) => {
-    setCurrentDate(date);
+  const handleAppointmentClick = (appt: WeekSlotAppointment) => {
+    if (isReadOnly) return;
+    // Build the appointment object expected by the dialog
+    setSelectedAppointment({
+      id: appt.id,
+      providerId: "", // Will need to look up, but providerName is shown
+      providerName: appt.providerName,
+      startUtc: appt.startUtc,
+      endUtc: appt.endUtc,
+      workMinutesNeeded: appt.workMinutesNeeded,
+      forkliftsNeeded: 1,
+      goodsType: appt.goodsType,
+      units: appt.units,
+      lines: appt.lines,
+      deliveryNotesCount: appt.deliveryNotesCount,
+    });
+    setPrefilledSlot(null);
+    setAppointmentDialogOpen(true);
   };
 
-  // Handle when FullCalendar changes its date range
-  const handleDatesChange = (
-    start: Date, 
-    end: Date, 
-    viewType: "dayGridMonth" | "timeGridWeek" | "timeGridDay",
-    viewCurrentStart?: Date
-  ) => {
-    // For month view, limit to actual month boundaries to avoid counting
-    // appointments from adjacent months (FullCalendar shows partial weeks)
-    let queryStart = start;
-    let queryEnd = end;
-    
-    if (viewType === "dayGridMonth" && viewCurrentStart) {
-      // Use the view's currentStart which points to the actual month being viewed
-      queryStart = startOfMonth(viewCurrentStart);
-      queryEnd = endOfMonth(viewCurrentStart);
-    }
-    
-    setDateRange({ startDate: queryStart, endDate: queryEnd });
-    setCurrentView(viewType);
+  const handleNewAppointmentButton = () => {
+    setSelectedAppointment(null);
+    setPrefilledSlot(null);
+    setAppointmentDialogOpen(true);
   };
+
+  // Build appointment prop for dialog (with prefilled slot data)
+  const dialogAppointment = selectedAppointment
+    ? selectedAppointment
+    : prefilledSlot
+    ? {
+        startUtc: `${prefilledSlot.date}T${prefilledSlot.startTime}:00`,
+        endUtc: `${prefilledSlot.date}T${prefilledSlot.endTime}:00`,
+        providerName: "",
+        providerId: "",
+        workMinutesNeeded: 60,
+        forkliftsNeeded: 1,
+      }
+    : undefined;
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -246,10 +213,11 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
             <QuickCapacityAdjust date={currentDate} />
           )}
           {!isReadOnly && (
-            <Button className="gradient-btn text-white border-0 no-default-hover-elevate no-default-active-elevate" onClick={() => {
-              setSelectedEvent(null);
-              setAppointmentDialogOpen(true);
-            }} data-testid="button-new-appointment">
+            <Button
+              className="gradient-btn text-white border-0 no-default-hover-elevate no-default-active-elevate"
+              onClick={handleNewAppointmentButton}
+              data-testid="button-new-appointment"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Nueva Cita
             </Button>
@@ -268,21 +236,26 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
         />
       )}
 
-      <CalendarView
-        events={events}
-        onEventClick={handleEventClick}
-        onDateSelect={handleDateSelect}
-        onEventDrop={handleEventDrop}
-        onViewChange={handleViewChange}
-        onDateChange={handleDateChange}
-        onDatesChange={handleDatesChange}
+      <SlotCalendar
+        currentDate={currentDate}
+        onDateChange={setCurrentDate}
+        currentView={currentView}
+        onViewChange={setCurrentView}
+        onSlotClick={handleSlotClick}
+        onAppointmentClick={handleAppointmentClick}
         readOnly={isReadOnly}
       />
 
       <AppointmentDialog
         open={appointmentDialogOpen}
-        onOpenChange={setAppointmentDialogOpen}
-        appointment={selectedEvent?.extendedProps as any}
+        onOpenChange={(open) => {
+          setAppointmentDialogOpen(open);
+          if (!open) {
+            setSelectedAppointment(null);
+            setPrefilledSlot(null);
+          }
+        }}
+        appointment={dialogAppointment}
         providers={providers}
         onSave={handleSaveAppointment}
       />

@@ -487,7 +487,49 @@ export const slotOverridesApi = {
   },
 };
 
+export interface WeekSlotAppointment {
+  id: string;
+  providerName: string;
+  goodsType: string | null;
+  units: number | null;
+  lines: number | null;
+  deliveryNotesCount: number | null;
+  size: string | null;
+  pointsUsed: number | null;
+  workMinutesNeeded: number;
+  startUtc: string;
+  endUtc: string;
+}
+
+export interface WeekSlot {
+  startTime: string;
+  endTime: string;
+  maxPoints: number;
+  usedPoints: number;
+  availablePoints: number;
+  appointments: WeekSlotAppointment[];
+}
+
+export interface WeekDay {
+  date: string;
+  dayOfWeek: number;
+  dayName: string;
+  slots: WeekSlot[];
+}
+
 export const slotsApi = {
+  getWeek: async (date: string): Promise<WeekDay[]> => {
+    const query = new URLSearchParams();
+    query.append("date", date);
+
+    const response = await fetch(`${API_BASE}/slots/week?${query}`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<WeekDay[]>(response, () =>
+      fetch(`${API_BASE}/slots/week?${query}`, { headers: getHeaders() })
+    );
+  },
+
   getAvailability: async (params: { date: string; points?: number }): Promise<Array<{
     startTime: string;
     endTime: string;

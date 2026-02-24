@@ -2104,4 +2104,117 @@ router.get("/api/audit-log", authenticateToken, requireRole("ADMIN", "PLANNER"),
   }
 });
 
+// Weekly slots with appointments — feeds the slot-based calendar
+router.get("/api/slots/week", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const dateParam = req.query.date as string | undefined;
+    const refDate = dateParam ? new Date(dateParam) : new Date();
+    if (isNaN(refDate.getTime())) {
+      return res.status(400).json({ error: "Formato de fecha inválido" });
+    }
+
+    // Find Monday of the week containing refDate
+    const day = refDate.getDay(); // 0=Sun, 1=Mon, ...
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    const monday = new Date(refDate);
+    monday.setDate(monday.getDate() + diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+
+    // Generate Mon-Sat (6 days)
+    const days: Date[] = [];
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(monday);
+      d.setDate(d.getDate() + i);
+      days.push(d);
+    }
+
+    const result: Array<{
+      date: string;
+      dayOfWeek: number;
+      dayName: string;
+      slots: Array<{
+        startTime: string;
+        endTime: string;
+        maxPoints: number;
+        usedPoints: number;
+        availablePoints: number;
+        appointments: Array<{
+          id: string;
+          providerName: string;
+          goodsType: string | null;
+          units: number | null;
+          lines: number | null;
+          deliveryNotesCount: number | null;
+          size: string | null;
+          pointsUsed: number | null;
+          workMinutesNeeded: number;
+          startUtc: string;
+          endUtc: string;
+        }>;
+      }>;
+    }> = [];
+
+    const dayNames = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+    for (const dayDate of days) {
+      const dateStr = dayDate.toISOString().split("T")[0];
+      const slots = await slotCapacityValidator.getSlotsForDate(dayDate);
+
+      const dateStart = new Date(dayDate);
+      dateStart.setHours(0, 0, 0, 0);
+      const dateEnd = new Date(dayDate);
+      dateEnd.setHours(23, 59, 59, 999);
+
+      // Fetch all appointments for this day at once
+      const dayAppointments = await prisma.appointment.findMany({
+        where: {
+          slotDate: { gte: dateStart, lte: dateEnd },
+        },
+        orderBy: { startUtc: "asc" },
+      });
+
+      const slotResults = [];
+      for (const slot of slots) {
+        const slotAppts = dayAppointments.filter(
+          (a) => a.slotStartTime === slot.startTime
+        );
+        const usedPoints = slotAppts.reduce((sum, a) => sum + (a.pointsUsed || 0), 0);
+
+        slotResults.push({
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          maxPoints: slot.maxPoints,
+          usedPoints,
+          availablePoints: slot.maxPoints - usedPoints,
+          appointments: slotAppts.map((a) => ({
+            id: a.id,
+            providerName: a.providerName,
+            goodsType: a.goodsType,
+            units: a.units,
+            lines: a.lines,
+            deliveryNotesCount: a.deliveryNotesCount,
+            size: a.size,
+            pointsUsed: a.pointsUsed,
+            workMinutesNeeded: a.workMinutesNeeded,
+            startUtc: a.startUtc.toISOString(),
+            endUtc: a.endUtc.toISOString(),
+          })),
+        });
+      }
+
+      result.push({
+        date: dateStr,
+        dayOfWeek: dayDate.getDay(),
+        dayName: dayNames[dayDate.getDay()],
+        slots: slotResults,
+      });
+    }
+
+    res.json(result);
+  } catch (error: any) {
+    console.error("Get slots/week error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;

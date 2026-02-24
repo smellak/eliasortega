@@ -159,16 +159,19 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
     // Build the appointment object expected by the dialog
     setSelectedAppointment({
       id: appt.id,
-      providerId: "", // Will need to look up, but providerName is shown
+      providerId: appt.providerId || "",
       providerName: appt.providerName,
       startUtc: appt.startUtc,
       endUtc: appt.endUtc,
       workMinutesNeeded: appt.workMinutesNeeded,
-      forkliftsNeeded: 1,
+      forkliftsNeeded: appt.forkliftsNeeded,
       goodsType: appt.goodsType,
       units: appt.units,
       lines: appt.lines,
       deliveryNotesCount: appt.deliveryNotesCount,
+      providerEmail: appt.providerEmail,
+      providerPhone: appt.providerPhone,
+      confirmationStatus: appt.confirmationStatus,
     });
     setPrefilledSlot(null);
     setAppointmentDialogOpen(true);

@@ -2142,6 +2142,7 @@ router.post("/api/email-recipients", authenticateToken, requireRole("ADMIN"), as
         receivesDailySummary: data.receivesDailySummary,
         receivesAlerts: data.receivesAlerts,
         receivesUrgent: data.receivesUrgent,
+        active: data.active,
       },
     });
     res.status(201).json(recipient);
@@ -2378,6 +2379,7 @@ router.get("/api/slots/week", authenticateToken, async (req: AuthRequest, res) =
           availablePoints: slot.maxPoints - usedPoints,
           appointments: slotAppts.map((a) => ({
             id: a.id,
+            providerId: a.providerId,
             providerName: a.providerName,
             goodsType: a.goodsType,
             units: a.units,
@@ -2386,6 +2388,7 @@ router.get("/api/slots/week", authenticateToken, async (req: AuthRequest, res) =
             size: a.size,
             pointsUsed: a.pointsUsed,
             workMinutesNeeded: a.workMinutesNeeded,
+            forkliftsNeeded: a.forkliftsNeeded,
             startUtc: a.startUtc.toISOString(),
             endUtc: a.endUtc.toISOString(),
             confirmationStatus: a.confirmationStatus,

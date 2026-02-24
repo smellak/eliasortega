@@ -515,6 +515,7 @@ export const slotOverridesApi = {
 
 export interface WeekSlotAppointment {
   id: string;
+  providerId: string | null;
   providerName: string;
   goodsType: string | null;
   units: number | null;
@@ -523,6 +524,7 @@ export interface WeekSlotAppointment {
   size: string | null;
   pointsUsed: number | null;
   workMinutesNeeded: number;
+  forkliftsNeeded: number;
   startUtc: string;
   endUtc: string;
   confirmationStatus?: string;

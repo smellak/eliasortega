@@ -421,23 +421,24 @@ function buildConfirmationPage(status: string, appt: any, contactPhone: string):
 }
 
 router.post("/api/chat/message", publicRateLimiter, async (req, res) => {
-  try {
-    const { sessionId, message } = req.body;
-    
-    if (!sessionId || !message) {
-      return res.status(400).json({ error: "sessionId and message are required" });
-    }
+  const { sessionId, message } = req.body;
 
+  if (!sessionId || !message) {
+    return res.status(400).json({ error: "sessionId and message are required" });
+  }
+
+  // Set SSE headers early so error handler can always send SSE responses
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  try {
     const { getBaseUrl } = await import("./utils/base-url");
     const baseUrl = getBaseUrl();
-    
+
     const { AgentOrchestrator } = await import("./agent/orchestrator");
     const orchestrator = new AgentOrchestrator(sessionId, baseUrl);
-
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-    res.flushHeaders();
 
     for await (const chunk of orchestrator.chat(message)) {
       const data = JSON.stringify(chunk);
@@ -449,7 +450,6 @@ router.post("/api/chat/message", publicRateLimiter, async (req, res) => {
   } catch (error: any) {
     console.error("[CHAT] Error:", error.message);
 
-    // After flushHeaders(), headers are always sent — respond via SSE chunks
     const errorChunk = JSON.stringify({
       type: "error",
       content: "Lo siento, ha ocurrido un error. Inténtalo de nuevo.",

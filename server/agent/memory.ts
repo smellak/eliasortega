@@ -18,22 +18,15 @@ export class ConversationMemory {
   }
 
   async getOrCreateConversation(): Promise<string> {
-    const existing = await prisma.conversation.findUnique({
+    const conversation = await prisma.conversation.upsert({
       where: { sessionId: this.sessionId },
-    });
-
-    if (existing) {
-      return existing.id;
-    }
-
-    const newConversation = await prisma.conversation.create({
-      data: {
+      update: {},
+      create: {
         sessionId: this.sessionId,
         metadata: {},
       },
     });
-
-    return newConversation.id;
+    return conversation.id;
   }
 
   async getHistory(): Promise<ConversationMessage[]> {

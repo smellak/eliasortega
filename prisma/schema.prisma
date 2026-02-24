@@ -109,6 +109,15 @@ model Appointment {
   slotDate           DateTime?        @map("slot_date")
   slotStartTime      String?          @map("slot_start_time")
   estimatedFields    String?          @map("estimated_fields")
+  providerEmail      String?          @map("provider_email")
+  providerPhone      String?          @map("provider_phone")
+  confirmationStatus String           @default("pending") @map("confirmation_status")
+  confirmationToken  String?          @unique @map("confirmation_token")
+  confirmationSentAt DateTime?        @map("confirmation_sent_at")
+  reminderSentAt     DateTime?        @map("reminder_sent_at")
+  confirmedAt        DateTime?        @map("confirmed_at")
+  cancelledAt        DateTime?        @map("cancelled_at")
+  cancellationReason String?          @map("cancellation_reason")
   createdAt          DateTime         @default(now()) @map("created_at")
   updatedAt          DateTime         @updatedAt @map("updated_at")
 
@@ -116,7 +125,17 @@ model Appointment {
   @@index([endUtc])
   @@index([providerName])
   @@index([slotDate, slotStartTime])
+  @@index([confirmationStatus])
   @@map("appointments")
+}
+
+model AppConfig {
+  key         String   @id
+  value       String
+  description String?
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("app_config")
 }
 
 model EmailRecipient {

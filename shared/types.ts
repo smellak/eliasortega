@@ -90,6 +90,8 @@ const appointmentBaseSchema = z.object({
   lines: z.coerce.number().int().min(0).optional(),
   deliveryNotesCount: z.coerce.number().int().min(0).optional(),
   externalRef: z.string().optional(),
+  providerEmail: z.string().email().optional(),
+  providerPhone: z.string().optional(),
 });
 
 export const createAppointmentSchema = appointmentBaseSchema.refine(
@@ -122,6 +124,14 @@ export interface Appointment {
   slotDate: string | null;
   slotStartTime: string | null;
   estimatedFields: string | null;
+  providerEmail: string | null;
+  providerPhone: string | null;
+  confirmationStatus: string;
+  confirmationSentAt: string | null;
+  reminderSentAt: string | null;
+  confirmedAt: string | null;
+  cancelledAt: string | null;
+  cancellationReason: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -360,3 +370,11 @@ export interface NormalizedCalendarQuery {
   workMinutesNeeded: number;
   forkliftsNeeded: number;
 }
+
+// Appointment confirmation (public)
+export const confirmAppointmentSchema = z.object({
+  token: z.string().min(1),
+  action: z.enum(["confirm", "cancel"]),
+  reason: z.string().optional(),
+});
+export type ConfirmAppointmentInput = z.infer<typeof confirmAppointmentSchema>;

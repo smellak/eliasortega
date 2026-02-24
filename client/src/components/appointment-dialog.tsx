@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CalendarPlus } from "lucide-react";
-import { slotsApi } from "@/lib/api";
+import { Loader2, CalendarPlus, Mail, RotateCcw } from "lucide-react";
+import { slotsApi, appointmentsApi } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface SlotAvailability {
   startTime: string;
@@ -34,6 +35,9 @@ interface AppointmentDialogProps {
     lines?: number;
     deliveryNotesCount?: number;
     estimatedFields?: string | null;
+    providerEmail?: string | null;
+    providerPhone?: string | null;
+    confirmationStatus?: string;
   };
   providers: Array<{ id: string; name: string }>;
   onSave: (data: any) => void;
@@ -56,6 +60,19 @@ function getSizeBadge(workMinutes: number): { label: string; points: number; var
   return { label: "L", points: 3, variant: "default" };
 }
 
+function ConfirmationStatusBadge({ status }: { status?: string }) {
+  if (!status || status === "pending") {
+    return <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-400">Pendiente</Badge>;
+  }
+  if (status === "confirmed") {
+    return <Badge variant="outline" className="text-xs bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400">Confirmada</Badge>;
+  }
+  if (status === "cancelled") {
+    return <Badge variant="outline" className="text-xs bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400">Cancelada</Badge>;
+  }
+  return null;
+}
+
 export function AppointmentDialog({
   open,
   onOpenChange,
@@ -63,6 +80,9 @@ export function AppointmentDialog({
   providers,
   onSave,
 }: AppointmentDialogProps) {
+  const { toast } = useToast();
+  const [resending, setResending] = useState(false);
+
   const isFieldEstimated = (field: string): boolean => {
     if (!appointment?.estimatedFields) return false;
     try {
@@ -88,6 +108,8 @@ export function AppointmentDialog({
     units: "",
     lines: "",
     deliveryNotesCount: "",
+    providerEmail: "",
+    providerPhone: "",
   });
 
   useEffect(() => {
@@ -108,6 +130,8 @@ export function AppointmentDialog({
           units: appointment.units?.toString() || "",
           lines: appointment.lines?.toString() || "",
           deliveryNotesCount: appointment.deliveryNotesCount?.toString() || "",
+          providerEmail: appointment.providerEmail || "",
+          providerPhone: appointment.providerPhone || "",
         });
       } else {
         const now = new Date();
@@ -124,6 +148,8 @@ export function AppointmentDialog({
           units: "",
           lines: "",
           deliveryNotesCount: "",
+          providerEmail: "",
+          providerPhone: "",
         });
       }
     }
@@ -233,6 +259,12 @@ export function AppointmentDialog({
       forkliftsNeeded: parseInt(formData.forkliftsNeeded, 10) || 0,
     };
 
+    if (formData.providerEmail && formData.providerEmail.trim()) {
+      payload.providerEmail = formData.providerEmail.trim();
+    }
+    if (formData.providerPhone && formData.providerPhone.trim()) {
+      payload.providerPhone = formData.providerPhone.trim();
+    }
     if (formData.goodsType && formData.goodsType.trim()) {
       payload.goodsType = formData.goodsType.trim();
     }
@@ -499,6 +531,80 @@ export function AppointmentDialog({
                 <span className="text-xs text-amber-600 dark:text-amber-400 mt-1 inline-block">~{formData.deliveryNotesCount} (estimado)</span>
               )}
             </div>
+
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 mt-2">Contacto Proveedor</div>
+            <div>
+              <Label htmlFor="provider-email">Email</Label>
+              <Input
+                id="provider-email"
+                type="email"
+                value={formData.providerEmail}
+                onChange={(e) => setFormData({ ...formData, providerEmail: e.target.value })}
+                placeholder="email@proveedor.com"
+                data-testid="input-provider-email"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="provider-phone">Teléfono</Label>
+              <Input
+                id="provider-phone"
+                type="tel"
+                value={formData.providerPhone}
+                onChange={(e) => setFormData({ ...formData, providerPhone: e.target.value })}
+                placeholder="+34 600..."
+                data-testid="input-provider-phone"
+              />
+            </div>
+
+            {appointment && (
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado Confirmación</div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <ConfirmationStatusBadge status={appointment.confirmationStatus} />
+                  {appointment.providerEmail && appointment.confirmationStatus !== "cancelled" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={resending}
+                      onClick={async () => {
+                        setResending(true);
+                        try {
+                          await appointmentsApi.resendConfirmation(appointment.id);
+                          toast({ title: "Enviado", description: "Email de confirmación reenviado" });
+                        } catch (err: any) {
+                          toast({ title: "Error", description: err.message || "No se pudo reenviar", variant: "destructive" });
+                        } finally {
+                          setResending(false);
+                        }
+                      }}
+                      data-testid="button-resend-confirmation"
+                    >
+                      {resending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Mail className="h-3 w-3 mr-1" />}
+                      Reenviar
+                    </Button>
+                  )}
+                  {appointment.confirmationStatus === "cancelled" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          await appointmentsApi.reactivate(appointment.id);
+                          toast({ title: "Reactivada", description: "Cita reactivada correctamente" });
+                        } catch (err: any) {
+                          toast({ title: "Error", description: err.message || "No se pudo reactivar", variant: "destructive" });
+                        }
+                      }}
+                      data-testid="button-reactivate"
+                    >
+                      <RotateCcw className="h-3 w-3 mr-1" />
+                      Reactivar
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

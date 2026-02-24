@@ -21,6 +21,7 @@ import {
   createEmailRecipientSchema,
   updateEmailRecipientSchema,
   changePasswordSchema,
+  confirmAppointmentSchema,
 } from "../shared/types";
 import { authenticateToken, requireRole, generateToken, generateRefreshToken, saveRefreshToken, validateRefreshToken, clearRefreshToken, authenticateJwtOrApiKey, AuthRequest } from "./middleware/auth";
 import { slotCapacityValidator } from "./services/slot-validator";
@@ -29,6 +30,7 @@ import { sendAppointmentAlert, sendTestEmail, sendDailySummary } from "./service
 import { prisma } from "./db/client";
 import { formatInTimeZone } from 'date-fns-tz';
 import { normalizeCategory, estimateLines, estimateDeliveryNotes, ESTIMATION_RATIOS } from "./config/estimation-ratios";
+import { sendAppointmentConfirmation, processAppointmentCancellation } from "./services/provider-email-service";
 import { addMinutes, setHours, setMinutes, setSeconds, setMilliseconds, isWeekend, addDays } from 'date-fns';
 import type { Request, Response, NextFunction } from "express";
 
@@ -106,6 +108,8 @@ async function upsertAppointmentInternal(data: {
   units: number | null;
   lines: number | null;
   deliveryNotesCount: number | null;
+  providerEmail?: string | null;
+  providerPhone?: string | null;
 }) {
   const est = resolveEstimationsForRoute(data.goodsType, data.units, data.lines, data.deliveryNotesCount);
 
@@ -158,6 +162,8 @@ async function upsertAppointmentInternal(data: {
           lines: est.lines,
           deliveryNotesCount: est.deliveryNotesCount,
           estimatedFields: est.estimatedFields.length > 0 ? JSON.stringify(est.estimatedFields) : null,
+          providerEmail: data.providerEmail ?? undefined,
+          providerPhone: data.providerPhone ?? undefined,
           size,
           pointsUsed,
           slotDate,
@@ -181,6 +187,8 @@ async function upsertAppointmentInternal(data: {
         lines: est.lines,
         deliveryNotesCount: est.deliveryNotesCount,
         estimatedFields: est.estimatedFields.length > 0 ? JSON.stringify(est.estimatedFields) : null,
+        providerEmail: data.providerEmail || null,
+        providerPhone: data.providerPhone || null,
         externalRef: data.externalRef,
         size,
         pointsUsed,
@@ -206,6 +214,144 @@ router.get("/api/health", async (req, res) => {
     res.status(503).json({ status: "degraded", database: "disconnected", timestamp: new Date().toISOString() });
   }
 });
+
+// --- Public appointment confirmation (no auth) ---
+router.get("/api/appointments/confirm/:token", async (req, res) => {
+  try {
+    const appt = await prisma.appointment.findFirst({
+      where: { confirmationToken: req.params.token },
+    });
+
+    const contactPhone = (await prisma.appConfig.findUnique({ where: { key: "provider_email_contact_phone" } }))?.value || "";
+
+    if (!appt) {
+      return res.type("html").send(buildConfirmationPage("error", null, contactPhone));
+    }
+
+    return res.type("html").send(buildConfirmationPage(appt.confirmationStatus, appt, contactPhone));
+  } catch (error) {
+    console.error("Confirm page error:", error);
+    res.type("html").status(500).send(buildConfirmationPage("error", null, ""));
+  }
+});
+
+router.post("/api/appointments/confirm", async (req, res) => {
+  try {
+    const data = confirmAppointmentSchema.parse(req.body);
+
+    const appt = await prisma.appointment.findFirst({
+      where: { confirmationToken: data.token },
+    });
+
+    if (!appt) {
+      return res.status(404).json({ success: false, error: "Token no válido o enlace caducado" });
+    }
+
+    if (appt.confirmationStatus === "confirmed" && data.action === "confirm") {
+      return res.json({ success: true, status: "confirmed", message: "La cita ya estaba confirmada" });
+    }
+
+    if (appt.confirmationStatus === "cancelled") {
+      return res.status(400).json({ success: false, error: "Esta cita ya fue anulada" });
+    }
+
+    if (data.action === "confirm") {
+      await prisma.appointment.update({
+        where: { id: appt.id },
+        data: { confirmationStatus: "confirmed", confirmedAt: new Date() },
+      });
+      return res.json({ success: true, status: "confirmed", message: "Cita confirmada correctamente" });
+    }
+
+    if (data.action === "cancel") {
+      await processAppointmentCancellation(appt.id, data.reason);
+      return res.json({ success: true, status: "cancelled", message: "Cita anulada correctamente" });
+    }
+
+    return res.status(400).json({ success: false, error: "Acción no válida" });
+  } catch (error: any) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({ success: false, error: "Datos no válidos", details: error.errors });
+    }
+    console.error("Confirm action error:", error);
+    res.status(500).json({ success: false, error: "Error interno del servidor" });
+  }
+});
+
+function buildConfirmationPage(status: string, appt: any, contactPhone: string): string {
+  const header = `<div style="background:#1e40af;color:#fff;padding:20px;text-align:center;">
+    <h1 style="margin:0;font-size:20px;">Centro Hogar Sánchez</h1>
+    <p style="margin:4px 0 0;font-size:13px;opacity:0.85;">Gestión de Descargas</p>
+  </div>`;
+  const footer = `<div style="padding:16px;text-align:center;font-size:12px;color:#94a3b8;border-top:1px solid #e2e8f0;">
+    ${contactPhone ? `Teléfono de contacto: <strong>${contactPhone}</strong><br>` : ""}
+    Centro Hogar Sánchez — Sistema de Gestión de Citas
+  </div>`;
+  const wrap = (body: string) => `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Confirmar Cita</title></head><body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f5f5f5;"><div style="max-width:500px;margin:20px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">${header}<div style="padding:24px;">${body}</div>${footer}</div></body></html>`;
+
+  if (status === "error" || !appt) {
+    return wrap(`<div style="text-align:center;padding:20px 0;"><p style="font-size:18px;color:#dc2626;font-weight:600;">Enlace no válido</p><p style="color:#64748b;">Este enlace no es válido o ha expirado. Si necesitas ayuda, contacta con el almacén.</p></div>`);
+  }
+
+  const dateStr = formatInTimeZone(appt.startUtc, "Europe/Madrid", "dd/MM/yyyy");
+  const startTime = formatInTimeZone(appt.startUtc, "Europe/Madrid", "HH:mm");
+  const endTime = formatInTimeZone(appt.endUtc, "Europe/Madrid", "HH:mm");
+  const sizeLabel = appt.size === "S" ? "Pequeña" : appt.size === "M" ? "Mediana" : appt.size === "L" ? "Grande" : "";
+  const summary = `<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
+    <tr><td style="padding:10px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Proveedor</td><td style="padding:10px;border:1px solid #e2e8f0;">${appt.providerName}</td></tr>
+    <tr><td style="padding:10px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Fecha</td><td style="padding:10px;border:1px solid #e2e8f0;">${dateStr}</td></tr>
+    <tr><td style="padding:10px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Horario</td><td style="padding:10px;border:1px solid #e2e8f0;">${startTime} — ${endTime}</td></tr>
+    ${appt.goodsType ? `<tr><td style="padding:10px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Mercancía</td><td style="padding:10px;border:1px solid #e2e8f0;">${appt.goodsType}</td></tr>` : ""}
+    ${sizeLabel ? `<tr><td style="padding:10px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;">Tamaño</td><td style="padding:10px;border:1px solid #e2e8f0;">${sizeLabel}</td></tr>` : ""}
+  </table>`;
+
+  if (status === "confirmed") {
+    const confirmedDate = appt.confirmedAt ? formatInTimeZone(appt.confirmedAt, "Europe/Madrid", "dd/MM/yyyy HH:mm") : "";
+    return wrap(`<div style="text-align:center;padding:8px 0;"><p style="font-size:24px;margin:0;">✅</p><p style="font-size:18px;color:#16a34a;font-weight:600;margin:8px 0;">Cita confirmada</p></div>${summary}<p style="text-align:center;color:#16a34a;font-weight:600;">¡Nos vemos el ${dateStr}!</p>${confirmedDate ? `<p style="text-align:center;font-size:12px;color:#94a3b8;">Confirmada el ${confirmedDate}</p>` : ""}`);
+  }
+
+  if (status === "cancelled") {
+    const cancelledDate = appt.cancelledAt ? formatInTimeZone(appt.cancelledAt, "Europe/Madrid", "dd/MM/yyyy HH:mm") : "";
+    return wrap(`<div style="text-align:center;padding:8px 0;"><p style="font-size:24px;margin:0;">❌</p><p style="font-size:18px;color:#dc2626;font-weight:600;margin:8px 0;">Cita anulada</p></div>${summary}${appt.cancellationReason ? `<p style="color:#64748b;font-size:13px;"><strong>Motivo:</strong> ${appt.cancellationReason}</p>` : ""}<p style="text-align:center;color:#64748b;">Si necesitas reprogramar, contacta con el almacén.</p>${cancelledDate ? `<p style="text-align:center;font-size:12px;color:#94a3b8;">Anulada el ${cancelledDate}</p>` : ""}`);
+  }
+
+  // Pending — show confirm/cancel buttons
+  const token = appt.confirmationToken;
+  return wrap(`<p style="font-size:16px;margin:0 0 16px;"><strong>Datos de tu cita:</strong></p>${summary}
+    <div id="actions">
+      <div style="text-align:center;margin:24px 0;">
+        <button onclick="doAction('confirm')" style="display:block;width:100%;background:#16a34a;color:#fff;border:none;padding:16px;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;margin-bottom:12px;min-height:48px;">✅ Confirmo mi cita</button>
+        <button onclick="showCancel()" style="display:block;width:100%;background:#dc2626;color:#fff;border:none;padding:16px;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;min-height:48px;">❌ Necesito anular</button>
+      </div>
+    </div>
+    <div id="cancel-form" style="display:none;margin:16px 0;">
+      <p style="font-weight:600;margin-bottom:8px;">¿Por qué necesitas anular? (opcional)</p>
+      <textarea id="cancel-reason" rows="3" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;font-size:14px;box-sizing:border-box;" placeholder="Motivo de la anulación..."></textarea>
+      <button onclick="doAction('cancel')" style="display:block;width:100%;background:#dc2626;color:#fff;border:none;padding:14px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;margin-top:12px;">Confirmar anulación</button>
+      <button onclick="hideCancel()" style="display:block;width:100%;background:#e2e8f0;color:#475569;border:none;padding:12px;border-radius:8px;font-size:14px;cursor:pointer;margin-top:8px;">Volver</button>
+    </div>
+    <div id="result" style="display:none;text-align:center;padding:20px 0;"></div>
+    <script>
+      function showCancel(){document.getElementById('actions').style.display='none';document.getElementById('cancel-form').style.display='block';}
+      function hideCancel(){document.getElementById('actions').style.display='block';document.getElementById('cancel-form').style.display='none';}
+      function doAction(action){
+        var reason=action==='cancel'?document.getElementById('cancel-reason').value:'';
+        document.getElementById('actions').style.display='none';
+        document.getElementById('cancel-form').style.display='none';
+        document.getElementById('result').style.display='block';
+        document.getElementById('result').innerHTML='<p style="color:#64748b;">Procesando...</p>';
+        fetch('/api/appointments/confirm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:'${token}',action:action,reason:reason||undefined})})
+        .then(function(r){return r.json()})
+        .then(function(d){
+          if(d.success){
+            if(action==='confirm'){document.getElementById('result').innerHTML='<p style="font-size:24px;">✅</p><p style="font-size:18px;color:#16a34a;font-weight:600;">¡Cita confirmada!</p><p style="color:#64748b;">Nos vemos el día de la descarga.</p>';}
+            else{document.getElementById('result').innerHTML='<p style="font-size:24px;">❌</p><p style="font-size:18px;color:#dc2626;font-weight:600;">Cita anulada</p><p style="color:#64748b;">Hemos informado al almacén.</p>';}
+          }else{document.getElementById('result').innerHTML='<p style="color:#dc2626;">'+d.error+'</p>';document.getElementById('actions').style.display='block';}
+        })
+        .catch(function(){document.getElementById('result').innerHTML='<p style="color:#dc2626;">Error de conexión. Inténtalo de nuevo.</p>';document.getElementById('actions').style.display='block';});
+      }
+    </script>`);
+}
 
 router.post("/api/chat/message", async (req, res) => {
   try {
@@ -959,6 +1105,8 @@ router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNE
           deliveryNotesCount: est.deliveryNotesCount,
           estimatedFields: est.estimatedFields.length > 0 ? JSON.stringify(est.estimatedFields) : null,
           externalRef: data.externalRef,
+          providerEmail: data.providerEmail || null,
+          providerPhone: data.providerPhone || null,
           size,
           pointsUsed,
           slotDate,
@@ -971,6 +1119,13 @@ router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNE
 
     if ("conflict" in result) {
       return res.status(409).json({ error: "Slot capacity conflict", conflict: result.conflict });
+    }
+
+    // Send confirmation email to provider if email provided
+    if (result.appointment.providerEmail) {
+      sendAppointmentConfirmation(result.appointment.id).catch((e) =>
+        console.error("[EMAIL] Provider confirmation error:", e)
+      );
     }
 
     logAudit({
@@ -2180,6 +2335,9 @@ router.get("/api/slots/week", authenticateToken, async (req: AuthRequest, res) =
           workMinutesNeeded: number;
           startUtc: string;
           endUtc: string;
+          confirmationStatus: string;
+          providerEmail: string | null;
+          providerPhone: string | null;
         }>;
       }>;
     }> = [];
@@ -2228,6 +2386,9 @@ router.get("/api/slots/week", authenticateToken, async (req: AuthRequest, res) =
             workMinutesNeeded: a.workMinutesNeeded,
             startUtc: a.startUtc.toISOString(),
             endUtc: a.endUtc.toISOString(),
+            confirmationStatus: a.confirmationStatus,
+            providerEmail: a.providerEmail,
+            providerPhone: a.providerPhone,
           })),
         });
       }
@@ -2250,6 +2411,93 @@ router.get("/api/slots/week", authenticateToken, async (req: AuthRequest, res) =
 // Estimation ratios config (read-only)
 router.get("/api/config/estimation-ratios", authenticateToken, requireRole("ADMIN"), async (_req: AuthRequest, res) => {
   res.json(ESTIMATION_RATIOS);
+});
+
+// Provider email config
+router.get("/api/config/provider-emails", authenticateToken, requireRole("ADMIN"), async (_req: AuthRequest, res) => {
+  try {
+    const keys = ["confirmation_email_enabled", "reminder_email_enabled", "provider_email_extra_text", "provider_email_contact_phone"];
+    const configs = await prisma.appConfig.findMany({ where: { key: { in: keys } } });
+    const result: Record<string, string> = {};
+    for (const k of keys) {
+      const found = configs.find(c => c.key === k);
+      result[k] = found?.value ?? "";
+    }
+    res.json(result);
+  } catch (error) {
+    console.error("Get provider email config error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/api/config/provider-emails", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
+  try {
+    const allowedKeys = ["confirmation_email_enabled", "reminder_email_enabled", "provider_email_extra_text", "provider_email_contact_phone"];
+    const updates: Array<{ key: string; value: string }> = [];
+    for (const key of allowedKeys) {
+      if (req.body[key] !== undefined) {
+        updates.push({ key, value: String(req.body[key]) });
+      }
+    }
+    for (const { key, value } of updates) {
+      await prisma.appConfig.upsert({
+        where: { key },
+        update: { value },
+        create: { key, value },
+      });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Update provider email config error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Resend confirmation email
+router.post("/api/appointments/:id/resend-confirmation", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
+  try {
+    const appt = await prisma.appointment.findUnique({ where: { id: req.params.id } });
+    if (!appt) return res.status(404).json({ error: "Appointment not found" });
+    if (!appt.providerEmail) return res.status(400).json({ error: "No provider email on this appointment" });
+
+    const sent = await sendAppointmentConfirmation(appt.id);
+    if (sent) {
+      res.json({ success: true, sentTo: appt.providerEmail });
+    } else {
+      res.status(500).json({ error: "Failed to send email" });
+    }
+  } catch (error) {
+    console.error("Resend confirmation error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Reactivate cancelled appointment
+router.post("/api/appointments/:id/reactivate", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
+  try {
+    const appt = await prisma.appointment.findUnique({ where: { id: req.params.id } });
+    if (!appt) return res.status(404).json({ error: "Appointment not found" });
+    if (appt.confirmationStatus !== "cancelled") return res.status(400).json({ error: "Only cancelled appointments can be reactivated" });
+
+    const updated = await prisma.appointment.update({
+      where: { id: appt.id },
+      data: { confirmationStatus: "pending", cancelledAt: null, cancellationReason: null },
+    });
+
+    logAudit({
+      entityType: "APPOINTMENT",
+      entityId: appt.id,
+      action: "UPDATE",
+      actorType: "USER",
+      actorId: req.user?.id,
+      changes: { confirmationStatus: { from: "cancelled", to: "pending" } },
+    }).catch(() => {});
+
+    res.json(updated);
+  } catch (error) {
+    console.error("Reactivate appointment error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 export default router;

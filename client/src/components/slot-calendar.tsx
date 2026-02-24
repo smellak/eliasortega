@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronLeft, ChevronRight, Plus, Clock, Package } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Clock, Package, Check, X } from "lucide-react";
 import { format, addDays, addWeeks, subWeeks, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, getDay } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -92,13 +92,20 @@ function AppointmentCard({
 }) {
   const pts = getSizePoints(appt.size);
 
+  const isCancelled = appt.confirmationStatus === "cancelled";
+  const isConfirmed = appt.confirmationStatus === "confirmed";
+
   if (compact) {
     return (
       <button
         onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-        className="w-full text-left p-1 rounded text-[10px] leading-tight hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+        className={`w-full text-left p-1 rounded text-[10px] leading-tight hover:bg-black/5 dark:hover:bg-white/5 transition-colors ${isCancelled ? "opacity-50 line-through" : ""}`}
       >
-        <div className="font-semibold truncate">{appt.providerName}</div>
+        <div className="font-semibold truncate flex items-center gap-0.5">
+          {isConfirmed && <Check className="h-2.5 w-2.5 text-green-600 shrink-0" />}
+          {isCancelled && <X className="h-2.5 w-2.5 text-red-500 shrink-0" />}
+          {appt.providerName}
+        </div>
         <div className="flex items-center gap-1 text-muted-foreground flex-wrap">
           {appt.goodsType && <span className="truncate max-w-[60px]">{appt.goodsType}</span>}
           {appt.units != null && <span>{appt.units} uds</span>}
@@ -123,10 +130,14 @@ function AppointmentCard({
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-      className="w-full text-left p-3 rounded-lg border bg-card hover:shadow-md transition-all"
+      className={`w-full text-left p-3 rounded-lg border bg-card hover:shadow-md transition-all ${isCancelled ? "opacity-60" : ""}`}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="font-semibold text-sm">{appt.providerName}</div>
+        <div className="font-semibold text-sm flex items-center gap-1.5">
+          {isConfirmed && <Check className="h-3.5 w-3.5 text-green-600 shrink-0" />}
+          {isCancelled && <X className="h-3.5 w-3.5 text-red-500 shrink-0" />}
+          <span className={isCancelled ? "line-through" : ""}>{appt.providerName}</span>
+        </div>
         {appt.size && (
           <Badge variant="outline" className={`text-[10px] ${getSizeBadgeColor(appt.size)}`}>
             {appt.size} · {pts} pts

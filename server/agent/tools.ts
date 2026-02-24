@@ -3,6 +3,7 @@ import { runCalculator, type CalculatorInput } from "./calculator";
 import { slotCapacityValidator } from "../services/slot-validator";
 import { prisma } from "../db/client";
 import { logAudit } from "../services/audit-service";
+import { sendAppointmentConfirmation } from "../services/provider-email-service";
 import { formatInTimeZone } from "date-fns-tz";
 import {
   normalizeCategory,
@@ -104,6 +105,14 @@ const CALENDAR_BOOK_TOOL: Anthropic.Tool = {
       forkliftsNeeded: {
         type: "number",
         description: "Número de carretillas necesarias (obtenido del calculator agent)",
+      },
+      providerEmail: {
+        type: "string",
+        description: "Email del proveedor para enviar confirmación de cita (opcional)",
+      },
+      providerPhone: {
+        type: "string",
+        description: "Teléfono del proveedor para contacto (opcional)",
       },
     },
     required: ["start", "end", "providerName", "goodsType", "units", "workMinutesNeeded", "forkliftsNeeded"],
@@ -330,6 +339,8 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
         slotDate,
         slotStartTime: slotValidation.slotStartTime,
         estimatedFields: estimatedFields.length > 0 ? JSON.stringify(estimatedFields) : null,
+        providerEmail: input.providerEmail || null,
+        providerPhone: input.providerPhone || null,
       };
 
       if (existing) {
@@ -363,6 +374,11 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
         actorType: "CHAT_AGENT",
         changes: { providerName, start: appointment.startUtc.toISOString(), end: appointment.endUtc.toISOString() },
       }).catch(() => {});
+
+      // Send confirmation email if provider email is available
+      if (appointment.providerEmail) {
+        sendAppointmentConfirmation(appointment.id).catch(() => {});
+      }
 
       const responseObj: Record<string, any> = {
         success: true,

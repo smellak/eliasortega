@@ -31,7 +31,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Gauge, AlertCircle, Plus, Trash2 } from "lucide-react";
+import { Gauge, AlertCircle, Plus, Trash2, Info, ChevronDown } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface CapacityPageProps {
   userRole: "ADMIN" | "PLANNER" | "BASIC_READONLY";
@@ -61,6 +66,74 @@ function PageHeader() {
         </p>
       </div>
     </div>
+  );
+}
+
+function PointsLegend() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <Card className="overflow-hidden">
+        <CollapsibleTrigger className="flex items-center justify-between w-full p-4 hover:bg-muted/50 transition-colors text-left">
+          <div className="flex items-center gap-2">
+            <Info className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Leyenda del sistema de puntos</span>
+          </div>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="px-4 pb-4 space-y-4 text-sm border-t pt-4">
+            <div>
+              <h4 className="font-semibold mb-2">Tallas de cita</h4>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 text-xs">S</Badge>
+                  <span className="text-muted-foreground">Pequeña — hasta 30 min — <strong>1 punto</strong></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300 text-xs">M</Badge>
+                  <span className="text-muted-foreground">Mediana — 31 a 90 min — <strong>2 puntos</strong></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 text-xs">L</Badge>
+                  <span className="text-muted-foreground">Grande — más de 90 min — <strong>3 puntos</strong></span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-semibold mb-2">Colores de ocupación</h4>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-green-500 shrink-0" />
+                  <span className="text-muted-foreground">Libre — menos del 50% ocupado</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-yellow-500 shrink-0" />
+                  <span className="text-muted-foreground">Moderado — 50% a 79% ocupado</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-red-500 shrink-0" />
+                  <span className="text-muted-foreground">Casi lleno — 80% a 99% ocupado</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-gray-500 shrink-0" />
+                  <span className="text-muted-foreground">Completo — 100% ocupado</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-semibold mb-2">Ejemplo</h4>
+              <p className="text-muted-foreground">
+                Una franja con 6 puntos máximos puede admitir, por ejemplo: 6 citas S (6×1pt), 3 citas M (3×2pt),
+                2 citas L (2×3pt), o combinaciones como 2 S + 2 M (2+4=6pt).
+              </p>
+            </div>
+          </div>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 }
 
@@ -309,6 +382,8 @@ function SlotTemplatesTab({ isReadOnly }: { isReadOnly: boolean }) {
           {sundayTimeSlots.length > 0 && renderSlotGrid("Domingo", SUNDAY_DAYS, sundayTimeSlots)}
         </div>
       )}
+
+      <PointsLegend />
 
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogContent data-testid="dialog-add-template">

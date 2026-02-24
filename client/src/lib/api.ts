@@ -293,6 +293,32 @@ export const appointmentsApi = {
     return handleResponse<void>(response);
   },
 
+  resendConfirmation: async (id: string): Promise<{ success: boolean }> => {
+    const response = await fetch(`${API_BASE}/appointments/${id}/resend-confirmation`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+    return handleResponse(response, () =>
+      fetch(`${API_BASE}/appointments/${id}/resend-confirmation`, {
+        method: "POST",
+        headers: getHeaders(),
+      })
+    );
+  },
+
+  reactivate: async (id: string): Promise<Appointment> => {
+    const response = await fetch(`${API_BASE}/appointments/${id}/reactivate`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+    return handleResponse<Appointment>(response, () =>
+      fetch(`${API_BASE}/appointments/${id}/reactivate`, {
+        method: "POST",
+        headers: getHeaders(),
+      })
+    );
+  },
+
   getCapacityAtMinute: async (minute: string): Promise<{
     workUsed: number;
     workAvailable: number;
@@ -499,6 +525,9 @@ export interface WeekSlotAppointment {
   workMinutesNeeded: number;
   startUtc: string;
   endUtc: string;
+  confirmationStatus?: string;
+  providerEmail?: string | null;
+  providerPhone?: string | null;
 }
 
 export interface WeekSlot {

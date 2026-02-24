@@ -101,6 +101,29 @@ async function seed() {
     console.log("[seed] Todas las plantillas de slots ya existen, nada que crear.");
   }
 
+  // --- AppConfig defaults ---
+  var DEFAULT_CONFIGS = [
+    { key: "confirmation_email_enabled", value: "true", description: "Enviar email de confirmación al crear cita con email de proveedor" },
+    { key: "reminder_email_enabled", value: "true", description: "Enviar recordatorio 48h antes de la cita" },
+    { key: "provider_email_extra_text", value: "", description: "Texto adicional en emails al proveedor" },
+    { key: "provider_email_contact_phone", value: "", description: "Teléfono de contacto del almacén en emails" },
+  ];
+
+  var configCreated = 0;
+  for (var ci = 0; ci < DEFAULT_CONFIGS.length; ci++) {
+    var cfg = DEFAULT_CONFIGS[ci];
+    var existingCfg = await prisma.appConfig.findUnique({ where: { key: cfg.key } });
+    if (!existingCfg) {
+      await prisma.appConfig.create({ data: cfg });
+      configCreated++;
+    }
+  }
+  if (configCreated > 0) {
+    console.log("[seed] Creadas " + configCreated + " configuraciones nuevas.");
+  } else {
+    console.log("[seed] Todas las configuraciones ya existen.");
+  }
+
   console.log("[seed] Seed completado.");
 }
 

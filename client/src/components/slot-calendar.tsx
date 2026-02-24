@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronLeft, ChevronRight, Plus, Clock, Package, Check, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Clock, Check, X } from "lucide-react";
 import { format, addDays, addWeeks, subWeeks, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, getDay } from "date-fns";
 import { es } from "date-fns/locale";
 

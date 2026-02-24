@@ -218,7 +218,7 @@ router.get("/api/health", async (req, res) => {
 // --- Public appointment confirmation (no auth) ---
 router.get("/api/appointments/confirm/:token", async (req, res) => {
   try {
-    const appt = await prisma.appointment.findFirst({
+    const appt = await prisma.appointment.findUnique({
       where: { confirmationToken: req.params.token },
     });
 
@@ -239,7 +239,7 @@ router.post("/api/appointments/confirm", async (req, res) => {
   try {
     const data = confirmAppointmentSchema.parse(req.body);
 
-    const appt = await prisma.appointment.findFirst({
+    const appt = await prisma.appointment.findUnique({
       where: { confirmationToken: data.token },
     });
 

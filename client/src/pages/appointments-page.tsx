@@ -6,12 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { AppointmentDialog } from "@/components/appointment-dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { Search, Pencil, Trash2, Plus, List, CalendarDays, Check, X } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, List, CalendarDays, Check, X, HelpCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatInTimeZone } from "date-fns-tz";
 import { appointmentsApi, providersApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Appointment, Provider, CreateAppointmentInput, UpdateAppointmentInput } from "@shared/types";
+import { AppointmentsSkeleton } from "@/components/skeleton-loaders";
+import { EmptyState } from "@/components/empty-state";
 
 interface AppointmentsPageProps {
   userRole: "ADMIN" | "PLANNER" | "BASIC_READONLY";
@@ -147,16 +150,7 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
             </p>
           </div>
         </div>
-        <div className="space-y-3">
-          {[1, 2, 3].map(i => (
-            <Card key={i} className="p-4">
-              <div className="space-y-3">
-                <div className="h-6 skeleton-shimmer rounded w-1/3" />
-                <div className="h-4 skeleton-shimmer rounded w-2/3" />
-              </div>
-            </Card>
-          ))}
-        </div>
+        <AppointmentsSkeleton count={4} />
       </div>
     );
   }
@@ -216,13 +210,20 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
                     <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border-0">{appointment.goodsType}</Badge>
                   )}
                   {appointment.size && (
-                    <Badge variant="outline" className={`text-xs ${
-                      appointment.size === "S" ? "bg-blue-50 text-blue-800 dark:bg-blue-950 dark:text-blue-300" :
-                      appointment.size === "M" ? "bg-orange-50 text-orange-800 dark:bg-orange-950 dark:text-orange-300" :
-                      "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-300"
-                    }`}>
-                      {appointment.size}{appointment.pointsUsed ? ` · ${appointment.pointsUsed} pts` : ""}
-                    </Badge>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className={`text-xs cursor-help ${
+                          appointment.size === "S" ? "bg-blue-50 text-blue-800 dark:bg-blue-950 dark:text-blue-300" :
+                          appointment.size === "M" ? "bg-orange-50 text-orange-800 dark:bg-orange-950 dark:text-orange-300" :
+                          "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-300"
+                        }`}>
+                          {appointment.size}{appointment.pointsUsed ? ` · ${appointment.pointsUsed} pts` : ""}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs max-w-[200px]">S = pequeña (1pt, &lt;30min), M = mediana (2pt, 30-120min), L = grande (3pt, &gt;120min)</p>
+                      </TooltipContent>
+                    </Tooltip>
                   )}
                   <Badge variant="outline" className={`text-xs ${
                     appointment.confirmationStatus === "confirmed" ? "bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400" :
@@ -278,13 +279,13 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
         ))}
 
         {filteredAppointments.length === 0 && (
-          <Card className="p-16">
-            <div className="text-center text-muted-foreground">
-              <List className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="text-base font-medium">No se encontraron citas.</p>
-              {searchQuery && <p className="text-sm mt-1">Intenta con otro término de búsqueda.</p>}
-            </div>
-          </Card>
+          <EmptyState
+            icon={List}
+            title="No se encontraron citas"
+            description={searchQuery ? "Intenta con otro término de búsqueda." : "Aún no hay citas programadas."}
+            actionLabel={!isReadOnly && !searchQuery ? "Nueva Cita" : undefined}
+            onAction={!isReadOnly && !searchQuery ? () => { setSelectedAppointment(null); setAppointmentDialogOpen(true); } : undefined}
+          />
         )}
       </div>
 

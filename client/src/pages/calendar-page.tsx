@@ -7,6 +7,8 @@ import { AppointmentDialog } from "@/components/appointment-dialog";
 import { ConflictErrorDialog } from "@/components/conflict-error-dialog";
 import { Button } from "@/components/ui/button";
 import { Plus, Calendar } from "lucide-react";
+import { DashboardCharts } from "@/components/dashboard-charts";
+import { ExportPDFButton } from "@/components/export-pdf";
 import { appointmentsApi, providersApi, capacityApi, ApiError } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -60,6 +62,12 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
     }),
+  });
+
+  // Fetch appointments (for PDF export)
+  const { data: allAppointments = [] } = useQuery<Appointment[]>({
+    queryKey: ["/api/appointments"],
+    queryFn: () => appointmentsApi.list(),
   });
 
   // Create appointment mutation
@@ -197,6 +205,7 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <ExportPDFButton appointments={allAppointments} currentDate={currentDate} viewType={currentView} />
           {!isReadOnly && (
             <QuickCapacityAdjust date={currentDate} />
           )}
@@ -247,6 +256,8 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
         providers={providers}
         onSave={handleSaveAppointment}
       />
+
+      <DashboardCharts currentDate={currentDate} />
 
       <ConflictErrorDialog
         open={conflictErrorOpen}

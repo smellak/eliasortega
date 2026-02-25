@@ -76,6 +76,44 @@ function MarkdownContent({ content, isUser }: { content: string; isUser: boolean
   );
 }
 
+const STEPS = [
+  { key: "data", label: "Datos" },
+  { key: "calc", label: "Cálculo" },
+  { key: "avail", label: "Disponibilidad" },
+  { key: "book", label: "Confirmación" },
+];
+
+function ProgressStepper({ currentStep }: { currentStep: number }) {
+  if (currentStep < 0) return null;
+  return (
+    <div className="px-3 sm:px-6 py-1.5 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-b border-blue-100 dark:border-gray-700 shrink-0">
+      <div className="max-w-3xl mx-auto flex items-center gap-0">
+        {STEPS.map((step, i) => (
+          <div key={step.key} className="flex items-center flex-1 last:flex-none">
+            <div className="flex flex-col items-center gap-0.5">
+              <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all duration-300 ${
+                i < currentStep ? "bg-blue-500 text-white" :
+                i === currentStep ? "bg-blue-500 text-white animate-pulse ring-2 ring-blue-300" :
+                "bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
+              }`}>
+                {i < currentStep ? "✓" : i + 1}
+              </div>
+              <span className={`text-[9px] sm:text-[10px] font-medium whitespace-nowrap ${
+                i <= currentStep ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500"
+              }`}>{step.label}</span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div className={`flex-1 h-0.5 mx-1 rounded transition-all duration-300 ${
+                i < currentStep ? "bg-blue-500" : "bg-gray-200 dark:bg-gray-600"
+              }`} />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ChatPublic() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -88,13 +126,14 @@ export default function ChatPublic() {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
+  const [chatStep, setChatStep] = useState(-1);
   const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
     }
   }, [messages]);
 
@@ -111,6 +150,7 @@ export default function ChatPublic() {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsStreaming(true);
+    if (chatStep < 0) setChatStep(0);
 
     const assistantMessageId = `assistant-${Date.now()}`;
     const assistantMessage: Message = {
@@ -167,6 +207,12 @@ export default function ChatPublic() {
           if (line.startsWith("data: ")) {
             try {
               const chunk: StreamChunk = JSON.parse(line.slice(6));
+
+              if (chunk.type === "tool_use" && chunk.toolName) {
+                if (chunk.toolName === "calculator") setChatStep(1);
+                else if (chunk.toolName === "calendar_availability") setChatStep(2);
+                else if (chunk.toolName === "calendar_book") setChatStep(3);
+              }
 
               if (chunk.type === "text" && chunk.content) {
                 assistantText += chunk.content;
@@ -261,13 +307,15 @@ export default function ChatPublic() {
           </div>
         </div>
 
+        <ProgressStepper currentStep={chatStep} />
+
         {/* Messages area */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 min-h-0">
           <div className="space-y-3 sm:space-y-4 max-w-3xl mx-auto">
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end chat-bubble-user" : "justify-start chat-bubble-agent"}`}
                 data-testid={`message-${msg.role}-${msg.id}`}
               >
                 {msg.role === "assistant" && <EliasAvatar />}
@@ -300,14 +348,14 @@ export default function ChatPublic() {
               </div>
             ))}
             {isStreaming && messages[messages.length - 1]?.content === "" && (
-              <div className="flex justify-start gap-2 sm:gap-3">
+              <div className="flex justify-start gap-2 sm:gap-3 chat-bubble-agent">
                 <EliasAvatar />
                 <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-sm px-3 sm:px-4 py-2 sm:py-3 shadow-md">
                   <div className="flex items-center gap-2">
-                    <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: "0ms"}} />
-                      <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: "150ms"}} />
-                      <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: "300ms"}} />
+                    <div className="flex gap-1.5">
+                      <span className="w-2 h-2 bg-blue-400 rounded-full dot-bounce" style={{animationDelay: "0ms"}} />
+                      <span className="w-2 h-2 bg-blue-400 rounded-full dot-bounce" style={{animationDelay: "0.2s"}} />
+                      <span className="w-2 h-2 bg-blue-400 rounded-full dot-bounce" style={{animationDelay: "0.4s"}} />
                     </div>
                     <span className="text-xs sm:text-sm text-muted-foreground">Elías está escribiendo...</span>
                   </div>

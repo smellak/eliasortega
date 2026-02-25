@@ -34,7 +34,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Gauge, Plus, Trash2, Info, ChevronDown, Check, X, Warehouse } from "lucide-react";
+import { Gauge, Plus, Trash2, Info, ChevronDown, Check, X, Warehouse, HelpCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { TableSkeleton } from "@/components/skeleton-loaders";
 import {
   Collapsible,
   CollapsibleContent,
@@ -602,7 +604,19 @@ function SlotOverridesTab({ isReadOnly }: { isReadOnly: boolean }) {
                 <TableHead>Fecha</TableHead>
                 <TableHead>Hora inicio</TableHead>
                 <TableHead>Hora fin</TableHead>
-                <TableHead className="text-center">Max Puntos</TableHead>
+                <TableHead className="text-center">
+                  <span className="inline-flex items-center gap-1">
+                    Max Puntos
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs max-w-[220px]">Los puntos representan la carga de trabajo. Cada franja tiene un máximo según personal y recursos disponibles.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </span>
+                </TableHead>
                 <TableHead>Motivo</TableHead>
                 {!isReadOnly && <TableHead className="w-[60px]" />}
               </TableRow>

@@ -1,3 +1,4 @@
+import { useEffect, useState, useCallback } from "react";
 import { Calendar, List, Gauge, Package, Users, LogOut, Bell, Shield, Warehouse } from "lucide-react";
 import {
   Sidebar,
@@ -14,6 +15,7 @@ import {
 import { RoleBadge } from "./role-badge";
 import { useLocation } from "wouter";
 import type { UserRole } from "@shared/types";
+import { appointmentsApi, providersApi } from "@/lib/api";
 
 interface AppSidebarProps {
   userRole: UserRole;
@@ -23,19 +25,45 @@ interface AppSidebarProps {
 
 export function AppSidebar({ userRole, userEmail, onLogout }: AppSidebarProps) {
   const [location] = useLocation();
+  const [pendingCount, setPendingCount] = useState<number | null>(null);
+  const [providerCount, setProviderCount] = useState<number | null>(null);
+
+  const fetchCounts = useCallback(async () => {
+    try {
+      const [appointments, providers] = await Promise.all([
+        appointmentsApi.list(),
+        providersApi.list(),
+      ]);
+      setPendingCount(appointments.filter(a => a.confirmationStatus === "pending").length);
+      setProviderCount(providers.length);
+    } catch {
+      // silently fail — sidebar badges are non-critical
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 30000);
+    return () => clearInterval(interval);
+  }, [fetchCounts]);
+
+  // Also refresh on navigation
+  useEffect(() => {
+    fetchCounts();
+  }, [location, fetchCounts]);
 
   const mainItems = [
-    { title: "Calendario", url: "/", icon: Calendar },
-    { title: "Citas", url: "/appointments", icon: List },
+    { title: "Calendario", url: "/", icon: Calendar, badge: null },
+    { title: "Citas", url: "/appointments", icon: List, badge: pendingCount },
   ];
 
   const managementItems = [
-    { title: "Capacidad", url: "/capacity", icon: Gauge, roles: ["ADMIN", "PLANNER"] },
-    { title: "Muelles", url: "/docks", icon: Warehouse, roles: ["ADMIN", "PLANNER"] },
-    { title: "Proveedores", url: "/providers", icon: Package, roles: ["ADMIN", "PLANNER"] },
-    { title: "Notificaciones", url: "/notifications", icon: Bell, roles: ["ADMIN"] },
-    { title: "Usuarios", url: "/users", icon: Users, roles: ["ADMIN"] },
-    { title: "Auditoría", url: "/audit", icon: Shield, roles: ["ADMIN", "PLANNER"] },
+    { title: "Capacidad", url: "/capacity", icon: Gauge, roles: ["ADMIN", "PLANNER"], badge: null },
+    { title: "Muelles", url: "/docks", icon: Warehouse, roles: ["ADMIN", "PLANNER"], badge: null },
+    { title: "Proveedores", url: "/providers", icon: Package, roles: ["ADMIN", "PLANNER"], badge: providerCount },
+    { title: "Notificaciones", url: "/notifications", icon: Bell, roles: ["ADMIN"], badge: null },
+    { title: "Usuarios", url: "/users", icon: Users, roles: ["ADMIN"], badge: null },
+    { title: "Auditoría", url: "/audit", icon: Shield, roles: ["ADMIN", "PLANNER"], badge: null },
   ];
 
   const filteredManagementItems = managementItems.filter(
@@ -68,7 +96,12 @@ export function AppSidebar({ userRole, userEmail, onLogout }: AppSidebarProps) {
                   >
                     <a href={item.url} data-testid={`link-sidebar-${item.title.toLowerCase()}`}>
                       <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <span className="flex-1">{item.title}</span>
+                      {item.badge !== null && item.badge > 0 && (
+                        <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white px-1.5">
+                          {item.badge}
+                        </span>
+                      )}
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -91,7 +124,12 @@ export function AppSidebar({ userRole, userEmail, onLogout }: AppSidebarProps) {
                     >
                       <a href={item.url} data-testid={`link-sidebar-${item.title.toLowerCase()}`}>
                         <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
+                        <span className="flex-1">{item.title}</span>
+                        {item.badge !== null && item.badge > 0 && (
+                          <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-500 text-[10px] font-bold text-white px-1.5">
+                            {item.badge}
+                          </span>
+                        )}
                       </a>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

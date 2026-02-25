@@ -19,6 +19,7 @@ import DocksPage from "@/pages/docks-page";
 import ChatPublic from "@/pages/chat-public";
 import NotFound from "@/pages/not-found";
 import { authApi, getAuthToken, clearAuth } from "@/lib/api";
+import { useNewAppointmentToast } from "@/hooks/use-new-appointment-toast";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import type { UserResponse } from "@shared/types";
@@ -62,6 +63,11 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
 
     return this.props.children;
   }
+}
+
+function AppointmentPolling() {
+  useNewAppointmentToast();
+  return null;
 }
 
 function Router({ user }: { user: UserResponse }) {
@@ -186,6 +192,7 @@ function App() {
                     <Router user={user} />
                   </div>
                 </main>
+                <AppointmentPolling />
               </div>
             </div>
           </SidebarProvider>

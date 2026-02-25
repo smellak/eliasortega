@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import type { Provider, CreateProviderInput, UpdateProviderInput } from "@shared/types";
 import { Card } from "@/components/ui/card";
 import { Package, AlertCircle } from "lucide-react";
+import { TableSkeleton } from "@/components/skeleton-loaders";
+import { EmptyState } from "@/components/empty-state";
 
 interface ProvidersPageProps {
   userRole: "ADMIN" | "PLANNER" | "BASIC_READONLY";
@@ -114,16 +116,7 @@ export default function ProvidersPage({ userRole }: ProvidersPageProps) {
             </p>
           </div>
         </div>
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="p-4">
-              <div className="space-y-3">
-                <div className="h-5 rounded w-1/3 skeleton-shimmer" />
-                <div className="h-4 rounded w-2/3 skeleton-shimmer" />
-              </div>
-            </Card>
-          ))}
-        </div>
+        <TableSkeleton rows={4} cols={3} />
       </div>
     );
   }

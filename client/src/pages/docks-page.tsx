@@ -28,7 +28,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Warehouse, Plus, Trash2, Pencil, Check, X, Clock } from "lucide-react";
+import { Warehouse, Plus, Trash2, Pencil, Check, X, Clock, HelpCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { TableSkeleton } from "@/components/skeleton-loaders";
+import { EmptyState } from "@/components/empty-state";
 import { formatInTimeZone } from "date-fns-tz";
 
 interface DocksPageProps {
@@ -207,9 +210,9 @@ export default function DocksPage({ userRole }: DocksPageProps) {
         <TabsContent value="docks">
           <Card className="p-0 overflow-hidden">
             {docksLoading ? (
-              <div className="p-8 text-center text-muted-foreground">Cargando...</div>
+              <TableSkeleton rows={3} cols={5} />
             ) : docks.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground">No hay muelles configurados</div>
+              <EmptyState icon={Warehouse} title="No hay muelles configurados" description="Añade un muelle para empezar." />
             ) : (
               <ResponsiveTable><Table>
                 <TableHeader>

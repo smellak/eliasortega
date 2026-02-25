@@ -91,7 +91,7 @@ export function DashboardCharts({ currentDate }: { currentDate: Date }) {
             <XAxis dataKey="name" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} />
             <RechartsTooltip
-              contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb" }}
+              contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid var(--border)", background: "var(--background)", color: "var(--foreground)" }}
             />
             <Bar dataKey="usados" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} name="Usados" />
             <Bar dataKey="disponibles" stackId="a" fill="#e5e7eb" radius={[4, 4, 0, 0]} name="Disponibles" />
@@ -157,7 +157,7 @@ export function DashboardCharts({ currentDate }: { currentDate: Date }) {
                 ))}
               </Pie>
               <RechartsTooltip
-                contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb" }}
+                contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid var(--border)", background: "var(--background)", color: "var(--foreground)" }}
               />
               <Legend
                 wrapperStyle={{ fontSize: 11 }}

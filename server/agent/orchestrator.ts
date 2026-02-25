@@ -166,13 +166,21 @@ export class AgentOrchestrator {
         type: "done",
         content: fullAssistantResponse,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error("Orchestrator error:", error);
-      const errorMessage = error instanceof Error ? error.message : "Error desconocido";
-      yield {
-        type: "error",
-        content: `Lo siento, ha ocurrido un error: ${errorMessage}`,
-      };
+
+      let friendlyMessage: string;
+      const errType = error?.error?.type || error?.type || "";
+
+      if (errType === "overloaded_error" || error?.status === 529) {
+        friendlyMessage = "Lo siento, el sistema está saturado en este momento. Por favor, inténtalo de nuevo en unos segundos.";
+      } else if (errType === "rate_limit_error" || error?.status === 429) {
+        friendlyMessage = "Se han realizado demasiadas consultas. Por favor, espera un momento e inténtalo de nuevo.";
+      } else {
+        friendlyMessage = "Lo siento, ha ocurrido un error inesperado. Por favor, inténtalo de nuevo.";
+      }
+
+      yield { type: "error", content: friendlyMessage };
     }
   }
 }

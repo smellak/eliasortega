@@ -1,5 +1,4 @@
 import { Router } from "express";
-import path from "path";
 import { prisma } from "../db/client";
 import { confirmAppointmentSchema } from "../../shared/types";
 import { publicRateLimiter } from "../middleware/rate-limiting";
@@ -7,10 +6,6 @@ import { buildConfirmationPage } from "../helpers/appointment-helpers";
 import { processAppointmentCancellation } from "../services/provider-email-service";
 
 const router = Router();
-
-router.get("/logo-sanchez.png", (req, res) => {
-  res.sendFile(path.join(process.cwd(), "client/public/logo-sanchez.png"));
-});
 
 router.get("/api/health", async (req, res) => {
   try {

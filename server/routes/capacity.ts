@@ -212,6 +212,7 @@ router.get("/api/capacity/utilization", authenticateToken, async (req: AuthReque
         AND: [
           { startUtc: { lt: toEnd } },
           { endUtc: { gt: fromStart } },
+          { cancelledAt: null },
         ],
       },
     });

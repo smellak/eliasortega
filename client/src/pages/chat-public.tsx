@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2, User, Play, X } from "lucide-react";
+import { Send, Loader2, User, Play, X, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import ReactMarkdown from "react-markdown";
+import { useNotificationSound } from "@/hooks/use-notification-sound";
 
 interface Message {
   id: string;
@@ -130,6 +131,7 @@ export default function ChatPublic() {
   const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const { soundEnabled, toggle: toggleSound, play: playSound } = useNotificationSound();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -251,6 +253,7 @@ export default function ChatPublic() {
     } finally {
       setIsStreaming(false);
       abortControllerRef.current = null;
+      playSound();
     }
   };
 
@@ -304,6 +307,14 @@ export default function ChatPublic() {
             <Badge variant="secondary" className="bg-green-500 text-white border-0 text-[10px] sm:text-xs px-2 py-0.5">
               En línea
             </Badge>
+            <button
+              onClick={toggleSound}
+              className="p-1.5 rounded-full hover:bg-white/20 transition-colors text-white/80 hover:text-white"
+              aria-label={soundEnabled ? "Silenciar notificaciones" : "Activar notificaciones"}
+              data-testid="button-sound-toggle"
+            >
+              {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </button>
           </div>
         </div>
 

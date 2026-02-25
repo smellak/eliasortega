@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Calendar, List, Gauge, Package, Users, LogOut, Bell, Shield, Warehouse } from "lucide-react";
+import { Calendar, List, Gauge, Package, Users, LogOut, Bell, Shield, Warehouse, MessageSquare } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -55,6 +55,7 @@ export function AppSidebar({ userRole, userEmail, onLogout }: AppSidebarProps) {
   const mainItems = [
     { title: "Calendario", url: "/", icon: Calendar, badge: null },
     { title: "Citas", url: "/appointments", icon: List, badge: pendingCount },
+    { title: "Asistente IA", url: "/admin-chat", icon: MessageSquare, badge: null },
   ];
 
   const managementItems = [

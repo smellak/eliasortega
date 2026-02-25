@@ -10,6 +10,7 @@ import capacityRoutes from "./routes/capacity";
 import dockRoutes from "./routes/docks";
 import integrationRoutes from "./routes/integration";
 import configRoutes from "./routes/config";
+import adminChatRoutes from "./routes/admin-chat";
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.use(capacityRoutes);
 router.use(dockRoutes);
 router.use(integrationRoutes);
 router.use(configRoutes);
+router.use(adminChatRoutes);
 
 export default router;

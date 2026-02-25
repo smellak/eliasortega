@@ -17,6 +17,7 @@ import NotificationsPage from "@/pages/notifications-page";
 import AuditPage from "@/pages/audit-page";
 import DocksPage from "@/pages/docks-page";
 import ChatPublic from "@/pages/chat-public";
+import ChatAdmin from "@/pages/chat-admin";
 import NotFound from "@/pages/not-found";
 import { authApi, getAuthToken, clearAuth } from "@/lib/api";
 import { useNewAppointmentToast } from "@/hooks/use-new-appointment-toast";
@@ -81,6 +82,7 @@ function Router({ user }: { user: UserResponse }) {
       {user.role === "ADMIN" && <Route path="/notifications" component={() => <NotificationsPage userRole={user.role} />} />}
       {user.role === "ADMIN" && <Route path="/users" component={UsersPage} />}
       {(user.role === "ADMIN" || user.role === "PLANNER") && <Route path="/audit" component={() => <AuditPage userRole={user.role} />} />}
+      {(user.role === "ADMIN" || user.role === "PLANNER") && <Route path="/admin-chat" component={ChatAdmin} />}
       <Route component={NotFound} />
     </Switch>
   );

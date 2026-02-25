@@ -33,6 +33,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { TableSkeleton } from "@/components/skeleton-loaders";
 import { EmptyState } from "@/components/empty-state";
 import { formatInTimeZone } from "date-fns-tz";
+import { DockMap } from "@/components/dock-map";
 
 interface DocksPageProps {
   userRole: "ADMIN" | "PLANNER" | "BASIC_READONLY";
@@ -197,6 +198,8 @@ export default function DocksPage({ userRole }: DocksPageProps) {
           </Button>
         )}
       </div>
+
+      <DockMap />
 
       <Tabs defaultValue="docks" className="space-y-4">
         <TabsList>

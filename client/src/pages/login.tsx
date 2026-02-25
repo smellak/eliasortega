@@ -57,7 +57,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               <img
                 src="/logo-sanchez.png"
                 alt="Centro Hogar Sanchez"
-                className="w-full h-full object-contain bg-white p-1"
+                className="w-full h-full object-contain bg-white dark:bg-gray-800 p-1 rounded"
               />
             </div>
             <div>

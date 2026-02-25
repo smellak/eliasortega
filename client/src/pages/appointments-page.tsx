@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { AppointmentDialog } from "@/components/appointment-dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Search, Pencil, Trash2, Plus, List, CalendarDays, Check, X } from "lucide-react";
-import { format } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import { appointmentsApi, providersApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -224,20 +224,20 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
                       {appointment.size}{appointment.pointsUsed ? ` · ${appointment.pointsUsed} pts` : ""}
                     </Badge>
                   )}
-                  {appointment.confirmationStatus && appointment.confirmationStatus !== "pending" && (
-                    <Badge variant="outline" className={`text-xs ${
-                      appointment.confirmationStatus === "confirmed" ? "bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400" :
-                      "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400"
-                    }`}>
-                      {appointment.confirmationStatus === "confirmed" ? "Confirmada" : "Cancelada"}
-                    </Badge>
-                  )}
+                  <Badge variant="outline" className={`text-xs ${
+                    appointment.confirmationStatus === "confirmed" ? "bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400" :
+                    appointment.confirmationStatus === "cancelled" ? "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400" :
+                    "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+                  }`}>
+                    {appointment.confirmationStatus === "confirmed" ? "Confirmada" :
+                     appointment.confirmationStatus === "cancelled" ? "Cancelada" : "Pendiente"}
+                  </Badge>
                 </div>
                 <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1.5 font-mono">
                     <CalendarDays className="h-3.5 w-3.5" />
-                    {format(new Date(appointment.startUtc), "MMM dd, HH:mm")} -{" "}
-                    {format(new Date(appointment.endUtc), "HH:mm")}
+                    {formatInTimeZone(new Date(appointment.startUtc), TIMEZONE, "MMM dd, HH:mm")} -{" "}
+                    {formatInTimeZone(new Date(appointment.endUtc), TIMEZONE, "HH:mm")}
                   </div>
                   <div>Trabajo: {appointment.workMinutesNeeded} min</div>
                   <div>Carretillas: {appointment.forkliftsNeeded}</div>

@@ -446,7 +446,7 @@
 }
 
 .premium-table {
-  @apply rounded-xl overflow-hidden;
+  @apply rounded-xl overflow-x-auto;
   border: 1px solid hsl(var(--border) / 0.5);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }

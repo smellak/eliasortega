@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { ResponsiveTable } from "@/components/responsive-table";
 import { emailRecipientsApi, emailApi, providerEmailConfigApi } from "@/lib/api";
 import type { ProviderEmailConfig } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
@@ -328,7 +329,7 @@ function RecipientsTab({ readOnly }: { readOnly: boolean }) {
       )}
 
       <Card>
-        <Table>
+        <ResponsiveTable><Table>
           <TableHeader>
             <TableRow>
               <TableHead>Nombre</TableHead>
@@ -437,7 +438,7 @@ function RecipientsTab({ readOnly }: { readOnly: boolean }) {
               ))
             )}
           </TableBody>
-        </Table>
+        </Table></ResponsiveTable>
       </Card>
 
       {dialogOpen && (
@@ -513,7 +514,7 @@ function EmailLogTab() {
   return (
     <div className="space-y-4">
       <Card>
-        <Table>
+        <ResponsiveTable><Table>
           <TableHeader>
             <TableRow>
               <TableHead>Fecha</TableHead>
@@ -580,7 +581,7 @@ function EmailLogTab() {
               ))
             )}
           </TableBody>
-        </Table>
+        </Table></ResponsiveTable>
       </Card>
 
       {totalPages > 1 && (

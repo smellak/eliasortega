@@ -175,7 +175,7 @@ function AppointmentCard({
       <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
           <Clock className="h-3 w-3" />
-          {format(new Date(appt.startUtc), "HH:mm")} - {format(new Date(appt.endUtc), "HH:mm")}
+          {formatInTimeZone(new Date(appt.startUtc), MADRID_TZ, "HH:mm")} - {formatInTimeZone(new Date(appt.endUtc), MADRID_TZ, "HH:mm")}
         </span>
         <span>~{appt.workMinutesNeeded} min</span>
       </div>

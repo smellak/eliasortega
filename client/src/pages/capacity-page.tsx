@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { ResponsiveTable } from "@/components/responsive-table";
 import { slotTemplatesApi, slotOverridesApi, docksApi, dockOverridesApi } from "@/lib/api";
 import type { DockWithAvailabilities, DockOverrideResponse } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
@@ -271,8 +272,8 @@ function SlotTemplatesTab({ isReadOnly }: { isReadOnly: boolean }) {
   ) => (
     <div>
       <h3 className="text-lg font-semibold mb-2">{title}</h3>
-      <Card className="overflow-x-auto">
-        <Table data-testid={`table-slot-templates-${title.toLowerCase().replace(/\s+/g, "-")}`}>
+      <Card>
+        <ResponsiveTable><Table data-testid={`table-slot-templates-${title.toLowerCase().replace(/\s+/g, "-")}`}>
           <TableHeader>
             <TableRow>
               <TableHead className="min-w-[120px]">Franja</TableHead>
@@ -337,7 +338,7 @@ function SlotTemplatesTab({ isReadOnly }: { isReadOnly: boolean }) {
               );
             })}
           </TableBody>
-        </Table>
+        </Table></ResponsiveTable>
       </Card>
     </div>
   );
@@ -594,8 +595,8 @@ function SlotOverridesTab({ isReadOnly }: { isReadOnly: boolean }) {
           </div>
         </Card>
       ) : (
-        <Card className="overflow-x-auto">
-          <Table data-testid="table-slot-overrides">
+        <Card>
+          <ResponsiveTable><Table data-testid="table-slot-overrides">
             <TableHeader>
               <TableRow>
                 <TableHead>Fecha</TableHead>
@@ -642,7 +643,7 @@ function SlotOverridesTab({ isReadOnly }: { isReadOnly: boolean }) {
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
+          </Table></ResponsiveTable>
         </Card>
       )}
 
@@ -921,7 +922,7 @@ function DockAvailabilityTab({ isReadOnly }: { isReadOnly: boolean }) {
                   Marca en qué franjas está disponible cada muelle. <span className="text-green-600 font-medium">Verde = activo</span>, <span className="text-red-600 font-medium">Rojo = inactivo</span>.
                 </p>
               </div>
-              <Table>
+              <ResponsiveTable><Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="sticky left-0 bg-background z-10 min-w-[100px]">Muelle</TableHead>
@@ -968,7 +969,7 @@ function DockAvailabilityTab({ isReadOnly }: { isReadOnly: boolean }) {
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
+              </Table></ResponsiveTable>
             </Card>
           )}
 
@@ -991,8 +992,8 @@ function DockAvailabilityTab({ isReadOnly }: { isReadOnly: boolean }) {
                 Sin excepciones. Usa excepciones para desactivar o reactivar un muelle en fechas concretas.
               </Card>
             ) : (
-              <Card className="overflow-x-auto">
-                <Table>
+              <Card>
+                <ResponsiveTable><Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Muelle</TableHead>
@@ -1031,7 +1032,7 @@ function DockAvailabilityTab({ isReadOnly }: { isReadOnly: boolean }) {
                       );
                     })}
                   </TableBody>
-                </Table>
+                </Table></ResponsiveTable>
               </Card>
             )}
           </div>

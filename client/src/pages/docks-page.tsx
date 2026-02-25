@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { ResponsiveTable } from "@/components/responsive-table";
 import { docksApi, dockOverridesApi, slotTemplatesApi } from "@/lib/api";
 import type { DockWithAvailabilities, DockTimelineEntry, DockOverrideResponse } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
@@ -210,7 +211,7 @@ export default function DocksPage({ userRole }: DocksPageProps) {
             ) : docks.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">No hay muelles configurados</div>
             ) : (
-              <Table>
+              <ResponsiveTable><Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Código</TableHead>
@@ -246,7 +247,7 @@ export default function DocksPage({ userRole }: DocksPageProps) {
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
+              </Table></ResponsiveTable>
             )}
           </Card>
         </TabsContent>
@@ -262,7 +263,7 @@ export default function DocksPage({ userRole }: DocksPageProps) {
                 Necesitas al menos un muelle y una franja para configurar disponibilidad.
               </div>
             ) : (
-              <Table>
+              <ResponsiveTable><Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="sticky left-0 bg-background z-10 min-w-[100px]">Muelle</TableHead>
@@ -315,7 +316,7 @@ export default function DocksPage({ userRole }: DocksPageProps) {
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
+              </Table></ResponsiveTable>
             )}
           </Card>
         </TabsContent>
@@ -343,7 +344,7 @@ export default function DocksPage({ userRole }: DocksPageProps) {
             {overrides.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">No hay excepciones configuradas</div>
             ) : (
-              <Table>
+              <ResponsiveTable><Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Muelle</TableHead>
@@ -382,7 +383,7 @@ export default function DocksPage({ userRole }: DocksPageProps) {
                     );
                   })}
                 </TableBody>
-              </Table>
+              </Table></ResponsiveTable>
             )}
           </Card>
         </TabsContent>

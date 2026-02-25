@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { ResponsiveTable } from "@/components/responsive-table";
 import { auditApi } from "@/lib/api";
 import type { AuditLog } from "@shared/types";
 import { Card } from "@/components/ui/card";
@@ -365,7 +366,7 @@ export default function AuditPage({ userRole }: AuditPageProps) {
       </Card>
 
       <Card>
-        <Table>
+        <ResponsiveTable><Table>
           <TableHeader>
             <TableRow>
               <TableHead>Fecha</TableHead>
@@ -408,7 +409,7 @@ export default function AuditPage({ userRole }: AuditPageProps) {
               ))
             )}
           </TableBody>
-        </Table>
+        </Table></ResponsiveTable>
       </Card>
 
       {totalPages > 1 && (

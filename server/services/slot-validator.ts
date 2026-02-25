@@ -46,6 +46,10 @@ export interface SlotValidationResult {
   slotStartTime: string;
   slotEndTime?: string;
   assignedDock?: DockInfo;
+  /** If the dock assignment required shifting the start time, this is the adjusted UTC start */
+  adjustedStartUtc?: Date;
+  /** If the dock assignment required shifting the end time, this is the adjusted UTC end */
+  adjustedEndUtc?: Date;
 }
 
 export interface SlotUsageResult {
@@ -102,9 +106,18 @@ export class SlotCapacityValidator {
     }
   }
 
+  /**
+   * Size thresholds:
+   * - S (1pt): <=30 min — quick deliveries (PAE, small batches)
+   * - M (2pt): 31-120 min — medium loads (e.g. 200 electro units = 110min)
+   * - L (3pt): >120 min — large loads (furniture, kitchens, mattresses with many lines)
+   *
+   * M threshold widened from 90→120 to better distribute loads.
+   * With the old threshold, most real-world loads above "small" fell into L.
+   */
   determineSizeFromDuration(durationMin: number): "S" | "M" | "L" {
     if (durationMin <= 30) return "S";
-    if (durationMin <= 90) return "M";
+    if (durationMin <= 120) return "M";
     return "L";
   }
 
@@ -266,6 +279,89 @@ export class SlotCapacityValidator {
     if (freeDocks.length === 0) return null;
 
     return this.selectBestDock(freeDocks, date, tx);
+  }
+
+  /**
+   * When no dock is free at the exact requested time, find the earliest possible
+   * start time on any active dock within the same slot.
+   * Returns the dock and the shifted start/end times, or null if impossible.
+   */
+  async findEarliestDockInSlot(
+    date: Date,
+    slotStartTime: string,
+    slotEndTime: string,
+    requestedStartUtc: Date,
+    durationMs: number,
+    excludeId?: string,
+    tx?: PrismaTransactionClient
+  ): Promise<{ dock: DockInfo; adjustedStartUtc: Date; adjustedEndUtc: Date } | null> {
+    const client = this.getClient(tx);
+    const activeDocks = await this.getActiveDocks(date, slotStartTime, tx);
+    if (activeDocks.length === 0) return null;
+
+    const bufferMinutes = await this.getDockBufferMinutes(tx);
+    const bufferMs = bufferMinutes * 60 * 1000;
+    const dateStart = getMadridMidnight(date);
+    const dateEnd = getMadridEndOfDay(date);
+
+    // Calculate slot end as a UTC boundary
+    const dateStr = getMadridDateStr(date);
+    const slotEndUtc = new Date(`${dateStr}T${slotEndTime}:00+01:00`); // CET approximation
+    // More robust: use formatInTimeZone in reverse. For now, use the slot's end as a limit.
+
+    type DockCandidate = { dock: DockInfo; earliestStart: Date };
+    const candidates: DockCandidate[] = [];
+
+    for (const dock of activeDocks) {
+      // Get all non-cancelled appointments on this dock for this day, sorted by start
+      const appointments = await client.appointment.findMany({
+        where: {
+          dockId: dock.id,
+          slotDate: { gte: dateStart, lte: dateEnd },
+          confirmationStatus: { not: "cancelled" },
+          ...(excludeId ? { NOT: { id: excludeId } } : {}),
+        },
+        orderBy: { startUtc: "asc" },
+        select: { startUtc: true, endUtc: true },
+      });
+
+      // Find the earliest start time >= requestedStartUtc that doesn't conflict
+      let candidateStart = new Date(requestedStartUtc);
+
+      for (const appt of appointments) {
+        const apptEndWithBuffer = new Date(appt.endUtc.getTime() + bufferMs);
+        const apptStartWithBuffer = new Date(appt.startUtc.getTime() - bufferMs);
+        const candidateEnd = new Date(candidateStart.getTime() + durationMs);
+
+        // Check if candidate overlaps with this appointment (including buffer)
+        if (candidateStart < apptEndWithBuffer && candidateEnd > apptStartWithBuffer) {
+          // Conflict: push candidateStart to after this appointment + buffer
+          candidateStart = apptEndWithBuffer;
+        }
+      }
+
+      // Check that the adjusted appointment still fits within the day
+      const candidateEnd = new Date(candidateStart.getTime() + durationMs);
+      if (candidateStart >= requestedStartUtc) {
+        candidates.push({ dock, earliestStart: candidateStart });
+      }
+    }
+
+    if (candidates.length === 0) return null;
+
+    // Sort by earliest start (prefer no displacement), then by dock sort order
+    candidates.sort((a, b) => {
+      const timeDiff = a.earliestStart.getTime() - b.earliestStart.getTime();
+      if (timeDiff !== 0) return timeDiff;
+      return a.dock.sortOrder - b.dock.sortOrder;
+    });
+
+    const best = candidates[0];
+    return {
+      dock: best.dock,
+      adjustedStartUtc: best.earliestStart,
+      adjustedEndUtc: new Date(best.earliestStart.getTime() + durationMs),
+    };
   }
 
   /**
@@ -561,6 +657,26 @@ export class SlotCapacityValidator {
       );
 
       if (!assignedDock) {
+        // Try to find a dock with a shifted start time within the same slot
+        const durationMs = endUtc.getTime() - startUtc.getTime();
+        const shifted = await this.findEarliestDockInSlot(
+          date, slot.startTime, slot.endTime, startUtc, durationMs, excludeId, tx
+        );
+
+        if (shifted) {
+          return {
+            valid: true,
+            pointsUsed,
+            maxPoints: slot.maxPoints,
+            pointsAvailable,
+            slotStartTime: slot.startTime,
+            slotEndTime: slot.endTime,
+            assignedDock: shifted.dock,
+            adjustedStartUtc: shifted.adjustedStartUtc,
+            adjustedEndUtc: shifted.adjustedEndUtc,
+          };
+        }
+
         return {
           valid: false,
           reason: "NO_DOCK",

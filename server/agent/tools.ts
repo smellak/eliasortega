@@ -14,6 +14,20 @@ import {
 
 const DAY_NAMES_ES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 
+// Calculator result cache: avoids redundant calls with identical inputs.
+// Key: JSON-serialized (goodsType, units, lines, albaranes). TTL: 10 minutes.
+const calculatorCache = new Map<string, { result: string; expiresAt: number }>();
+const CALC_CACHE_TTL_MS = 10 * 60 * 1000;
+
+function getCalcCacheKey(input: Record<string, any>): string {
+  return JSON.stringify({
+    g: (input.goodsType || "").toLowerCase().trim(),
+    u: input.units || 0,
+    l: input.lines ?? null,
+    a: input.albaranes ?? null,
+  });
+}
+
 const CALENDAR_AVAILABILITY_TOOL: Anthropic.Tool = {
   name: "calendar_availability",
   description: "Busca franjas de citas disponibles en el calendario del almacén. Requiere rango de fechas (from, to), duración estimada y detalles de la entrega. Devuelve franjas disponibles con puntos libres.",
@@ -326,11 +340,15 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
         return { success: false as const, error: slotValidation.error || "Slot sin capacidad", reason: slotValidation.reason };
       }
 
+      // Use adjusted times if the dock assignment required a time shift
+      const finalStart = slotValidation.adjustedStartUtc || currentStart;
+      const finalEnd = slotValidation.adjustedEndUtc || currentEnd;
+
       const appointmentData = {
         providerId: provider!.id,
         providerName,
-        startUtc: currentStart,
-        endUtc: currentEnd,
+        startUtc: finalStart,
+        endUtc: finalEnd,
         workMinutesNeeded,
         forkliftsNeeded: 0,
         goodsType: input.goodsType || null,
@@ -369,8 +387,15 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
       const appointment = result.appointment;
       const assignedDock = result.assignedDock;
       const startLocal = formatInTimeZone(appointment.startUtc, "Europe/Madrid", "dd/MM/yyyy, HH:mm");
+      const startTimeOnly = formatInTimeZone(appointment.startUtc, "Europe/Madrid", "HH:mm");
       const endLocal = formatInTimeZone(appointment.endUtc, "Europe/Madrid", "HH:mm");
       const duration = Math.round((appointment.endUtc.getTime() - appointment.startUtc.getTime()) / 60000);
+
+      // Detect time displacement: compare requested vs actual start
+      const requestedTimeLocal = formatInTimeZone(startDate, "Europe/Madrid", "HH:mm");
+      const timeDiffMinutes = Math.round(
+        (appointment.startUtc.getTime() - startDate.getTime()) / 60000
+      );
 
       logAudit({
         entityType: "APPOINTMENT",
@@ -388,9 +413,11 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
       const dockLabel = assignedDock ? ` — Muelle: ${assignedDock.name}` : "";
       const responseObj: Record<string, any> = {
         success: true,
-        confirmationHtml: `<b>Cita confirmada</b><br>Proveedor: ${providerName}<br>Tipo: ${input.goodsType}<br>Fecha: ${startLocal.split(",")[0]}<br>Hora: ${startLocal.split(", ")[1]}–${endLocal} (duración: ${duration} min)<br>Talla: ${size} (${pointsUsed} pts)${dockLabel}`,
+        confirmationHtml: `<b>Cita confirmada</b><br>Proveedor: ${providerName}<br>Tipo: ${input.goodsType}<br>Fecha: ${startLocal.split(",")[0]}<br>Hora: ${startTimeOnly}–${endLocal} (duración: ${duration} min)<br>Talla: ${size} (${pointsUsed} pts)${dockLabel}`,
         providerName,
         goodsType: input.goodsType,
+        horaRealInicio: startTimeOnly,
+        horaRealFin: endLocal,
         startLocal,
         endLocal,
         size,
@@ -400,6 +427,12 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
         dockName: assignedDock?.name || null,
         dockCode: assignedDock?.code || null,
       };
+
+      // Add prominent warning if actual time differs from requested
+      if (Math.abs(timeDiffMinutes) > 5) {
+        responseObj.AVISO_HORA_CAMBIADA = `IMPORTANTE: La hora solicitada era las ${requestedTimeLocal} pero el sistema ha asignado las ${startTimeOnly} (diferencia de ${timeDiffMinutes} minutos) por disponibilidad de muelle. DEBES informar al proveedor de la hora REAL: ${startTimeOnly}.`;
+        responseObj.horaSolicitada = requestedTimeLocal;
+      }
 
       if (estimatedFields.length > 0) {
         responseObj.note = `Nota: se han estimado ${estimatedFields.join(" y ")} a partir de datos históricos de ${input.goodsType}.`;
@@ -466,6 +499,14 @@ export async function executeToolCall(
   try {
     switch (toolName) {
       case "calculator": {
+        // Check cache first to avoid redundant calculator calls
+        const cacheKey = getCalcCacheKey(toolInput);
+        const cached = calculatorCache.get(cacheKey);
+        if (cached && Date.now() < cached.expiresAt) {
+          console.log(`[Agent] Calculator cache hit for key: ${cacheKey}`);
+          return cached.result;
+        }
+
         const calcInput: CalculatorInput = {
           providerName: toolInput.providerName,
           goodsType: toolInput.goodsType,
@@ -479,7 +520,12 @@ export async function executeToolCall(
         if (calcResult.estimatedFields && calcResult.estimatedFields.length > 0) {
           response.note = `Nota: se han estimado ${calcResult.estimatedFields.join(" y ")} a partir de datos históricos de ${calcResult.categoria_elegida}.`;
         }
-        return JSON.stringify(response, null, 2);
+        const resultStr = JSON.stringify(response, null, 2);
+
+        // Cache the result
+        calculatorCache.set(cacheKey, { result: resultStr, expiresAt: Date.now() + CALC_CACHE_TTL_MS });
+
+        return resultStr;
       }
 
       case "calendar_availability":

@@ -109,14 +109,18 @@ export async function upsertAppointmentInternal(data: {
       };
     }
 
+    // Use adjusted times if the dock assignment required a time shift
+    const finalStartUtc = slotValidation.adjustedStartUtc || new Date(data.start);
+    const finalEndUtc = slotValidation.adjustedEndUtc || new Date(data.end);
+
     if (existing) {
       const appointment = await tx.appointment.update({
         where: { id: existing.id },
         data: {
           providerId: data.providerId,
           providerName: data.providerName,
-          startUtc: new Date(data.start),
-          endUtc: new Date(data.end),
+          startUtc: finalStartUtc,
+          endUtc: finalEndUtc,
           workMinutesNeeded: data.workMinutesNeeded,
           forkliftsNeeded: data.forkliftsNeeded,
           goodsType: data.goodsType,
@@ -141,8 +145,8 @@ export async function upsertAppointmentInternal(data: {
       data: {
         providerId: data.providerId,
         providerName: data.providerName,
-        startUtc: new Date(data.start),
-        endUtc: new Date(data.end),
+        startUtc: finalStartUtc,
+        endUtc: finalEndUtc,
         workMinutesNeeded: data.workMinutesNeeded,
         forkliftsNeeded: data.forkliftsNeeded,
         goodsType: data.goodsType,

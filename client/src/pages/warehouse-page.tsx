@@ -34,7 +34,12 @@ export default function WarehousePage({ userRole }: { userRole: UserRole }) {
 
   const { data: appointments = [], isLoading } = useQuery({
     queryKey: ["warehouse-appointments", dateStr],
-    queryFn: () => appointmentsApi.list({ from: dateStr, to: dateStr }),
+    queryFn: () => {
+      const nextDay = new Date(viewDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const toStr = getMadridDateStr(nextDay);
+      return appointmentsApi.list({ from: dateStr, to: toStr });
+    },
     refetchInterval: 30000,
   });
 

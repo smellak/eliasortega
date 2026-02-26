@@ -1,0 +1,543 @@
+{
+  "metadata": {
+    "generated": "2026-02-26",
+    "source": "recepcion@centrohogarsanchez.es",
+    "total_emails_analyzed": 12521,
+    "period": "2023-11 to 2026-02",
+    "unique_senders": 374,
+    "unique_domains": 159
+  },
+  "transport_agencies": [
+    {
+      "name": "Mengualba",
+      "type": "logistics_operator",
+      "emails_count": 732,
+      "frequency": "daily",
+      "avg_emails_per_month": 26,
+      "lead_time_days": { "avg": 1.5, "median": 1, "mode": 0 },
+      "contacts": [
+        { "name": "Carmen Lucia Hita Mochón", "email": "sac@mengualba.com", "role": "Atención al cliente" },
+        { "name": null, "email": "operaciones@mengualba.com", "role": "Operaciones" }
+      ],
+      "location": "Avda. Málaga 20, Pol. Asegra, 18210 Peligros (Granada)",
+      "phone": "958 009 599",
+      "delivers_for": ["ITEM Internacional", "Delonghi", "Teka", "Beijer", "Milarosa", "Dugar Home", "Export Trading Textiles", "Andrea Bizzotto", "Nestlé", "Whirlpool", "Fagor", "Groupe SEB", "Forte"],
+      "data_fields_provided": ["remitente", "albaran", "bultos", "pedido"],
+      "communication_style": "structured",
+      "notes": "Mayor operador logístico. Envía albarán como PDF adjunto. Responde con OK tras confirmar cita."
+    },
+    {
+      "name": "DHL",
+      "type": "parcel_freight",
+      "emails_count": 499,
+      "frequency": "3x_week",
+      "avg_emails_per_month": 18,
+      "lead_time_days": { "avg": 1.6, "median": 1, "mode": 0 },
+      "contacts": [
+        { "name": "Francisco Gámez", "email": "francisco.gamez@dhl.com", "role": "DHL eCom ES" },
+        { "name": "Roberto Garrido", "email": "roberto.garridocomba@dhl.com", "role": null },
+        { "name": "Ángela del Pino", "email": "angela.delpino@dhl.com", "role": null },
+        { "name": "Mario Marcos Velasco", "email": "mario.marcos@dhl.com", "role": "DHL Global Forwarding (contenedores)" }
+      ],
+      "delivers_for": ["Isogona", "Versa", "Pikolín", "Productos KOL", "Vivanco", "Arcos", "Hendi Horeca", "Beijer", "Philips", "Himolla", "Groupe SEB"],
+      "data_fields_provided": ["expedicion", "pedido", "bultos", "fecha_entrega"],
+      "communication_style": "tabular",
+      "notes": "Usa formato tabular con columnas Expedición/Rmt/Pedido/Bultos/Fecha. Carpeta con muchas incidencias de daños."
+    },
+    {
+      "name": "GLS",
+      "type": "parcel",
+      "emails_count": 332,
+      "frequency": "3x_week",
+      "avg_emails_per_month": 13,
+      "lead_time_days": { "avg": 0.7, "median": 0, "mode": 0 },
+      "contacts": [
+        { "name": "Francisco Aguado", "email": "agencia183.atc@gls-spain.es", "role": "Tráfico" },
+        { "name": "Paqui Benjumea", "email": null, "role": "Tráfico" },
+        { "name": "Irene Torrealba", "email": null, "role": "Tráfico" }
+      ],
+      "location": "Soluciones Logísticas Irevan S.L., Calle Príncipe Felipe 1, 18220 Albolote",
+      "phone": "858 988 376",
+      "delivers_for": ["Marckeric", "BOJ Olaneta", "Infiniton", "Würth", "Espumalia", "Samsung", "Hilding Anders"],
+      "data_fields_provided": ["albaran", "expedicion", "bultos"],
+      "communication_style": "structured",
+      "notes": "Muy corto plazo — 63% mismo día. Adjuntan albaranes PDF."
+    },
+    {
+      "name": "TDN",
+      "type": "logistics_operator",
+      "emails_count": 329,
+      "frequency": "3x_week",
+      "avg_emails_per_month": 12,
+      "lead_time_days": { "avg": 1.1, "median": 0, "mode": 0 },
+      "contacts": [
+        { "name": "Maite Padial", "email": "trafico_granada@tdn.es", "role": "Tráfico" },
+        { "name": null, "email": "atc_llegadas_granada@tdn.es", "role": "ATC Llegadas" },
+        { "name": null, "email": "ConcertarEntregasTDN@tdn.es", "role": "Sistema automatizado" }
+      ],
+      "delivers_for": ["CATA", "Ixia Regal", "Daikin", "Universal Importadora", "Cobain Vigo", "Sonifer", "Frecan"],
+      "data_fields_provided": ["expedicion", "remitente", "pedido", "albaran", "palets"],
+      "communication_style": "automated",
+      "notes": "57% solicitudes mismo día. Sistema automatizado con link ConcertarEntrega. Datos muy estructurados."
+    },
+    {
+      "name": "Ontime",
+      "type": "logistics_operator",
+      "emails_count": 267,
+      "frequency": "3x_week",
+      "avg_emails_per_month": 11,
+      "lead_time_days": { "avg": 1.8, "median": 2, "mode": 2 },
+      "contacts": [
+        { "name": "Iván Alfonso", "email": "granada1825@ontimelogistica.com", "role": "Att. Cliente" }
+      ],
+      "location": "Complejo Ontime, Pol. Ind. Juncaril C/Valor S/N, 18210 Peligros",
+      "phone": "958 43 06 12",
+      "delivers_for": ["Fores", "Visobath", "Aux. Tableros Mecanizados", "Torga", "European Home Delivery", "Infiniton"],
+      "data_fields_provided": ["remitente", "pedido", "bultos", "expedicion", "palets"],
+      "communication_style": "structured",
+      "notes": "Asuntos tipo 'pedimos cita ontime'. Siempre incluyen Remite/Pedido/Bultos/Exp."
+    },
+    {
+      "name": "Azkar/Dachser",
+      "type": "logistics_operator",
+      "emails_count": 264,
+      "frequency": "weekly",
+      "avg_emails_per_month": 9,
+      "lead_time_days": { "avg": 1.7, "median": 1, "mode": 0 },
+      "contacts": [
+        { "name": "Encarni Lujano", "email": "encarni.lujano@es.dachser.com", "role": null },
+        { "name": "Jesús Mata", "email": "jesus.mata@es.dachser.com", "role": null }
+      ],
+      "delivers_for": ["Cobain Vigo", "Marckeric", "Exojo/Fabrikit", "Vivanco", "Brisa Jardín", "Forte", "Polti"],
+      "data_fields_provided": ["expedicion", "remitente"],
+      "communication_style": "brief",
+      "notes": "Asuntos 'MERCANCÍA PENDIENTE DE ENTREGA'. Intercambios muy breves."
+    },
+    {
+      "name": "Granada Cargo",
+      "type": "local_transport",
+      "emails_count": 255,
+      "frequency": "weekly",
+      "avg_emails_per_month": 9,
+      "lead_time_days": { "avg": 1.8, "median": 1, "mode": 0 },
+      "contacts": [
+        { "name": null, "email": "atencion.cliente@granadacargo.com", "role": "Atención al Cliente" }
+      ],
+      "location": "Pol. Ind. Juncaril C/ Huéscar nave 16, 18210 Peligros",
+      "delivers_for": ["Productos KOL", "Visobath", "Keter Iberia", "Smattex"],
+      "data_fields_provided": ["palets", "pedido", "remitente", "albaran"],
+      "communication_style": "template",
+      "notes": "Plantilla fija: 'PETICIÓN CON FECHA DE ENTREGA CONCERTADA'. Parseable automáticamente."
+    },
+    {
+      "name": "RDA/Ramoneda",
+      "type": "logistics_operator",
+      "emails_count": 208,
+      "frequency": "weekly",
+      "avg_emails_per_month": 8,
+      "contacts": [
+        { "name": null, "email": "granada@ramoneda.es", "role": "Granada 180" }
+      ],
+      "delivers_for": ["ITEM Internacional", "Mitsubishi", "Cobain Vigo"],
+      "data_fields_provided": ["expedicion"],
+      "communication_style": "structured",
+      "notes": "Asuntos tipo 'cita descarga exp. XXXXXXXX'."
+    },
+    {
+      "name": "Transportes Peinado",
+      "type": "logistics_operator",
+      "emails_count": 242,
+      "frequency": "weekly",
+      "avg_emails_per_month": 8,
+      "contacts": [
+        { "name": null, "email": "atencionalcliente2@transportespeinado.com", "role": null }
+      ],
+      "delivers_for": ["Smattex", "Ixia Regal", "Panasonic", "Cecotec"],
+      "data_fields_provided": ["pedido", "remitente"],
+      "communication_style": "structured"
+    },
+    {
+      "name": "Transportes Porcel",
+      "type": "local_transport",
+      "emails_count": 184,
+      "frequency": "weekly",
+      "avg_emails_per_month": 8,
+      "contacts": [
+        { "name": null, "email": "transportesymudanzasporcel@hotmail.es", "role": null },
+        { "name": null, "email": "info@transportesporcel.com", "role": null }
+      ],
+      "delivers_for": ["Ekornes/Stressless", "Alma Sofás", "Portos", "Smattex"],
+      "data_fields_provided": ["pedido"],
+      "communication_style": "informal"
+    },
+    {
+      "name": "TXT",
+      "type": "logistics_operator",
+      "emails_count": 143,
+      "frequency": "weekly",
+      "avg_emails_per_month": 6,
+      "contacts": [
+        { "name": "Antonio Medina", "email": null, "role": null }
+      ],
+      "delivers_for": ["Cecotec", "Aux. Tableros Mecanizados", "Jata", "Dabedan", "Fores", "Isogona"],
+      "data_fields_provided": ["pedido", "bultos"],
+      "communication_style": "structured"
+    },
+    {
+      "name": "SEUR",
+      "type": "parcel",
+      "emails_count": 138,
+      "frequency": "weekly",
+      "avg_emails_per_month": 7,
+      "contacts": [
+        { "name": "Ana Cuesta", "email": "ana.cuesta@seur.net", "role": null },
+        { "name": "Francisco Árbol Rodríguez", "email": null, "role": null }
+      ],
+      "delivers_for": ["Tempur", "Hendi Horeca"],
+      "data_fields_provided": ["tracking"],
+      "communication_style": "automated"
+    },
+    {
+      "name": "Logodis",
+      "type": "dedicated_transport",
+      "emails_count": 113,
+      "frequency": "weekly",
+      "avg_emails_per_month": 6,
+      "contacts": [
+        { "name": "Jesús A. Vargas Moya", "email": "trafico.granada@logodiscentergranada.es", "role": "Resp. Tráfico" }
+      ],
+      "delivers_for": ["CODECO", "BSH (Bosch/Siemens/Balay)", "Infiniton"],
+      "data_fields_provided": ["albaran", "expedicion"],
+      "communication_style": "structured",
+      "notes": "Transporte dedicado para electrodomésticos CODECO y BSH."
+    },
+    {
+      "name": "XPO",
+      "type": "logistics_operator",
+      "emails_count": 108,
+      "frequency": "weekly",
+      "avg_emails_per_month": 7,
+      "contacts": [
+        { "name": "Estefanía Cabrera Gutiérrez", "email": null, "role": "Resp. Distribución" }
+      ],
+      "delivers_for": ["Infiniton", "Visobath", "Tap. Santiago", "Groupe SEB", "Shiito"],
+      "data_fields_provided": ["cs_number"],
+      "communication_style": "structured"
+    }
+  ],
+  "product_suppliers": [
+    {
+      "name": "CODECO",
+      "category": "electrodomesticos",
+      "emails_count": 522,
+      "frequency": "daily",
+      "avg_emails_per_month": 29,
+      "contacts": [
+        { "name": "Francisco López", "email": "logistica@codeco.es", "role": "Dpto. Logística" },
+        { "name": null, "email": "sanchezginer@codeco.es", "role": "Cuenta Sánchez Giner" },
+        { "name": null, "email": "auto-envio@codeco.es", "role": "Partes automáticos" },
+        { "name": null, "email": "descargas@codeco.es", "role": "Descargas" },
+        { "name": null, "email": "averias@codeco.es", "role": "Averías" }
+      ],
+      "transport_agency": "Logodis",
+      "products": ["lavadoras", "secadoras", "frigoríficos", "lavavajillas", "pantallas/TV", "aires acondicionados", "microondas"],
+      "data_fields_typical": ["ParteTransporte (PDF)", "fecha descarga"],
+      "lead_time_notification": "Día anterior (DESCARGA XX/XX)",
+      "notes": "62% correos son ParteTransporte automáticos. Volumen creciente: de 13/mes en may-2024 a 70/mes en dic-2025."
+    },
+    {
+      "name": "Tapizados Jaén",
+      "category": "tapiceria",
+      "emails_count": 358,
+      "frequency": "3x_week",
+      "avg_emails_per_month": 16,
+      "contacts": [
+        { "name": "Jose Antonio Jaén Bonilla", "email": "tapizadosjaen@gmail.com", "role": "Propietario" }
+      ],
+      "transport_agency": "Propio (camión propio)",
+      "products": ["sofás", "chaiselongues", "sillones"],
+      "lead_time_days": { "avg": 6.6, "median": 7 },
+      "communication_style": "informal",
+      "notes": "Muy informal, tipo WhatsApp. Solicita fecha con frases cortas ('Buenas para descargar viernes 20 diciembre'). Camión propio semanal."
+    },
+    {
+      "name": "Tapizados Zen",
+      "category": "tapiceria",
+      "emails_count": 267,
+      "frequency": "3x_week",
+      "avg_emails_per_month": 11,
+      "contacts": [
+        { "name": "José", "email": "jose.tapizadoszen@gmail.com", "role": null },
+        { "name": "Manuel", "email": "MANUEL@TAPIZADOSZEN.ES", "role": null }
+      ],
+      "transport_agency": "PINO (livingpino.com)",
+      "products": ["chaiselongues", "sofás"],
+      "communication_style": "informal",
+      "notes": "Asuntos tipo 'DESCARGA ZEN'. Indica nº de piezas ('unas 12 chaisse'). Descargas regulares."
+    },
+    {
+      "name": "Nova Cucine / Gugel",
+      "category": "cocinas",
+      "emails_count": 200,
+      "frequency": "3x_week",
+      "avg_emails_per_month": 11,
+      "contacts": [
+        { "name": "Giorgia Pradal", "email": "giorgia@gugel.it", "role": "Operativo España, Gugel SRL" },
+        { "name": null, "email": "elisapolles@novacucina.com", "role": null }
+      ],
+      "transport_agency": "Gugel SRL (logística propia, Italia)",
+      "products": ["cocinas completas"],
+      "data_fields_typical": ["bultos", "albarán PDF"],
+      "communication_style": "structured",
+      "notes": "Fabricante italiano de cocinas. Logística propia Gugel. Aviso de entrega con bultos y albarán."
+    },
+    {
+      "name": "Grupo Exojo / Fabrikit",
+      "category": "muebles_kit",
+      "emails_count": 196,
+      "frequency": "weekly",
+      "avg_emails_per_month": 7,
+      "contacts": [
+        { "name": "Chaimae Zelmati", "email": "chaimae.zelmati@exojo.com", "role": null },
+        { "name": "Julio Rico", "email": "julio.rico@exojo.com", "role": null },
+        { "name": null, "email": "logistica@exojo.com", "role": "Logística" }
+      ],
+      "products": ["muebles kit", "estanterías", "armarios"],
+      "data_fields_typical": ["m3 (metros cúbicos)", "fecha propuesta"],
+      "communication_style": "structured",
+      "notes": "Siempre especifican volumen en m3 (ej: '9,43 m3', '12 M3'). Asuntos tipo 'AVISO DE ENTREGA'."
+    },
+    {
+      "name": "Cecotec",
+      "category": "pequeno_electrodomestico",
+      "emails_count": 192,
+      "frequency": "3x_week",
+      "avg_emails_per_month": 11,
+      "contacts": [
+        { "name": "Ariadna Isabel Flores Castillo", "email": "administracionms@cecotec.es", "role": "Dpto. Administración" }
+      ],
+      "products": ["cafeteras", "aspiradoras", "robots cocina", "ollas", "planchas"],
+      "data_fields_typical": ["código CC (CCXXXXXXX)", "nº palets", "split MSS1/MSS2"],
+      "lead_time_requirement": "48 horas mínimo",
+      "communication_style": "very_structured",
+      "notes": "Asuntos tipo 'CITA ENTREGA CCXXXXXXX SANCHEZ GINER'. Siempre especifican nº palets y si necesitan medios de descarga. Exigen 48h de antelación."
+    },
+    {
+      "name": "Distrigal",
+      "category": "muebles",
+      "emails_count": 199,
+      "frequency": "weekly",
+      "avg_emails_per_month": 8,
+      "products": ["dormitorios", "canapés", "armarios", "sofás cama"],
+      "notes": "Subcarpetas de incidencias específicas (dormitorio, canapés, sofa cama)."
+    },
+    {
+      "name": "Tapizados JJ Sánchez",
+      "category": "tapiceria",
+      "emails_count": 203,
+      "frequency": "weekly",
+      "avg_emails_per_month": 9,
+      "contacts": [
+        { "name": null, "email": "pedidos@tapizadosjj.com", "role": "Pedidos" }
+      ],
+      "products": ["sofás", "chaiselongues", "fundas"],
+      "communication_style": "structured"
+    },
+    {
+      "name": "Tapizados Llogra",
+      "category": "tapiceria",
+      "emails_count": 201,
+      "frequency": "weekly",
+      "avg_emails_per_month": 8,
+      "contacts": [
+        { "name": null, "email": "pedidos@tapizadosllogran.com", "role": "Pedidos" }
+      ],
+      "products": ["chaiselongues", "sofás"],
+      "notes": "Carpetas de incidencias con problemas de albaranes y chaiselongues."
+    },
+    {
+      "name": "Glicerio Chaves",
+      "category": "muebles",
+      "emails_count": 174,
+      "frequency": "weekly",
+      "avg_emails_per_month": 7,
+      "products": ["dormitorios juveniles", "habitaciones"]
+    },
+    {
+      "name": "Tapizados Pedro Ortiz",
+      "category": "tapiceria",
+      "emails_count": 169,
+      "frequency": "weekly",
+      "avg_emails_per_month": 7,
+      "contacts": [
+        { "name": "Conchi Albert", "email": "conchi@pedroortiz.com", "role": "Dpto. Comercial" }
+      ],
+      "products": ["sofás", "sillones", "tapizados premium"],
+      "lead_time_days": { "avg": 5.9, "median": 5 },
+      "communication_style": "formal",
+      "notes": "Asuntos 'SOLICITUD CITA DESCARGA'. Tráilers completos, planifica 5-6 días de adelanto."
+    },
+    {
+      "name": "Lan Mobel",
+      "category": "muebles",
+      "emails_count": 157,
+      "frequency": "weekly",
+      "avg_emails_per_month": 6,
+      "contacts": [
+        { "name": "Miren Arenas", "email": "miren@lanmobel.es", "role": null }
+      ],
+      "products": ["muebles de salón", "aparadores"]
+    },
+    {
+      "name": "IMECI",
+      "category": "muebles",
+      "emails_count": 151,
+      "frequency": "weekly",
+      "avg_emails_per_month": 6,
+      "contacts": [
+        { "name": null, "email": "pedidos@imeci.es", "role": "Pedidos" }
+      ],
+      "products": ["muebles"]
+    },
+    {
+      "name": "Flex",
+      "category": "colchoneria",
+      "emails_count": 148,
+      "frequency": "3x_week",
+      "avg_emails_per_month": 15,
+      "contacts": [
+        { "name": "Rafael Bracero", "email": "rafael.bracero@flex.es", "role": null },
+        { "name": "Vero", "email": null, "role": "Contacto principal" }
+      ],
+      "products": ["colchones", "bases", "somieres"],
+      "communication_style": "informal",
+      "notes": "Asuntos tipo 'Cita Flex'. Comunicación informal, trato de tú. Patrón a ráfagas (15/mes en meses activos)."
+    },
+    {
+      "name": "Tapizados Cayuela",
+      "category": "tapiceria",
+      "emails_count": 129,
+      "frequency": "weekly",
+      "avg_emails_per_month": 5,
+      "products": ["sofás", "chaiselongues"],
+      "notes": "Carpeta de incidencia por aplazamiento de tráiler (24.9.24)."
+    },
+    {
+      "name": "Tapizados Muñoz Robles",
+      "category": "tapiceria",
+      "emails_count": 117,
+      "frequency": "weekly",
+      "avg_emails_per_month": 5,
+      "products": ["tapizados"]
+    },
+    {
+      "name": "Martín Robledo",
+      "category": "mixto",
+      "emails_count": 137,
+      "frequency": "weekly",
+      "avg_emails_per_month": 5,
+      "contacts": [
+        { "name": null, "email": "pedidos@martinrobledo.es", "role": "Pedidos" }
+      ],
+      "products": ["colchones", "muebles", "tapicería"],
+      "notes": "Fabricante con 3 líneas: colchones CHS, muebles Azor, tapicería. Incidencia registrada: problema descarga 8.10.24."
+    }
+  ],
+  "china_import_chain": {
+    "broker": {
+      "name": "JANCOR Negocios",
+      "emails": ["facturacion@jancornegocios.com", "contabilidad@jancornegocios.com"],
+      "contact": "Iria",
+      "role": "Intermediario de compras/facturación"
+    },
+    "customs_agent": {
+      "name": "NAVA Forwarding",
+      "emails": ["b.balaguer@navaforwarding.com", "b.carratala@navaforwarding.com"],
+      "contact": "Belén Balaguer",
+      "role": "Agente de aduanas/transitario"
+    },
+    "freight_forwarder": {
+      "name": "Interglobo",
+      "emails": ["arasal@interglobo.com"],
+      "role": "Transitario"
+    },
+    "internal_coordinator": {
+      "name": "Juan Carlos Fernández Guerrero (Vargas)",
+      "role": "Dpto. Comercial Mobiliario, Sánchez Giner"
+    },
+    "containers_identified": 38,
+    "frequency": "1-2 contenedores/mes",
+    "lead_time_days": { "avg": 3.6, "median": 2 },
+    "reference_format": "P-XXXXXXXX + código contenedor ISO (4 letras + 7 dígitos)"
+  },
+  "domain_vocabulary": {
+    "delivery_terms": {
+      "cita": "appointment for delivery/unloading",
+      "descarga": "unloading action",
+      "entrega": "delivery/handover",
+      "albaran": "delivery note/packing slip",
+      "bulto": "package/bundle (most common counting unit)",
+      "palet": "pallet",
+      "expedicion": "shipment/dispatch",
+      "concertada": "arranged/scheduled delivery",
+      "muelle": "loading dock",
+      "franja": "time slot/window",
+      "carretilla": "forklift",
+      "trailer": "full truck trailer"
+    },
+    "confirmation_phrases": {
+      "anotados_quedan": "Anotados quedan para el [DÍA] — Booking confirmed",
+      "ruego_confirmen": "Ruego me confirmen con el OK — Please confirm with OK",
+      "pueden_pasarse": "Pueden pasarse — You may come by for delivery",
+      "primera_hora": "A primera hora — First thing in the morning",
+      "ultima_hora": "A última hora de la mañana — Late morning"
+    },
+    "incident_terms": {
+      "incidencia": "incident/issue",
+      "devolucion": "return of goods (abbr: DV/DEV)",
+      "rotura": "breakage",
+      "faltante": "shortage/missing item",
+      "sobrante": "surplus/excess item",
+      "rehusado": "refused delivery",
+      "mal_estado": "bad condition",
+      "reclamacion": "formal claim"
+    },
+    "reference_formats": {
+      "pedido_interno": "P-XXXXXXXX (8 digits, year prefix)",
+      "pedido_compra": "PC.XXXXXXXX",
+      "pedido_venta": "PV-XXXXXXX",
+      "cecotec_code": "CCXXXXXXX",
+      "dhl_expedition": "10 digits",
+      "tdn_expedition": "15 alphanumeric",
+      "container_iso": "4 uppercase letters + 7 digits",
+      "incidencia": "INC.XXXX.2"
+    },
+    "product_categories": {
+      "muebles": ["armarios", "mesas", "sillas", "estanterías", "zapateros", "espejos", "aparadores"],
+      "tapiceria": ["sofás 2P/3P", "chaiselongues", "sillones", "butacas", "fundas"],
+      "colchoneria": ["colchones", "canapés", "somieres", "bases tapizadas"],
+      "electrodomesticos": ["lavadoras", "lavavajillas", "frigoríficos", "secadoras", "pantallas/TV", "campanas"],
+      "cocinas": ["cocinas completas", "placas", "hornos"],
+      "climatizacion": ["aires acondicionados"],
+      "pequeno_electrodomestico": ["cafeteras", "aspiradoras", "robots cocina", "planchas"]
+    },
+    "locations": {
+      "almacen_central": "Pol. Ind. Juncaril, Albolote (Granada)",
+      "C-3": "Centro/almacén nº 3",
+      "C-63": "Centro nº 63",
+      "C-73": "Centro nº 73",
+      "sucursales": ["Albán", "Motril", "Málaga", "Almería", "Antequera"]
+    }
+  },
+  "scheduling_insights": {
+    "busiest_days": ["lunes", "martes"],
+    "busiest_day_share": 0.438,
+    "weekend_share": 0.016,
+    "recommended_min_lead_times": {
+      "agencias_locales": 1,
+      "fabricantes_tapiceria": 5,
+      "contenedores_china": 3,
+      "cecotec": 2
+    }
+  }
+}

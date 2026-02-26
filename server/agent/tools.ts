@@ -517,8 +517,15 @@ export async function executeToolCall(
         const calcResult = await runCalculator(calcInput);
 
         const response: Record<string, any> = { ...calcResult };
+        const notes: string[] = [];
         if (calcResult.estimatedFields && calcResult.estimatedFields.length > 0) {
-          response.note = `Nota: se han estimado ${calcResult.estimatedFields.join(" y ")} a partir de datos históricos de ${calcResult.categoria_elegida}.`;
+          notes.push(`Se han estimado ${calcResult.estimatedFields.join(" y ")} a partir de datos históricos de ${calcResult.categoria_elegida}.`);
+        }
+        if (calcResult.cappedFromOriginal != null && calcResult.cappedTo != null) {
+          notes.push(`El cálculo original daba ${calcResult.cappedFromOriginal} minutos pero se ha limitado a ${calcResult.cappedTo} minutos (máximo histórico para esta categoría).`);
+        }
+        if (notes.length > 0) {
+          response.note = `Nota: ${notes.join(" ")}`;
         }
         const resultStr = JSON.stringify(response, null, 2);
 

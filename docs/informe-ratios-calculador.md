@@ -925,5 +925,65 @@ Formula:
 
 humanRound(600.28): 600.28 >= 95 -> ceil(600.28/10)*10 = 61*10 = 610
 
-Resultado: 610 minutos (~10 horas) -> Size L (3 puntos)
+Resultado SIN tope: 610 minutos (~10 horas) -> ABSURDO
+Resultado CON tope: capped a 160 min (max Colchoneria) -> humanRound(160) = 160 -> Size L (3 puntos)
+```
+
+---
+
+## 15. Topes maximos implementados (febrero 2026)
+
+Basado en el analisis del P95 de los datos historicos, se han implementado topes maximos por categoria para evitar predicciones irreales en entregas de alto volumen:
+
+| Categoria | Tope (min) | Tope (hh:mm) | Basado en |
+|-----------|-----------|-------------|-----------|
+| Asientos | 350 | 5:50 | P95=270, max real=350 |
+| Bano | 60 | 1:00 | P95=37, max real=40 |
+| Cocina | 140 | 2:20 | P95=109 x 1.3 |
+| Colchoneria | 160 | 2:40 | P95=120 x 1.3 |
+| Electro | 230 | 3:50 | P95=180 x 1.3 |
+| Mobiliario | 270 | 4:30 | P95=210 x 1.3 |
+| PAE | 60 | 1:00 | P95=41, max real=45 |
+| Tapiceria | 180 | 3:00 | P95=136 x 1.3 |
+
+### Implementacion
+
+En `server/agent/calculator.ts`, despues de calcular `rawMinutes` y ANTES de `humanRound`:
+
+```typescript
+const CATEGORY_MAX_MINUTES: Record<string, number> = {
+  "Asientos":     350,
+  "Bano":         60,
+  "Cocina":       140,
+  "Colchoneria":  160,
+  "Electro":      230,
+  "Mobiliario":   270,
+  "PAE":          60,
+  "Tapiceria":    180,
+};
+
+const maxMinutes = CATEGORY_MAX_MINUTES[category] || 480;
+const cappedMinutes = Math.min(rawMinutes, maxMinutes);
+const workMinutes = humanRound(cappedMinutes);
+```
+
+Cuando se aplica el tope, la salida incluye:
+- `cappedFromOriginal`: valor raw original sin tope
+- `cappedTo`: valor del tope aplicado
+
+### Impacto medido sobre datos historicos
+
+Solo-U (simulando que el proveedor no da albaranes ni lineas):
+- Tapiceria: MAE mejoro de 31.9 a 27.0 min (-15%)
+- Colchoneria: MAE mejoro de 28.5 a 25.1 min (-12%)
+- Cocina: MAE mejoro de 31.1 a 28.7 min (-8%)
+- Mobiliario: MAE mejoro de 43.7 a 41.6 min (-5%)
+
+### Logging
+
+Cada ejecucion del calculador genera un log estructurado:
+
+```
+[CALCULATOR] cat=Colchoneria U=300 A=3(est) L=111(est) raw=600 capped=160 final=160
+[CALCULATOR] cat=PAE U=500 A=2(est) L=1(est) raw=23 final=20
 ```

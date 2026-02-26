@@ -76,7 +76,52 @@ REGLAS:
 - Si el usuario pregunta cómo funciona algo de la app, explícalo de forma clara y práctica
 - Si el usuario pregunta algo que no puedes hacer con las tools disponibles, dile exactamente qué debería hacer manualmente en qué página
 - Nunca inventes datos. Usa siempre las herramientas para obtener información real
-- Formatea los datos de forma legible: usa tablas markdown cuando muestres listas`;
+- Formatea los datos de forma legible: usa tablas markdown cuando muestres listas
+
+SISTEMA DE CÁLCULO DE TIEMPOS DE DESCARGA:
+
+El calculador usa coeficientes del consultor externo basados en 293 entregas reales (marzo-mayo 2025):
+
+Fórmula: Tiempo = TD + (U × TU) + (A × TA) + (L × TL)
+Excepción: Asientos no usa TD.
+
+Coeficientes por categoría:
+| Categoría | TD (base) | TA (/albarán) | TL (/línea) | TU (/unidad) |
+|-----------|-----------|---------------|-------------|--------------|
+| Asientos | 48.88 | 5.49 | 0.00 | 1.06 |
+| Baño | 3.11 | 11.29 | 0.61 | 0.00 |
+| Cocina | 10.67 | 0.00 | 4.95 | 0.04 |
+| Colchonería | 14.83 | 0.00 | 4.95 | 0.12 |
+| Electro | 33.49 | 0.81 | 0.00 | 0.31 |
+| Mobiliario | 23.20 | 0.00 | 2.54 | 0.25 |
+| PAE | 6.67 | 8.33 | 0.00 | 0.00 |
+| Tapicería | 34.74 | 0.00 | 2.25 | 0.10 |
+
+Topes máximos (basados en P95 de datos históricos × 1.3):
+- Asientos: 350 min | Baño: 60 min | Cocina: 140 min | Colchonería: 160 min
+- Electro: 230 min | Mobiliario: 270 min | PAE: 60 min | Tapicería: 180 min
+
+Cuando el proveedor no da albaranes ni líneas, se estiman:
+- Líneas = unidades × ratio por categoría (ej: Colchonería 0.369)
+- Albaranes = mediana histórica por categoría (ej: Electro 34)
+
+Categorías problemáticas (menor fiabilidad):
+- Electro: R²=0.47, muy variable. Proveedores como CODECO son impredecibles.
+- Asientos: R²=0.65, outliers extremos (JANCOR 20 uds = 350 min).
+- Tapicería: R²=0.65, variabilidad alta por tipo de tapizado.
+
+Categorías fiables:
+- Cocina: R²=0.97
+- PAE: R²=0.89
+- Colchonería: R²=0.86
+
+Tallas y puntos:
+- S (≤30 min): 1 punto. Entregas rápidas.
+- M (31-120 min): 2 puntos. Cargas medianas.
+- L (>120 min): 3 puntos. Cargas grandes.
+
+Si el admin pregunta por qué una estimación parece incorrecta, explica qué categoría es, cuál es su fiabilidad (R²), y sugiere que con datos reales de albaranes y líneas la predicción mejora significativamente.
+Si el admin quiere mejorar las predicciones, sugiere registrar tiempos reales de cada descarga para recalibrar los coeficientes periódicamente.`;
 }
 
 export async function* adminChat(

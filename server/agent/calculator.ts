@@ -30,6 +30,8 @@ export interface CalculatorOutput {
   estimatedFields?: string[];
   usedLines: number;
   usedAlbaranes: number;
+  cappedFromOriginal?: number;
+  cappedTo?: number;
 }
 
 interface CategoryCoefficients {
@@ -53,11 +55,11 @@ const CATEGORIES: Record<string, CategoryCoefficients> = {
 const CATEGORY_SYNONYMS: Record<string, string> = {
   "asientos": "Asientos", "sillas": "Asientos", "asiento": "Asientos", "silla": "Asientos",
   "baño": "Baño", "bano": "Baño", "sanitarios": "Baño", "sanitario": "Baño",
-  "cocina": "Cocina", "encimeras": "Cocina", "encimera": "Cocina",
+  "cocina": "Cocina", "cocinas": "Cocina", "encimeras": "Cocina", "encimera": "Cocina",
   "colchonería": "Colchonería", "colchoneria": "Colchonería", "colchon": "Colchonería",
   "colchones": "Colchonería", "descanso": "Colchonería", "colchón": "Colchonería",
-  "electro": "Electro", "electrodomesticos": "Electro", "electrodomésticos": "Electro",
-  "electrodomestico": "Electro", "electrodoméstico": "Electro",
+  "electro": "Electro", "electros": "Electro", "electrodomesticos": "Electro",
+  "electrodomésticos": "Electro", "electrodomestico": "Electro", "electrodoméstico": "Electro",
   "mobiliario": "Mobiliario", "canape": "Mobiliario", "canapé": "Mobiliario",
   "canapes": "Mobiliario", "canapés": "Mobiliario", "bases": "Mobiliario",
   "estructuras": "Mobiliario", "muebles": "Mobiliario", "mueble": "Mobiliario",
@@ -89,6 +91,18 @@ function normalizeCategory(goodsType: string): string | null {
   return normalizeCategoryFromRatios(goodsType);
 }
 
+// Maximum minutes per category based on P95 of historical data × 1.3
+const CATEGORY_MAX_MINUTES: Record<string, number> = {
+  "Asientos":     350,
+  "Baño":         60,
+  "Cocina":       140,
+  "Colchonería":  160,
+  "Electro":      230,
+  "Mobiliario":   270,
+  "PAE":          60,
+  "Tapicería":    180,
+};
+
 function humanRound(minutes: number): number {
   if (minutes <= 0) return 0;
   if (minutes < 15) return 15;
@@ -112,7 +126,6 @@ function calculateDeterministic(input: CalculatorInput): CalculatorOutput | null
   } else {
     L = estimateLines(category, U);
     estimatedFields.push("lines");
-    console.log(`[Calculator] Using estimated lines for ${category}: ${L} (from ${U} units)`);
   }
 
   // Resolve albaranes — use provided value or estimate
@@ -122,7 +135,6 @@ function calculateDeterministic(input: CalculatorInput): CalculatorOutput | null
   } else {
     A = estimateDeliveryNotes(category);
     estimatedFields.push("deliveryNotes");
-    console.log(`[Calculator] Using estimated deliveryNotes for ${category}: ${A}`);
   }
 
   let rawMinutes: number;
@@ -132,9 +144,22 @@ function calculateDeterministic(input: CalculatorInput): CalculatorOutput | null
     rawMinutes = (U === 0 ? 0 : coeff.TD) + (U * coeff.TU) + (A * coeff.TA) + (L * coeff.TL);
   }
 
-  const workMinutes = humanRound(rawMinutes);
+  // Apply category cap to prevent unrealistic extrapolations
+  const maxMinutes = CATEGORY_MAX_MINUTES[category] || 480;
+  const wasCapped = rawMinutes > maxMinutes;
+  const cappedMinutes = Math.min(rawMinutes, maxMinutes);
+  const workMinutes = humanRound(cappedMinutes);
 
-  return {
+  // Structured logging
+  const aLabel = estimatedFields.includes("deliveryNotes") ? `${A}(est)` : `${A}`;
+  const lLabel = estimatedFields.includes("lines") ? `${L}(est)` : `${L}`;
+  if (wasCapped) {
+    console.log(`[CALCULATOR] cat=${category} U=${U} A=${aLabel} L=${lLabel} raw=${Math.round(rawMinutes)} capped=${maxMinutes} final=${workMinutes}`);
+  } else {
+    console.log(`[CALCULATOR] cat=${category} U=${U} A=${aLabel} L=${lLabel} raw=${Math.round(rawMinutes)} final=${workMinutes}`);
+  }
+
+  const result: CalculatorOutput = {
     categoria_elegida: category,
     work_minutes_needed: workMinutes,
     duration_min: workMinutes,
@@ -142,6 +167,13 @@ function calculateDeterministic(input: CalculatorInput): CalculatorOutput | null
     usedLines: L,
     usedAlbaranes: A,
   };
+
+  if (wasCapped) {
+    result.cappedFromOriginal = Math.round(rawMinutes);
+    result.cappedTo = maxMinutes;
+  }
+
+  return result;
 }
 
 const CALCULATOR_MODEL = process.env.CALCULATOR_MODEL || "claude-haiku-4-5-20251001";

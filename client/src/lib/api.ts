@@ -846,6 +846,132 @@ export const dockOverridesApi = {
   },
 };
 
+// ── Warehouse API ────────────────────────────────────────────────
+
+export const warehouseApi = {
+  checkin: async (id: string): Promise<Appointment> => {
+    const response = await fetch(`${API_BASE}/appointments/${id}/check-in`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+    return handleResponse<Appointment>(response, () =>
+      fetch(`${API_BASE}/appointments/${id}/check-in`, { method: "POST", headers: getHeaders() })
+    );
+  },
+
+  checkout: async (id: string, actualUnits?: number): Promise<Appointment> => {
+    const response = await fetch(`${API_BASE}/appointments/${id}/check-out`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ actualUnits }),
+    });
+    return handleResponse<Appointment>(response, () =>
+      fetch(`${API_BASE}/appointments/${id}/check-out`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ actualUnits }),
+      })
+    );
+  },
+
+  undoCheckin: async (id: string): Promise<Appointment> => {
+    const response = await fetch(`${API_BASE}/appointments/${id}/undo-check-in`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+    return handleResponse<Appointment>(response, () =>
+      fetch(`${API_BASE}/appointments/${id}/undo-check-in`, { method: "POST", headers: getHeaders() })
+    );
+  },
+};
+
+// ── Analytics API ────────────────────────────────────────────────
+
+export interface CategoryAccuracy {
+  category: string;
+  sampleSize: number;
+  avgEstimated: number;
+  avgActual: number;
+  mae: number;
+  mape: number;
+  bias: number;
+  r2: number | null;
+}
+
+export interface ProviderProfile {
+  providerName: string;
+  deliveryCount: number;
+  avgDurationMin: number;
+  avgUnits: number;
+  avgPredictionError: number;
+  reliability: "fast" | "normal" | "slow";
+}
+
+export const analyticsApi = {
+  getPredictionAccuracy: async (params?: { from?: string; to?: string; category?: string }): Promise<CategoryAccuracy[]> => {
+    const query = new URLSearchParams();
+    if (params?.from) query.append("from", params.from);
+    if (params?.to) query.append("to", params.to);
+    if (params?.category) query.append("category", params.category);
+
+    const response = await fetch(`${API_BASE}/analytics/prediction-accuracy?${query}`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<CategoryAccuracy[]>(response, () =>
+      fetch(`${API_BASE}/analytics/prediction-accuracy?${query}`, { headers: getHeaders() })
+    );
+  },
+
+  getProviderProfiles: async (): Promise<ProviderProfile[]> => {
+    const response = await fetch(`${API_BASE}/analytics/provider-profiles`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<ProviderProfile[]>(response, () =>
+      fetch(`${API_BASE}/analytics/provider-profiles`, { headers: getHeaders() })
+    );
+  },
+};
+
+// ── Calibration API ──────────────────────────────────────────────
+
+export const calibrationApi = {
+  calculate: async (category: string): Promise<any> => {
+    const response = await fetch(`${API_BASE}/calibration/calculate`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ category }),
+    });
+    return handleResponse(response, () =>
+      fetch(`${API_BASE}/calibration/calculate`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ category }),
+      })
+    );
+  },
+
+  apply: async (id: string): Promise<any> => {
+    const response = await fetch(`${API_BASE}/calibration/${id}/apply`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+    return handleResponse(response, () =>
+      fetch(`${API_BASE}/calibration/${id}/apply`, { method: "POST", headers: getHeaders() })
+    );
+  },
+
+  getHistory: async (): Promise<any[]> => {
+    const response = await fetch(`${API_BASE}/calibration/history`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(response, () =>
+      fetch(`${API_BASE}/calibration/history`, { headers: getHeaders() })
+    );
+  },
+};
+
+// ── Provider Email Config ────────────────────────────────────────
+
 export interface ProviderEmailConfig {
   confirmation_email_enabled: string;
   reminder_email_enabled: string;

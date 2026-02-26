@@ -11,6 +11,8 @@ import dockRoutes from "./routes/docks";
 import integrationRoutes from "./routes/integration";
 import configRoutes from "./routes/config";
 import adminChatRoutes from "./routes/admin-chat";
+import analyticsRoutes from "./routes/analytics";
+import calibrationRoutes from "./routes/calibration";
 
 const router = Router();
 
@@ -26,5 +28,7 @@ router.use(dockRoutes);
 router.use(integrationRoutes);
 router.use(configRoutes);
 router.use(adminChatRoutes);
+router.use(analyticsRoutes);
+router.use(calibrationRoutes);
 
 export default router;

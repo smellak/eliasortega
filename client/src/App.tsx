@@ -18,6 +18,8 @@ import AuditPage from "@/pages/audit-page";
 import DocksPage from "@/pages/docks-page";
 import ChatPublic from "@/pages/chat-public";
 import ChatAdmin from "@/pages/chat-admin";
+import WarehousePage from "@/pages/warehouse-page";
+import AnalyticsPage from "@/pages/analytics-page";
 import NotFound from "@/pages/not-found";
 import { authApi, getAuthToken, clearAuth } from "@/lib/api";
 import { useNewAppointmentToast } from "@/hooks/use-new-appointment-toast";
@@ -83,6 +85,8 @@ function Router({ user }: { user: UserResponse }) {
       {user.role === "ADMIN" && <Route path="/users" component={UsersPage} />}
       {(user.role === "ADMIN" || user.role === "PLANNER") && <Route path="/audit" component={() => <AuditPage userRole={user.role} />} />}
       {(user.role === "ADMIN" || user.role === "PLANNER") && <Route path="/admin-chat" component={ChatAdmin} />}
+      <Route path="/warehouse" component={() => <WarehousePage userRole={user.role} />} />
+      {(user.role === "ADMIN" || user.role === "PLANNER") && <Route path="/analytics" component={() => <AnalyticsPage userRole={user.role} />} />}
       <Route component={NotFound} />
     </Switch>
   );

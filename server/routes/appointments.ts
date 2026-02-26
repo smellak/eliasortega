@@ -9,7 +9,7 @@ import { slotCapacityValidator } from "../services/slot-validator";
 import { logAudit, computeChanges } from "../services/audit-service";
 import { sendAppointmentAlert } from "../services/email-service";
 import { sendAppointmentConfirmation } from "../services/provider-email-service";
-import { getMadridDayOfWeek, getMadridMidnight } from "../utils/madrid-date";
+import { getMadridDayOfWeek, getMadridMidnight, getMadridDateStr } from "../utils/madrid-date";
 import { formatInTimeZone } from "date-fns-tz";
 import { normalizeCategory, estimateLines, estimateDeliveryNotes } from "../config/estimation-ratios";
 import {
@@ -385,6 +385,207 @@ router.post("/api/appointments/:id/reactivate", authenticateToken, requireRole("
     res.json(normalizeAppointmentResponse(updated));
   } catch (error) {
     console.error("Reactivate appointment error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── POST /api/appointments/:id/check-in ──────────────────────────────
+
+router.post("/api/appointments/:id/check-in", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const appointment = await prisma.appointment.findUnique({ where: { id: req.params.id } });
+    if (!appointment) return res.status(404).json({ error: "Appointment not found" });
+
+    if (appointment.actualStartUtc) {
+      return res.status(400).json({ error: "Appointment already checked in" });
+    }
+
+    if (appointment.cancelledAt) {
+      return res.status(400).json({ error: "Cannot check in a cancelled appointment" });
+    }
+
+    // Validate appointment date is today ±1 day (Madrid timezone)
+    const now = new Date();
+    const todayMadrid = getMadridDateStr(now);
+    const appointmentDateMadrid = getMadridDateStr(appointment.startUtc);
+    const todayDate = new Date(todayMadrid + "T12:00:00Z");
+    const apptDate = new Date(appointmentDateMadrid + "T12:00:00Z");
+    const diffDays = Math.abs((todayDate.getTime() - apptDate.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays > 1) {
+      return res.status(400).json({ error: "Check-in only allowed for today's appointments (±1 day)" });
+    }
+
+    let updated: any;
+    try {
+      updated = await prisma.appointment.update({
+        where: { id: req.params.id },
+        data: { actualStartUtc: now, checkedInBy: req.user!.email },
+        include: { dock: true },
+      });
+    } catch {
+      updated = await prisma.appointment.update({
+        where: { id: req.params.id },
+        data: { actualStartUtc: now, checkedInBy: req.user!.email },
+      });
+    }
+
+    logAudit({
+      entityType: "APPOINTMENT",
+      entityId: req.params.id,
+      action: "UPDATE",
+      actorType: "USER",
+      actorId: req.user?.id,
+      changes: { action: "CHECK_IN", checkedInBy: req.user!.email },
+    }).catch(() => {});
+
+    res.json({ success: true, appointment: normalizeAppointmentResponse(updated) });
+  } catch (error) {
+    console.error("Check-in error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── POST /api/appointments/:id/check-out ─────────────────────────────
+
+router.post("/api/appointments/:id/check-out", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const appointment = await prisma.appointment.findUnique({ where: { id: req.params.id } });
+    if (!appointment) return res.status(404).json({ error: "Appointment not found" });
+
+    if (!appointment.actualStartUtc) {
+      return res.status(400).json({ error: "Appointment has not been checked in yet" });
+    }
+    if (appointment.actualEndUtc) {
+      return res.status(400).json({ error: "Appointment already checked out" });
+    }
+
+    const now = new Date();
+    const actualDurationMin = (now.getTime() - appointment.actualStartUtc.getTime()) / 60000;
+    const predictionErrorMin = actualDurationMin - appointment.workMinutesNeeded;
+
+    const updateData: any = {
+      actualEndUtc: now,
+      checkedOutBy: req.user!.email,
+      actualDurationMin: Math.round(actualDurationMin * 100) / 100,
+      predictionErrorMin: Math.round(predictionErrorMin * 100) / 100,
+    };
+
+    if (req.body.actualUnits !== undefined && req.body.actualUnits !== null) {
+      updateData.actualUnits = req.body.actualUnits;
+    }
+
+    let updated: any;
+    try {
+      updated = await prisma.appointment.update({
+        where: { id: req.params.id },
+        data: updateData,
+        include: { dock: true },
+      });
+    } catch {
+      updated = await prisma.appointment.update({
+        where: { id: req.params.id },
+        data: updateData,
+      });
+    }
+
+    logAudit({
+      entityType: "APPOINTMENT",
+      entityId: req.params.id,
+      action: "UPDATE",
+      actorType: "USER",
+      actorId: req.user?.id,
+      changes: {
+        action: "CHECK_OUT",
+        checkedOutBy: req.user!.email,
+        actualDurationMin: updateData.actualDurationMin,
+        predictionErrorMin: updateData.predictionErrorMin,
+      },
+    }).catch(() => {});
+
+    // Alert if prediction error > 60 minutes
+    if (Math.abs(updateData.predictionErrorMin) > 60) {
+      logAudit({
+        entityType: "APPOINTMENT",
+        entityId: req.params.id,
+        action: "UPDATE",
+        actorType: "SYSTEM",
+        actorId: null,
+        changes: {
+          type: "PREDICTION_DEVIATION",
+          predicted: appointment.workMinutesNeeded,
+          actual: updateData.actualDurationMin,
+          errorMin: updateData.predictionErrorMin,
+          goodsType: appointment.goodsType,
+          providerName: appointment.providerName,
+        },
+      }).catch(() => {});
+    }
+
+    res.json({
+      success: true,
+      appointment: normalizeAppointmentResponse(updated),
+      actualDurationMin: updateData.actualDurationMin,
+      predictionErrorMin: updateData.predictionErrorMin,
+    });
+  } catch (error) {
+    console.error("Check-out error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── POST /api/appointments/:id/undo-check-in ────────────────────────
+
+router.post("/api/appointments/:id/undo-check-in", authenticateToken, requireRole("ADMIN", "PLANNER"), async (req: AuthRequest, res) => {
+  try {
+    const appointment = await prisma.appointment.findUnique({ where: { id: req.params.id } });
+    if (!appointment) return res.status(404).json({ error: "Appointment not found" });
+
+    if (!appointment.actualStartUtc) {
+      return res.status(400).json({ error: "Appointment has not been checked in" });
+    }
+
+    let updated: any;
+    try {
+      updated = await prisma.appointment.update({
+        where: { id: req.params.id },
+        data: {
+          actualStartUtc: null,
+          actualEndUtc: null,
+          actualUnits: null,
+          checkedInBy: null,
+          checkedOutBy: null,
+          actualDurationMin: null,
+          predictionErrorMin: null,
+        },
+        include: { dock: true },
+      });
+    } catch {
+      updated = await prisma.appointment.update({
+        where: { id: req.params.id },
+        data: {
+          actualStartUtc: null,
+          actualEndUtc: null,
+          actualUnits: null,
+          checkedInBy: null,
+          checkedOutBy: null,
+          actualDurationMin: null,
+          predictionErrorMin: null,
+        },
+      });
+    }
+
+    logAudit({
+      entityType: "APPOINTMENT",
+      entityId: req.params.id,
+      action: "UPDATE",
+      actorType: "USER",
+      actorId: req.user?.id,
+      changes: { action: "UNDO_CHECK_IN" },
+    }).catch(() => {});
+
+    res.json({ success: true, appointment: normalizeAppointmentResponse(updated) });
+  } catch (error) {
+    console.error("Undo check-in error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

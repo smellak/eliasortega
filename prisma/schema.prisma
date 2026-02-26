@@ -170,6 +170,13 @@ model Appointment {
   confirmedAt        DateTime?        @map("confirmed_at")
   cancelledAt        DateTime?        @map("cancelled_at")
   cancellationReason String?          @map("cancellation_reason")
+  actualStartUtc     DateTime?        @map("actual_start_utc")
+  actualEndUtc       DateTime?        @map("actual_end_utc")
+  actualUnits        Int?             @map("actual_units")
+  checkedInBy        String?          @map("checked_in_by")
+  checkedOutBy       String?          @map("checked_out_by")
+  actualDurationMin  Float?           @map("actual_duration_min")
+  predictionErrorMin Float?           @map("prediction_error_min")
   createdAt          DateTime         @default(now()) @map("created_at")
   updatedAt          DateTime         @updatedAt @map("updated_at")
 
@@ -179,6 +186,7 @@ model Appointment {
   @@index([slotDate, slotStartTime])
   @@index([confirmationStatus])
   @@index([dockId, slotDate, startUtc, endUtc])
+  @@index([actualStartUtc])
   @@map("appointments")
 }
 
@@ -189,6 +197,30 @@ model AppConfig {
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("app_config")
+}
+
+model CalibrationSnapshot {
+  id         String    @id @default(uuid())
+  createdAt  DateTime  @default(now()) @map("created_at")
+  category   String
+  sampleSize Int       @map("sample_size")
+  newTD      Float     @map("new_td")
+  newTA      Float     @map("new_ta")
+  newTL      Float     @map("new_tl")
+  newTU      Float     @map("new_tu")
+  oldTD      Float     @map("old_td")
+  oldTA      Float     @map("old_ta")
+  oldTL      Float     @map("old_tl")
+  oldTU      Float     @map("old_tu")
+  maeOld     Float     @map("mae_old")
+  maeNew     Float     @map("mae_new")
+  appliedAt  DateTime? @map("applied_at")
+  appliedBy  String?   @map("applied_by")
+  status     String    @default("pending")
+
+  @@index([category])
+  @@index([status])
+  @@map("calibration_snapshots")
 }
 
 model EmailRecipient {

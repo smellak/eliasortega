@@ -4,6 +4,8 @@ import { formatInTimeZone } from "date-fns-tz";
 import { getMadridMidnight, getMadridDateStr } from "../utils/madrid-date";
 import { slotCapacityValidator } from "../services/slot-validator";
 import { getActiveSlotSchedule } from "./prompts";
+import { getPredictionAccuracy, getProviderProfiles } from "../services/analytics-service";
+import { calculateCalibration, applyCalibration } from "../services/calibration-service";
 
 // ── Tool Definitions ────────────────────────────────────────────────
 
@@ -114,6 +116,44 @@ const RESUMEN_DIARIO: Anthropic.Tool = {
   },
 };
 
+const CONSULTAR_PRECISION: Anthropic.Tool = {
+  name: "consultar_precision",
+  description: "Consulta la precisión de las estimaciones de tiempo de descarga. Muestra MAE, MAPE, sesgo y R² por categoría de mercancía.",
+  input_schema: {
+    type: "object",
+    properties: {
+      desde: { type: "string", description: "Fecha inicio (YYYY-MM-DD). Opcional." },
+      hasta: { type: "string", description: "Fecha fin (YYYY-MM-DD). Opcional." },
+      categoria: { type: "string", description: "Categoría específica a consultar. Opcional." },
+    },
+    required: [],
+  },
+};
+
+const CONSULTAR_PERFILES_PROVEEDORES: Anthropic.Tool = {
+  name: "consultar_perfiles_proveedores",
+  description: "Consulta perfiles de proveedores basados en datos reales de descarga: duración media, unidades, error de predicción y fiabilidad (rápido/normal/lento).",
+  input_schema: {
+    type: "object",
+    properties: {},
+    required: [],
+  },
+};
+
+const RECALIBRAR_CATEGORIA: Anthropic.Tool = {
+  name: "recalibrar_categoria",
+  description: "Recalibra los coeficientes de estimación de una categoría usando regresión lineal sobre datos reales. Puede calcular nuevos coeficientes y opcionalmente aplicarlos.",
+  input_schema: {
+    type: "object",
+    properties: {
+      categoria: { type: "string", description: "Categoría a recalibrar (ej: Electro, Cocina, etc.)." },
+      aplicar: { type: "boolean", description: "Si true y se proporciona snapshot_id, aplica los coeficientes calculados." },
+      snapshot_id: { type: "string", description: "ID del snapshot de calibración a aplicar." },
+    },
+    required: ["categoria"],
+  },
+};
+
 export const ADMIN_AGENT_TOOLS: Anthropic.Tool[] = [
   CONSULTAR_CITAS,
   CONSULTAR_OCUPACION,
@@ -123,6 +163,9 @@ export const ADMIN_AGENT_TOOLS: Anthropic.Tool[] = [
   CREAR_CITA_MANUAL,
   CONSULTAR_MUELLES,
   RESUMEN_DIARIO,
+  CONSULTAR_PRECISION,
+  CONSULTAR_PERFILES_PROVEEDORES,
+  RECALIBRAR_CATEGORIA,
 ];
 
 // ── Tool Execution ──────────────────────────────────────────────────
@@ -544,6 +587,82 @@ async function execResumenDiario(input: Record<string, any>): Promise<string> {
   }, null, 2);
 }
 
+async function execConsultarPrecision(input: Record<string, any>): Promise<string> {
+  const results = await getPredictionAccuracy({
+    from: input.desde,
+    to: input.hasta,
+    category: input.categoria,
+  });
+
+  if (results.length === 0) {
+    return JSON.stringify({ mensaje: "No hay datos de precisión todavía. Se necesitan descargas con tiempos reales registrados." });
+  }
+
+  const totalSamples = results.reduce((s, r) => s + r.sampleSize, 0);
+  const globalMae = totalSamples > 0
+    ? results.reduce((s, r) => s + r.mae * r.sampleSize, 0) / totalSamples
+    : 0;
+
+  return JSON.stringify({
+    total_muestras: totalSamples,
+    mae_global: Math.round(globalMae * 10) / 10,
+    categorias: results.map((r) => ({
+      categoria: r.category,
+      muestras: r.sampleSize,
+      estimado_medio: r.avgEstimated,
+      real_medio: r.avgActual,
+      mae: r.mae,
+      mape: r.mape,
+      sesgo: r.bias,
+      r2: r.r2,
+    })),
+  }, null, 2);
+}
+
+async function execConsultarPerfilesProveedores(): Promise<string> {
+  const results = await getProviderProfiles();
+
+  if (results.length === 0) {
+    return JSON.stringify({ mensaje: "No hay perfiles de proveedor todavía. Se necesitan al menos 3 descargas con tiempos reales por proveedor." });
+  }
+
+  return JSON.stringify({
+    total_proveedores: results.length,
+    proveedores: results.map((r) => ({
+      nombre: r.providerName,
+      descargas: r.deliveryCount,
+      duracion_media_min: r.avgDurationMin,
+      unidades_media: r.avgUnits,
+      error_prediccion_medio: r.avgPredictionError,
+      fiabilidad: r.reliability === "fast" ? "rápido" : r.reliability === "slow" ? "lento" : "normal",
+    })),
+  }, null, 2);
+}
+
+async function execRecalibrarCategoria(input: Record<string, any>): Promise<string> {
+  // If applying an existing snapshot
+  if (input.aplicar && input.snapshot_id) {
+    await applyCalibration(input.snapshot_id, "admin-agent");
+    return JSON.stringify({ success: true, mensaje: `Calibración ${input.snapshot_id} aplicada correctamente.` });
+  }
+
+  // Calculate new calibration
+  const result = await calculateCalibration(input.categoria);
+
+  return JSON.stringify({
+    snapshot_id: result.snapshotId,
+    categoria: result.category,
+    muestras: result.sampleSize,
+    coeficientes_actuales: result.oldCoeffs,
+    coeficientes_nuevos: result.newCoeffs,
+    mae_actual: result.maeOld,
+    mae_nuevo: result.maeNew,
+    mejora_porcentaje: result.improvement,
+    estado: "pendiente",
+    mensaje: `Para aplicar los nuevos coeficientes, usa esta herramienta con aplicar=true y snapshot_id="${result.snapshotId}".`,
+  }, null, 2);
+}
+
 export async function executeAdminToolCall(
   toolName: string,
   toolInput: Record<string, any>,
@@ -566,6 +685,12 @@ export async function executeAdminToolCall(
         return await execConsultarMuelles();
       case "resumen_diario":
         return await execResumenDiario(toolInput);
+      case "consultar_precision":
+        return await execConsultarPrecision(toolInput);
+      case "consultar_perfiles_proveedores":
+        return await execConsultarPerfilesProveedores();
+      case "recalibrar_categoria":
+        return await execRecalibrarCategoria(toolInput);
       default:
         return JSON.stringify({ error: `Herramienta desconocida: ${toolName}` });
     }

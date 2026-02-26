@@ -6,6 +6,7 @@ import {
   estimateLines,
   estimateDeliveryNotes,
 } from "../config/estimation-ratios";
+import { prisma } from "../db/client";
 
 const calculatorInputSchema = z.object({
   providerName: z.string().optional(),
@@ -103,6 +104,30 @@ const CATEGORY_MAX_MINUTES: Record<string, number> = {
   "Tapicería":    180,
 };
 
+// Cache for calibrated coefficients (5 minute TTL)
+const coeffCache = new Map<string, { coeffs: CategoryCoefficients; expiresAt: number }>();
+const COEFF_CACHE_TTL = 5 * 60 * 1000;
+
+async function getCoefficients(category: string): Promise<CategoryCoefficients> {
+  const cached = coeffCache.get(category);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.coeffs;
+  }
+
+  try {
+    const config = await prisma.appConfig.findUnique({
+      where: { key: `calc_coeff_${category}` },
+    });
+    if (config) {
+      const coeffs = JSON.parse(config.value) as CategoryCoefficients;
+      coeffCache.set(category, { coeffs, expiresAt: Date.now() + COEFF_CACHE_TTL });
+      return coeffs;
+    }
+  } catch { /* fallback to hardcoded */ }
+
+  return CATEGORIES[category];
+}
+
 function humanRound(minutes: number): number {
   if (minutes <= 0) return 0;
   if (minutes < 15) return 15;
@@ -111,11 +136,11 @@ function humanRound(minutes: number): number {
   return Math.ceil(minutes / 10) * 10;
 }
 
-function calculateDeterministic(input: CalculatorInput): CalculatorOutput | null {
+async function calculateDeterministic(input: CalculatorInput): Promise<CalculatorOutput | null> {
   const category = normalizeCategory(input.goodsType);
   if (!category) return null;
 
-  const coeff = CATEGORIES[category];
+  const coeff = await getCoefficients(category);
   const U = Math.max(0, input.units);
   const estimatedFields: string[] = [];
 
@@ -179,7 +204,7 @@ function calculateDeterministic(input: CalculatorInput): CalculatorOutput | null
 const CALCULATOR_MODEL = process.env.CALCULATOR_MODEL || "claude-haiku-4-5-20251001";
 
 export async function runCalculator(input: CalculatorInput): Promise<CalculatorOutput> {
-  const deterministicResult = calculateDeterministic(input);
+  const deterministicResult = await calculateDeterministic(input);
   if (deterministicResult) {
     return deterministicResult;
   }

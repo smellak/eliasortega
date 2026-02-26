@@ -143,6 +143,13 @@ export interface Appointment {
   dockId: string | null;
   dockCode: string | null;
   dockName: string | null;
+  actualStartUtc: string | null;
+  actualEndUtc: string | null;
+  actualUnits: number | null;
+  checkedInBy: string | null;
+  checkedOutBy: string | null;
+  actualDurationMin: number | null;
+  predictionErrorMin: number | null;
   createdAt: string;
   updatedAt: string;
 }

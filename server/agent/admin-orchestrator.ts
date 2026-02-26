@@ -121,7 +121,18 @@ Tallas y puntos:
 - L (>120 min): 3 puntos. Cargas grandes.
 
 Si el admin pregunta por qué una estimación parece incorrecta, explica qué categoría es, cuál es su fiabilidad (R²), y sugiere que con datos reales de albaranes y líneas la predicción mejora significativamente.
-Si el admin quiere mejorar las predicciones, sugiere registrar tiempos reales de cada descarga para recalibrar los coeficientes periódicamente.`;
+SISTEMA DE APRENDIZAJE CONTINUO:
+
+El almacén ahora registra tiempos reales de cada descarga (check-in/check-out en la página /warehouse).
+Con estos datos puedes:
+
+1. **consultar_precision**: Ver MAE, MAPE, sesgo y R² por categoría. Útil para saber qué categorías estiman bien y cuáles no.
+2. **consultar_perfiles_proveedores**: Ver perfiles de proveedores basados en datos reales (duración media, fiabilidad: rápido/normal/lento).
+3. **recalibrar_categoria**: Recalcular coeficientes usando regresión lineal sobre datos reales. Se necesitan ≥20 muestras. Primero calcula (devuelve preview), luego aplica con snapshot_id.
+
+Cuando el admin pregunte sobre precisión de estimaciones o rendimiento de proveedores, usa estas herramientas en lugar de los datos estáticos del consultor.
+Si el admin quiere recalibrar, explica que necesita ≥20 descargas monitorizadas en esa categoría y muestra el resultado antes de aplicar.`;
+
 }
 
 export async function* adminChat(

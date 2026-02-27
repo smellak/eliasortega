@@ -1,4 +1,4 @@
-const CACHE_NAME = 'centrohogar-v1';
+const CACHE_NAME = 'centrohogar-v2';
 const STATIC_ASSETS = [
   '/',
   '/chat',

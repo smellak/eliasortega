@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2, User, Play, X, Volume2, VolumeX } from "lucide-react";
+import { Send, Loader2, User, Volume2, VolumeX, Clock, Truck, MessageCircle, ChevronDown, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import ReactMarkdown from "react-markdown";
 import { useNotificationSound } from "@/hooks/use-notification-sound";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface Message {
   id: string;
@@ -79,9 +80,9 @@ function MarkdownContent({ content, isUser }: { content: string; isUser: boolean
 
 const STEPS = [
   { key: "data", label: "Datos" },
-  { key: "calc", label: "Cálculo" },
+  { key: "calc", label: "Calculo" },
   { key: "avail", label: "Disponibilidad" },
-  { key: "book", label: "Confirmación" },
+  { key: "book", label: "Confirmacion" },
 ];
 
 function ProgressStepper({ currentStep }: { currentStep: number }) {
@@ -97,7 +98,7 @@ function ProgressStepper({ currentStep }: { currentStep: number }) {
                 i === currentStep ? "bg-blue-500 text-white animate-pulse ring-2 ring-blue-300" :
                 "bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
               }`}>
-                {i < currentStep ? "✓" : i + 1}
+                {i < currentStep ? "\u2713" : i + 1}
               </div>
               <span className={`text-[9px] sm:text-[10px] font-medium whitespace-nowrap ${
                 i <= currentStep ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500"
@@ -120,13 +121,12 @@ export default function ChatPublic() {
     {
       id: "welcome",
       role: "assistant",
-      content: "Hola, soy Elías, del almacén de Centro Hogar Sánchez. ¿En qué te puedo ayudar? Si necesitas programar una entrega, dime qué traes y buscamos hueco.",
+      content: "Hola, soy Elias, del almacen de Centro Hogar Sanchez. En que te puedo ayudar? Si necesitas programar una entrega, dime que traes y buscamos hueco.",
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
-  const [showVideo, setShowVideo] = useState(false);
   const [chatStep, setChatStep] = useState(-1);
   const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -264,177 +264,248 @@ export default function ChatPublic() {
     }
   };
 
-  return (
-    <div className="h-dvh flex flex-col bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      {/* Compact header */}
-      <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 px-3 sm:px-6 py-2.5 sm:py-3 shadow-lg shrink-0">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <img
-              src="/logo-sanchez.png"
-              alt="Centro Hogar Sanchez"
-              className="h-8 sm:h-10 w-auto"
-              data-testid="img-logo"
-            />
-            <div className="min-w-0">
-              <h1 className="text-sm sm:text-base font-bold text-white truncate">Sistema de Reservas</h1>
-              <p className="text-[10px] sm:text-xs text-blue-100 truncate">Centro Hogar Sánchez</p>
+  /* ─── Chat messages JSX (shared between mobile & desktop) ─── */
+  const messagesContent = (
+    <>
+      {messages.map((msg) => (
+        <div
+          key={msg.id}
+          className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end chat-bubble-user" : "justify-start chat-bubble-agent"}`}
+          data-testid={`message-${msg.role}-${msg.id}`}
+        >
+          {msg.role === "assistant" && <EliasAvatar />}
+          <div
+            className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-md ${
+              msg.role === "user"
+                ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-tr-sm"
+                : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-tl-sm"
+            }`}
+          >
+            {msg.role === "assistant" ? (
+              <MarkdownContent content={msg.content} isUser={false} />
+            ) : (
+              <p className="whitespace-pre-wrap break-words leading-relaxed text-sm sm:text-base">{msg.content}</p>
+            )}
+            <p className={`text-xs mt-1 sm:mt-2 ${msg.role === "user" ? "text-blue-100" : "text-muted-foreground"}`}>
+              {msg.timestamp.toLocaleTimeString("es-ES", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+          </div>
+          {msg.role === "user" && (
+            <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0 mt-1">
+              <AvatarFallback className="bg-blue-600 text-white">
+                <User className="h-3 w-3 sm:h-4 sm:w-4" />
+              </AvatarFallback>
+            </Avatar>
+          )}
+        </div>
+      ))}
+      {isStreaming && messages[messages.length - 1]?.content === "" && (
+        <div className="flex justify-start gap-2 sm:gap-3 chat-bubble-agent">
+          <EliasAvatar />
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-sm px-3 sm:px-4 py-2 sm:py-3 shadow-md">
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1.5">
+                <span className="w-2 h-2 bg-blue-400 rounded-full dot-bounce" style={{animationDelay: "0ms"}} />
+                <span className="w-2 h-2 bg-blue-400 rounded-full dot-bounce" style={{animationDelay: "0.2s"}} />
+                <span className="w-2 h-2 bg-blue-400 rounded-full dot-bounce" style={{animationDelay: "0.4s"}} />
+              </div>
+              <span className="text-xs sm:text-sm text-muted-foreground">Elias esta escribiendo...</span>
             </div>
           </div>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="shrink-0 bg-white/20 hover:bg-white/30 text-white border-0 text-xs sm:text-sm gap-1.5"
-            onClick={() => setShowVideo(true)}
-          >
-            <Play className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Ver tutorial</span>
-            <span className="sm:hidden">Tutorial</span>
-          </Button>
+        </div>
+      )}
+    </>
+  );
+
+  /* ─── Chat input JSX (shared) ─── */
+  const chatInput = (
+    <div className="p-2.5 sm:p-4 border-t bg-gray-50/80 dark:bg-gray-900/80 backdrop-blur-sm shrink-0">
+      <div className="flex gap-2 sm:gap-3 items-end">
+        <Textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Escribe tu mensaje aqui..."
+          className="resize-none min-h-[44px] sm:min-h-[52px] max-h-[120px] rounded-xl border-gray-300 focus-visible:ring-blue-500 text-sm sm:text-base"
+          disabled={isStreaming}
+          data-testid="input-message"
+        />
+        <Button
+          onClick={sendMessage}
+          disabled={!input.trim() || isStreaming}
+          size="icon"
+          className="shrink-0 h-[44px] w-[44px] sm:h-[52px] sm:w-[52px] rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white shadow-md"
+          aria-label="Enviar mensaje"
+          data-testid="button-send"
+        >
+          {isStreaming ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Send className="h-5 w-5" />
+          )}
+        </Button>
+      </div>
+      <p className="text-[10px] text-muted-foreground mt-1.5 text-center hidden sm:block">
+        Presiona Enter para enviar &middot; Shift+Enter para nueva linea
+      </p>
+    </div>
+  );
+
+  /* ─── Chat header bar JSX (shared) ─── */
+  const chatHeader = (
+    <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 p-2.5 sm:p-3 shrink-0">
+      <div className="flex items-center gap-2 sm:gap-3">
+        <EliasAvatar size="lg" />
+        <div className="flex-1 min-w-0">
+          <h2 className="text-sm sm:text-base font-semibold text-white truncate">Elias Ortega</h2>
+          <p className="text-[10px] sm:text-xs text-blue-100">Asistente de Almacen</p>
+        </div>
+        <Badge variant="secondary" className="bg-green-500 text-white border-0 text-[10px] sm:text-xs px-2 py-0.5">
+          En linea
+        </Badge>
+        <button
+          onClick={toggleSound}
+          className="p-1.5 rounded-full hover:bg-white/20 transition-colors text-white/80 hover:text-white"
+          aria-label={soundEnabled ? "Silenciar notificaciones" : "Activar notificaciones"}
+          data-testid="button-sound-toggle"
+        >
+          {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="h-dvh flex flex-col bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+
+      {/* ═══ MOBILE HEADER (below lg) ═══ */}
+      <div className="lg:hidden bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 px-3 py-2.5 shadow-lg shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <img
+            src="/logo-sanchez.png"
+            alt="Centro Hogar Sanchez"
+            className="h-8 w-auto"
+            data-testid="img-logo"
+          />
+          <div className="min-w-0 flex-1">
+            <h1 className="text-sm font-bold text-white truncate">Elias Ortega</h1>
+            <p className="text-[10px] text-blue-100 truncate">Asistente de Almacen &middot; CentroHogar Sanchez</p>
+          </div>
+          <div className="[&_button]:text-white [&_button]:hover:bg-white/20">
+            <ThemeToggle />
+          </div>
         </div>
       </div>
 
-      {/* Chat area — fills remaining viewport */}
-      <Card className="flex-1 flex flex-col overflow-hidden rounded-none sm:rounded-2xl sm:mx-4 sm:my-3 sm:mb-4 shadow-xl border-0 sm:border sm:border-blue-200 min-h-0">
-        {/* Chat header with Elías info */}
-        <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 p-2.5 sm:p-3 border-b border-blue-700 shrink-0">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <EliasAvatar size="lg" />
-            <div className="flex-1 min-w-0">
-              <h2 className="text-sm sm:text-base font-semibold text-white truncate">Elías Ortega</h2>
-              <p className="text-[10px] sm:text-xs text-blue-100">Asistente de Almacén</p>
-            </div>
-            <Badge variant="secondary" className="bg-green-500 text-white border-0 text-[10px] sm:text-xs px-2 py-0.5">
-              En línea
-            </Badge>
-            <button
-              onClick={toggleSound}
-              className="p-1.5 rounded-full hover:bg-white/20 transition-colors text-white/80 hover:text-white"
-              aria-label={soundEnabled ? "Silenciar notificaciones" : "Activar notificaciones"}
-              data-testid="button-sound-toggle"
-            >
-              {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+      {/* ═══ MOBILE COLLAPSIBLE VIDEO (below lg) ═══ */}
+      <div className="lg:hidden shrink-0">
+        <Collapsible>
+          <CollapsibleTrigger asChild>
+            <button className="w-full px-3 py-2 bg-blue-50 dark:bg-gray-800 border-b border-blue-100 dark:border-gray-700 flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-gray-700 transition-colors">
+              <Video className="h-4 w-4" />
+              <span>Ver tutorial de uso</span>
+              <ChevronDown className="h-4 w-4 ml-auto transition-transform [[data-state=open]>&]:rotate-180" />
             </button>
-          </div>
-        </div>
-
-        <ProgressStepper currentStep={chatStep} />
-
-        {/* Messages area */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 min-h-0">
-          <div className="space-y-3 sm:space-y-4 max-w-3xl mx-auto">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end chat-bubble-user" : "justify-start chat-bubble-agent"}`}
-                data-testid={`message-${msg.role}-${msg.id}`}
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="bg-black p-2">
+              <video
+                controls
+                preload="metadata"
+                className="w-full max-h-[200px] object-contain"
+                data-testid="video-tutorial-mobile"
               >
-                {msg.role === "assistant" && <EliasAvatar />}
-                <div
-                  className={`max-w-[85%] sm:max-w-[75%] md:max-w-[70%] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-md ${
-                    msg.role === "user"
-                      ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-tr-sm"
-                      : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-tl-sm"
-                  }`}
-                >
-                  {msg.role === "assistant" ? (
-                    <MarkdownContent content={msg.content} isUser={false} />
-                  ) : (
-                    <p className="whitespace-pre-wrap break-words leading-relaxed text-sm sm:text-base">{msg.content}</p>
-                  )}
-                  <p className={`text-xs mt-1 sm:mt-2 ${msg.role === "user" ? "text-blue-100" : "text-muted-foreground"}`}>
-                    {msg.timestamp.toLocaleTimeString("es-ES", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                </div>
-                {msg.role === "user" && (
-                  <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0 mt-1">
-                    <AvatarFallback className="bg-blue-600 text-white">
-                      <User className="h-3 w-3 sm:h-4 sm:w-4" />
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-              </div>
-            ))}
-            {isStreaming && messages[messages.length - 1]?.content === "" && (
-              <div className="flex justify-start gap-2 sm:gap-3 chat-bubble-agent">
-                <EliasAvatar />
-                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-sm px-3 sm:px-4 py-2 sm:py-3 shadow-md">
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-1.5">
-                      <span className="w-2 h-2 bg-blue-400 rounded-full dot-bounce" style={{animationDelay: "0ms"}} />
-                      <span className="w-2 h-2 bg-blue-400 rounded-full dot-bounce" style={{animationDelay: "0.2s"}} />
-                      <span className="w-2 h-2 bg-blue-400 rounded-full dot-bounce" style={{animationDelay: "0.4s"}} />
-                    </div>
-                    <span className="text-xs sm:text-sm text-muted-foreground">Elías está escribiendo...</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+                <source src="/tutorial-video.mp4" type="video/mp4" />
+              </video>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
 
-        {/* Input area — sticky at bottom */}
-        <div className="p-2.5 sm:p-4 border-t bg-gray-50/80 dark:bg-gray-900/80 backdrop-blur-sm shrink-0">
-          <div className="flex gap-2 sm:gap-3 items-end max-w-3xl mx-auto">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Escribe tu mensaje aquí..."
-              className="resize-none min-h-[44px] sm:min-h-[52px] max-h-[120px] rounded-xl border-gray-300 focus-visible:ring-blue-500 text-sm sm:text-base"
-              disabled={isStreaming}
-              data-testid="input-message"
+      {/* ═══ MAIN 2-COL LAYOUT ═══ */}
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
+
+        {/* ─── LEFT PANEL (desktop only) ─── */}
+        <div className="hidden lg:flex lg:w-[380px] xl:w-[420px] flex-col bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900 p-6 overflow-y-auto shrink-0">
+
+          {/* Branding */}
+          <div className="flex flex-col items-center text-center mb-6 animate-fadeIn">
+            <img
+              src="/logo-sanchez.png"
+              alt="Centro Hogar Sanchez"
+              className="h-16 w-auto mb-4"
+              data-testid="img-logo"
             />
-            <Button
-              onClick={sendMessage}
-              disabled={!input.trim() || isStreaming}
-              size="icon"
-              className="shrink-0 h-[44px] w-[44px] sm:h-[52px] sm:w-[52px] rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white shadow-md"
-              aria-label="Enviar mensaje"
-              data-testid="button-send"
-            >
-              {isStreaming ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Send className="h-5 w-5" />
-              )}
-            </Button>
+            <h1 className="text-xl font-bold text-white">Elias Ortega</h1>
+            <p className="text-sm text-blue-200 mt-1">Asistente de Almacen</p>
+            <Badge className="mt-3 bg-green-500/20 text-green-300 border-green-500/30 text-xs">
+              En linea
+            </Badge>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-1.5 text-center hidden sm:block">
-            Presiona Enter para enviar · Shift+Enter para nueva línea
-          </p>
-        </div>
-      </Card>
 
-      {/* Video tutorial modal */}
-      <Dialog open={showVideo} onOpenChange={setShowVideo}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-black border-0">
-          <DialogTitle className="sr-only">Tutorial de uso</DialogTitle>
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 z-10 text-white hover:bg-white/20 rounded-full"
-              onClick={() => setShowVideo(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-            <video
-              controls
-              autoPlay
-              preload="metadata"
-              className="w-full aspect-video"
-              data-testid="video-tutorial"
-            >
-              <source src="/tutorial-video.mp4" type="video/mp4" />
-              Tu navegador no soporta la reproducción de videos.
-            </video>
+          <div className="h-px bg-white/10 my-4" />
+
+          {/* Video */}
+          <div className="mb-6 animate-slideUp">
+            <h3 className="text-sm font-semibold text-blue-200 mb-3 flex items-center gap-2">
+              <Video className="h-4 w-4" /> Tutorial de uso
+            </h3>
+            <div className="rounded-xl overflow-hidden border border-white/10 shadow-lg">
+              <video
+                controls
+                preload="metadata"
+                className="w-full aspect-video"
+                data-testid="video-tutorial"
+              >
+                <source src="/tutorial-video.mp4" type="video/mp4" />
+                Tu navegador no soporta la reproduccion de videos.
+              </video>
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+
+          {/* Info bullets */}
+          <div className="space-y-3 text-sm text-gray-300 animate-slideUp" style={{ animationDelay: "0.2s" }}>
+            <div className="flex items-start gap-3">
+              <Clock className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
+              <p>Horario de recepcion: Lunes a Viernes, 8:00 - 20:00</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <Truck className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
+              <p>Indica que traes y te busco hueco para la descarga</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <MessageCircle className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
+              <p>Respondo al momento, las 24 horas del dia</p>
+            </div>
+          </div>
+
+          {/* Theme toggle at bottom */}
+          <div className="mt-auto pt-6 flex justify-center [&_button]:text-gray-300 [&_button]:hover:text-white [&_button]:hover:bg-white/10">
+            <ThemeToggle />
+          </div>
+        </div>
+
+        {/* ─── RIGHT PANEL: CHAT (always visible) ─── */}
+        <div className="flex-1 flex flex-col min-h-0 min-w-0">
+          <Card className="flex-1 flex flex-col overflow-hidden rounded-none lg:rounded-none shadow-xl border-0 lg:border-l lg:border-blue-200/30 dark:lg:border-gray-700 min-h-0">
+
+            {chatHeader}
+            <ProgressStepper currentStep={chatStep} />
+
+            {/* Messages area */}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 min-h-0">
+              <div className="space-y-3 sm:space-y-4 max-w-3xl mx-auto">
+                {messagesContent}
+              </div>
+            </div>
+
+            {chatInput}
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

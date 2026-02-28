@@ -1,0 +1,4265 @@
+[
+  {
+    "name": "Mengualba",
+    "officialName": "Mengualba Logística, S.L.",
+    "type": "AGENCY",
+    "aliases": [
+      "Mengualba",
+      "SAC Mengualba",
+      "Carmen Lucia Hita Mochon",
+      "Marian Grande Robledillo"
+    ],
+    "domains": [
+      "mengualba.com"
+    ],
+    "contacts": [
+      {
+        "name": "Carmen Lucia Hita Mochón",
+        "email": "sac@mengualba.com",
+        "phone": "958 009 599",
+        "role": "Atención al cliente"
+      },
+      {
+        "name": "Carmen Lucia Hita Mochón",
+        "email": "operaciones@mengualba.com",
+        "phone": "958 009 599",
+        "role": "Operaciones logísticas"
+      },
+      {
+        "name": "Marian Grande Robledillo",
+        "email": "sac@mengualba.com",
+        "phone": "958 009 599",
+        "role": "Atención al cliente"
+      }
+    ],
+    "address": "Avda. Málaga 20, Pol Asegra, 18210 Peligros (Granada)",
+    "deliversFor": [
+      "Delonghi",
+      "TEKA",
+      "ITEM Internacional",
+      "Mila Rosa",
+      "Nestlé",
+      "GRUCOTEX",
+      "Export Trading Textile",
+      "Dugar Home",
+      "Cintacor",
+      "Velamen",
+      "Andrea Bizzoto",
+      "Albero Forte",
+      "Beijer ECR Ibérica"
+    ],
+    "referenceFormats": {
+      "expedicion": "10 dígitos numéricos (prefijos 8070=Delonghi, 8983=ITEM, 9999=varios)"
+    },
+    "avgLeadDays": 0.5,
+    "typicalData": {
+      "orderId": "never",
+      "expedition": "always",
+      "manufacturer": "always",
+      "packages": "sometimes",
+      "pallets": "never",
+      "weight": "sometimes",
+      "desiredDate": "never"
+    },
+    "automated": false,
+    "samplePhrases": [
+      "Solicito cita del albarán adjunto",
+      "Solicito cita de [X] bultos de [FABRICANTE]",
+      "Buenos días, adjunto albarán para que nos den cita de las cafeteras",
+      "Solicito cita de los siguientes pedidos adjuntos: [números separados por +]"
+    ],
+    "phase": 1
+  },
+  {
+    "name": "DHL",
+    "officialName": "DHL eCom ES / DHL Parcel España",
+    "type": "AGENCY",
+    "aliases": [
+      "DHL",
+      "Francisco Gamez DHL"
+    ],
+    "domains": [
+      "dhl.com"
+    ],
+    "contacts": [
+      {
+        "name": "Francisco Gámez",
+        "email": "francisco.gamez@dhl.com",
+        "phone": null,
+        "role": "Operaciones"
+      },
+      {
+        "name": "Francisco Joaquín Aguado López",
+        "email": "franciscojoaquin.aguado@dhl.com",
+        "phone": null,
+        "role": "Operaciones"
+      },
+      {
+        "name": "Roberto Garrido Comba",
+        "email": "Roberto.GARRIDOCOMBA@dhl.com",
+        "phone": null,
+        "role": "Operaciones"
+      }
+    ],
+    "address": null,
+    "deliversFor": [
+      "ISOGONA",
+      "VERSA",
+      "Tapizados",
+      "Sonifer",
+      "Pikolín",
+      "Beijer",
+      "DHL Freight"
+    ],
+    "referenceFormats": {
+      "expedicion": "10 dígitos (ej: 4320694910, 4817244770)"
+    },
+    "avgLeadDays": 1.5,
+    "typicalData": {
+      "orderId": "always",
+      "expedition": "always",
+      "manufacturer": "always",
+      "packages": "always",
+      "pallets": "never",
+      "weight": "never",
+      "desiredDate": "never"
+    },
+    "automated": "semi",
+    "automatedFormat": "Tabla: Expedicion | Rmt | Nº Pedido | Bultos | Fecha de entrega",
+    "samplePhrases": [
+      "Expedicion / Rmt / Nº Pedido / Bultos / Fecha de entrega",
+      "Hola. Reitero petición de cita de entrega."
+    ],
+    "phase": 1
+  },
+  {
+    "name": "TDN",
+    "officialName": "TDN, S.A.U.",
+    "type": "AGENCY",
+    "aliases": [
+      "TDN"
+    ],
+    "domains": [
+      "tdn.es"
+    ],
+    "nif": "A28815017",
+    "contacts": [
+      {
+        "name": "Miguel Benavides Ogalla",
+        "email": "mbenavid@tdn.es",
+        "phone": null,
+        "role": "ATC Granada"
+      },
+      {
+        "name": "Paqui Jiménez La Torre",
+        "email": "mfrancis@tdn.es",
+        "phone": null,
+        "role": "ATC"
+      },
+      {
+        "name": "Daniel Lucena Fernández",
+        "email": "dlucena@tdn.es",
+        "phone": null,
+        "role": "ATC"
+      },
+      {
+        "name": "Sistema Automatizado",
+        "email": "ConcertarEntregasTDN@tdn.es",
+        "phone": null,
+        "role": "Citas automáticas"
+      },
+      {
+        "name": "ATC Llegadas Granada",
+        "email": "atc_llegadas_granada@tdn.es",
+        "phone": null,
+        "role": "ATC Llegadas"
+      }
+    ],
+    "address": "Avenida de Europa nº 2, 28821 Coslada (Madrid)",
+    "deliversFor": [
+      "CATA Electrodomésticos",
+      "Ixia Regal",
+      "Franke España",
+      "Universal Importadora Alicantina",
+      "Cobain Vigo",
+      "Longitud",
+      "Sonifer",
+      "Riello Enerdata",
+      "Deyban",
+      "Dake Electros",
+      "Daikin Europe",
+      "Dabedan Tejidos Ignífugos"
+    ],
+    "referenceFormats": {
+      "pedido": "Variable: 24006066, SC-24006738, 25-3077-XXXX-CX-25XXXXXX"
+    },
+    "avgLeadDays": 2,
+    "typicalData": {
+      "orderId": "always",
+      "expedition": "sometimes",
+      "manufacturer": "always",
+      "packages": "sometimes",
+      "pallets": "never",
+      "weight": "never",
+      "desiredDate": "never"
+    },
+    "automated": true,
+    "automatedFormat": "Link para confirmar cita. Asunto: 'TDN solicitud Cita [PEDIDO]' o 'TDN - Solicitud fecha entrega pedido [PEDIDO]'",
+    "samplePhrases": [
+      "TDN tiene un pedido para usted. Por favor indíquenos la fecha en la que quiere que le entreguemos su mercancía.",
+      "Estimado colaborador, rogamos nos indique fecha de entrega para:",
+      "*** POR FAVOR NO CONTESTE A ESTE CORREO ***"
+    ],
+    "phase": 1
+  },
+  {
+    "name": "GLS",
+    "officialName": "GLS Spain / Soluciones Logísticas Ireván S.L.",
+    "type": "AGENCY",
+    "aliases": [
+      "GLS",
+      "GLS Albolote"
+    ],
+    "domains": [
+      "gls-spain.es",
+      "comunicaciones.gls-spain.com",
+      "mail.gls-spain.es"
+    ],
+    "contacts": [
+      {
+        "name": "Daniel Morón / Irene Torrealba",
+        "email": "agencia183.atc@gls-spain.es",
+        "phone": "+34 858 988 376",
+        "role": "Tráfico Albolote"
+      },
+      {
+        "name": "Agencia Albolote",
+        "email": "agencia.183@gls-spain.es",
+        "phone": "622 258 285",
+        "role": "Genérico"
+      }
+    ],
+    "address": "Calle Príncipe Felipe 1, 18220 Albolote",
+    "deliversFor": [
+      "Marckeric",
+      "Hidrosalud",
+      "Espumalia",
+      "Würth",
+      "IchWallpaper"
+    ],
+    "referenceFormats": {
+      "expedicion": "7-10 dígitos crecientes (ej: 933133764, 1216727820)"
+    },
+    "avgLeadDays": 0.5,
+    "typicalData": {
+      "orderId": "sometimes",
+      "expedition": "always",
+      "manufacturer": "sometimes",
+      "packages": "sometimes",
+      "pallets": "never",
+      "weight": "never",
+      "desiredDate": "never"
+    },
+    "automated": false,
+    "samplePhrases": [
+      "SOLICITUD DE DESCARGA",
+      "SOLICITUD CITA PARA ENTREGA",
+      "[Nº expedición] Cita"
+    ],
+    "phase": 1
+  },
+  {
+    "name": "Ontime",
+    "officialName": "Ontime Plataforma Sur S.L.U.",
+    "type": "AGENCY",
+    "aliases": [
+      "Ontime"
+    ],
+    "domains": [
+      "ontimelogistica.com",
+      "ontime.es"
+    ],
+    "contacts": [
+      {
+        "name": "Granada Genérico",
+        "email": "granada718@ontimelogistica.com",
+        "phone": "+34 958 43 06 12",
+        "role": "Tráfico"
+      },
+      {
+        "name": "Jose Antonio Fernández Montes",
+        "email": "jfernandez@ontime.es",
+        "phone": null,
+        "role": "Operaciones"
+      }
+    ],
+    "address": "Pol. Ind. Juncaril C/Valor S/N, 18210 Peligros (Granada)",
+    "deliversFor": [
+      "Fores",
+      "D'Casa / Compra Muebles Desde Casa",
+      "Sanysan Appliances",
+      "Visobath",
+      "Fabricados Inoxidables",
+      "Ibercondor",
+      "Auxiliar de Tableros Mecanizados",
+      "Muebles Torga",
+      "Smattex",
+      "Conva",
+      "Nardi"
+    ],
+    "referenceFormats": {},
+    "avgLeadDays": 1.5,
+    "typicalData": {
+      "orderId": "always",
+      "expedition": "sometimes",
+      "manufacturer": "always",
+      "packages": "sometimes",
+      "pallets": "never",
+      "weight": "never",
+      "desiredDate": "never"
+    },
+    "automated": false,
+    "samplePhrases": [
+      "Remite: [FABRICANTE] / Pedido: [Nº]",
+      "pedimos cita ontime",
+      "REMITE: FABRICADOS INOXIDABLES / PEDIDO: 540309695"
+    ],
+    "phase": 1
+  },
+  {
+    "name": "Azkar/Dachser",
+    "officialName": "Dachser (antes Azkar)",
+    "type": "AGENCY",
+    "aliases": [
+      "Azkar",
+      "Dachser",
+      "Azkar/Dachser"
+    ],
+    "domains": [
+      "es.dachser.com",
+      "dachser.com"
+    ],
+    "contacts": [
+      {
+        "name": "Jesús Mata",
+        "email": "jesus.mata@dachser.com",
+        "phone": null,
+        "role": "Tráfico Granada"
+      },
+      {
+        "name": "Encarni Lujano",
+        "email": "encarni.lujano@es.dachser.com",
+        "phone": null,
+        "role": "Tráfico"
+      }
+    ],
+    "address": null,
+    "deliversFor": [
+      "Rhointer",
+      "Vivanco",
+      "Marckeric",
+      "Pikolín",
+      "Resol"
+    ],
+    "referenceFormats": {
+      "albaran": "Formato: FABRICANTE + Nº albarán + palets (ej: 'RHOINTER 25107979 1P')"
+    },
+    "avgLeadDays": 1.5,
+    "typicalData": {
+      "orderId": "sometimes",
+      "expedition": "always",
+      "manufacturer": "always",
+      "packages": "always",
+      "pallets": "always",
+      "weight": "never",
+      "desiredDate": "never"
+    },
+    "automated": "semi",
+    "automatedFormat": "Escaneos reenviados (prt839a001) + listas manuales de Jesús Mata",
+    "samplePhrases": [
+      "Mercancía pendiente de entrega",
+      "Buenos días, adjunto mercancía pendiente de entrega.",
+      "RHOINTER 25107979 1P"
+    ],
+    "phase": 1
+  },
+  {
+    "name": "Granada Cargo",
+    "officialName": "Granada Cargo S.L.",
+    "type": "AGENCY",
+    "aliases": [
+      "Granada Cargo"
+    ],
+    "domains": [
+      "granadacargo.com"
+    ],
+    "contacts": [
+      {
+        "name": "Atención Cliente",
+        "email": "atencion.cliente@granadacargo.com",
+        "phone": "958 430631",
+        "role": "Atención Cliente"
+      }
+    ],
+    "address": "Polig. Ind Juncaril C/ Huéscar nave 16, 18210 Peligros (Granada)",
+    "deliversFor": [
+      "Visobath",
+      "Keter Ibérica",
+      "Productos KOL",
+      "Barperfil",
+      "Rayen",
+      "Guerra San Martín Difusión",
+      "Taurus",
+      "Smattex"
+    ],
+    "referenceFormats": {
+      "expedicion": "10 dígitos prefijo 83 (ej: 8310114367)"
+    },
+    "avgLeadDays": 1.5,
+    "typicalData": {
+      "orderId": "never",
+      "expedition": "always",
+      "manufacturer": "always",
+      "packages": "always",
+      "pallets": "always",
+      "weight": "never",
+      "desiredDate": "never"
+    },
+    "automated": "template",
+    "automatedFormat": "Plantilla: 'TENEMOS EN NUESTRO ALMACEN LA SIGUIENTE MERCANCIA' + tabla",
+    "samplePhrases": [
+      "TENEMOS EN NUESTRO ALMACEN LA SIGUIENTE MERCANCIA",
+      "PETICION CON FECHA DE ENTREGA CONCERTADA"
+    ],
+    "phase": 1
+  },
+  {
+    "name": "Transportes Peinado",
+    "officialName": "Transportes Peinado",
+    "type": "AGENCY",
+    "aliases": [
+      "Peinado",
+      "Transportes Peinado"
+    ],
+    "domains": [
+      "transportespeinado.com"
+    ],
+    "contacts": [
+      {
+        "name": "Victoria E. Del Carpio Melero",
+        "email": "atencionalcliente2@transportespeinado.com",
+        "phone": null,
+        "role": "Att. Cliente"
+      },
+      {
+        "name": "attcliente3",
+        "email": "attcliente3@transportespeinado.com",
+        "phone": null,
+        "role": "Att. Cliente"
+      }
+    ],
+    "address": null,
+    "deliversFor": [
+      "Smattex",
+      "Panasonic",
+      "Cecotec",
+      "Ixia Regal",
+      "Paly",
+      "INDE",
+      "Ilexpa Distribuciones",
+      "Indufex"
+    ],
+    "referenceFormats": {
+      "pedido": "6-7 dígitos (ej: 6074890, 5994917)"
+    },
+    "avgLeadDays": 1,
+    "typicalData": {
+      "orderId": "sometimes",
+      "expedition": "sometimes",
+      "manufacturer": "always",
+      "packages": "always",
+      "pallets": "never",
+      "weight": "always",
+      "desiredDate": "never"
+    },
+    "automated": false,
+    "samplePhrases": [
+      "Buenos días, solicitamos cita para entrega, adjunto documentación, gracias",
+      "Remitente: SMATTEX 1 BULTO DE 15 KG. PEDIDO: 6074890",
+      "Remitente: PANASONIC 5 BULTOS DE 65 KG."
+    ],
+    "phase": 1
+  },
+  {
+    "name": "RDA/Ramoneda",
+    "officialName": "Ramoneda / RDA",
+    "type": "AGENCY",
+    "aliases": [
+      "RDA",
+      "Ramoneda",
+      "GRANADA 180 RDA"
+    ],
+    "domains": [
+      "ramoneda.es"
+    ],
+    "contacts": [
+      {
+        "name": "GRANADA 180 RDA",
+        "email": "granada@ramoneda.es",
+        "phone": "902 151 540",
+        "role": "Delegación Granada"
+      }
+    ],
+    "address": null,
+    "deliversFor": [
+      "ITEM Internacional",
+      "Mitsubishi Electric",
+      "Eurosaime",
+      "Visobath",
+      "Aitana",
+      "Cobain Vigo"
+    ],
+    "referenceFormats": {
+      "expedicion": "8 dígitos crecientes (ej: 46779626, 54873084)"
+    },
+    "avgLeadDays": 1.5,
+    "typicalData": {
+      "orderId": "never",
+      "expedition": "always",
+      "manufacturer": "always",
+      "packages": "always",
+      "pallets": "always",
+      "weight": "never",
+      "desiredDate": "never"
+    },
+    "automated": false,
+    "samplePhrases": [
+      "cita descarga exp. [NÚMERO]",
+      "[X] palet de Item Internacional con s/ref [NÚMERO]",
+      "[X] bultos de Mitsubishi Electric con s/ref [NÚMERO]"
+    ],
+    "phase": 1
+  },
+  {
+    "name": "Transportes Porcel",
+    "officialName": "Transportes y Mudanzas Porcel",
+    "type": "AGENCY",
+    "aliases": [
+      "Porcel",
+      "José Luis Porcel"
+    ],
+    "domains": [
+      "transportesporcel.com",
+      "hotmail.es"
+    ],
+    "contacts": [
+      {
+        "name": "José Luis Porcel",
+        "email": "logistica@transportesporcel.com",
+        "phone": "957 66 19 04",
+        "role": "Logística"
+      },
+      {
+        "name": "Porcel",
+        "email": "transportesymudanzasporcel@hotmail.es",
+        "phone": "605 058 623",
+        "role": "WhatsApp/General"
+      }
+    ],
+    "address": "P.I. Pilar de la Dehesa C/Cantabria Nº 6, 14900 Lucena (Córdoba)",
+    "deliversFor": [
+      "Nacher",
+      "Campaña (Campa)",
+      "Portos Mobiliário"
+    ],
+    "referenceFormats": {},
+    "avgLeadDays": 0.5,
+    "typicalData": {
+      "orderId": "never",
+      "expedition": "never",
+      "manufacturer": "sometimes",
+      "packages": "sometimes",
+      "pallets": "never",
+      "weight": "never",
+      "desiredDate": "never"
+    },
+    "automated": false,
+    "samplePhrases": [
+      "Buenas",
+      "Mercancía para el Lunes",
+      "cita"
+    ],
+    "phase": 1
+  },
+  {
+    "name": "TSB/Serviyecla",
+    "officialName": "TSB Trans / Serviyecla S.L.",
+    "type": "AGENCY",
+    "aliases": [
+      "TSB",
+      "Serviyecla"
+    ],
+    "domains": [
+      "tsbtrans.com",
+      "serviyecla.es"
+    ],
+    "contacts": [
+      {
+        "name": "Miguel Ángel Ortega",
+        "email": "miguel.ortega018@tsbtrans.com",
+        "phone": null,
+        "role": "Tráfico"
+      },
+      {
+        "name": "Serviyecla",
+        "email": "info@serviyecla.es",
+        "phone": null,
+        "role": "General"
+      },
+      {
+        "name": "ATC Granada",
+        "email": "atc01.018@tsbtrans.com",
+        "phone": null,
+        "role": "ATC"
+      }
+    ],
+    "address": null,
+    "deliversFor": [
+      "Cancio",
+      "Versa Home",
+      "Brita Ibérica"
+    ],
+    "referenceFormats": {
+      "expedicion": "12 dígitos (ej: 999916303750, 999417191104)"
+    },
+    "avgLeadDays": 2,
+    "typicalData": {
+      "orderId": "never",
+      "expedition": "always",
+      "manufacturer": "sometimes",
+      "packages": "sometimes",
+      "pallets": "never",
+      "weight": "never",
+      "desiredDate": "sometimes"
+    },
+    "automated": false,
+    "samplePhrases": [
+      "Hola, Buenos días, tenemos [mercancía]",
+      "SOLICITUD FECHA DE DESCARGA",
+      "Buenas tardes, tenemos un bulto de Cancio indiquen cuando podemos llevar"
+    ],
+    "phase": 1
+  },
+  {
+    "name": "TXT",
+    "officialName": "Grupo TXT",
+    "type": "AGENCY",
+    "aliases": [
+      "TXT",
+      "Grupo TXT"
+    ],
+    "domains": [
+      "txt.es"
+    ],
+    "contacts": [
+      {
+        "name": "Antonio Medina",
+        "email": "antonio.medina@txt.es",
+        "phone": null,
+        "role": "Tráfico Granada"
+      }
+    ],
+    "address": null,
+    "deliversFor": [
+      "Cecotec Innovaciones",
+      "Lozano Import",
+      "Electrodomésticos Jata",
+      "Don Hierro"
+    ],
+    "referenceFormats": {
+      "expedicion": "Formato 202-XXXXXXX (ej: 202-8565745)"
+    },
+    "avgLeadDays": 1.5,
+    "typicalData": {
+      "orderId": "never",
+      "expedition": "sometimes",
+      "manufacturer": "always",
+      "packages": "always",
+      "pallets": "always",
+      "weight": "never",
+      "desiredDate": "never"
+    },
+    "automated": false,
+    "samplePhrases": [
+      "Tenemos [X] pallet de la firma [FABRICANTE], adjuntamos documentación. Quedamos a la espera de fecha para su entrega",
+      "DESCARGA TXT"
+    ],
+    "phase": 1
+  },
+  {
+    "name": "SEUR",
+    "officialName": "SEUR (DHL Group)",
+    "type": "AGENCY",
+    "aliases": [
+      "SEUR"
+    ],
+    "domains": [
+      "seur.net"
+    ],
+    "contacts": [
+      {
+        "name": "Ana Isabel Cuesta Sánchez",
+        "email": "ana.cuesta@seur.net",
+        "phone": "+34 958 402 288",
+        "role": "Operaciones Granada"
+      },
+      {
+        "name": "María Jesús Reyes Franco",
+        "email": "maria.reyes@seur.net",
+        "phone": "+34 975 75 00 94",
+        "role": "Operaciones"
+      },
+      {
+        "name": "Francisco Árbol Rodríguez",
+        "email": "francisco.arbol@seur.net",
+        "phone": null,
+        "role": "Operaciones"
+      }
+    ],
+    "address": "Avda. Asegra s/n 18210 Peligros, Granada",
+    "deliversFor": [
+      "Tempur / SLM-Tempur+Sealy",
+      "Supersonido",
+      "Longitud"
+    ],
+    "referenceFormats": {
+      "expedicion": "7 dígitos (ej: 3839397, 7595979)"
+    },
+    "avgLeadDays": 1,
+    "typicalData": {
+      "orderId": "sometimes",
+      "expedition": "always",
+      "manufacturer": "always",
+      "packages": "sometimes",
+      "pallets": "never",
+      "weight": "never",
+      "desiredDate": "never"
+    },
+    "automated": "semi",
+    "automatedFormat": "Emails de tracking automáticos + solicitudes manuales",
+    "samplePhrases": [
+      "SEUR - CITA PARA ENTREGA",
+      "SOLICITUD CITA DE ENTREGA EXPEDICIÓN [Nº] ORIGEN SLM-TEMPUR DE MADRID"
+    ],
+    "phase": 1
+  },
+  {
+    "name": "Logodis",
+    "officialName": "Logodis Center Granada",
+    "type": "AGENCY",
+    "aliases": [
+      "Logodis",
+      "Logody"
+    ],
+    "domains": [
+      "logodiscentergranada.es"
+    ],
+    "contacts": [
+      {
+        "name": "Tráfico Logodis Granada",
+        "email": "trafico.granada@logodiscentergranada.es",
+        "phone": "958 43 91 61",
+        "role": "Tráfico"
+      }
+    ],
+    "address": "18340 Fuente Vaqueros (Granada)",
+    "deliversFor": [
+      "BSH (Bosch/Siemens)",
+      "CODECO",
+      "Grupo Romo"
+    ],
+    "referenceFormats": {},
+    "avgLeadDays": 1.5,
+    "typicalData": {
+      "orderId": "never",
+      "expedition": "sometimes",
+      "manufacturer": "always",
+      "packages": "sometimes",
+      "pallets": "sometimes",
+      "weight": "never",
+      "desiredDate": "never"
+    },
+    "automated": false,
+    "samplePhrases": [
+      "CITAS BSH SANCHEZ GINER",
+      "CITAS CODECO SANCHEZ GINER",
+      "Hola decirme donde descargamos esta mercancía y para que me deis cita para entregar"
+    ],
+    "phase": 1
+  },
+  {
+    "name": "XPO",
+    "officialName": "XPO Logistics",
+    "type": "AGENCY",
+    "aliases": [
+      "XPO"
+    ],
+    "domains": [
+      "xpo.com"
+    ],
+    "contacts": [
+      {
+        "name": "Estefanía Cabrera Gutiérrez",
+        "email": "Estefania.Cabreragutierrez@xpo.com",
+        "phone": "+34 638 35 72 24",
+        "role": "Responsable de Distribución"
+      },
+      {
+        "name": "Alba Hinojosa",
+        "email": "alba.hinojosa@xpo.com",
+        "phone": "649 311 002",
+        "role": "Distribución"
+      }
+    ],
+    "address": "Pol Ind. La Fuente C/ Córdoba S/N, 18340 Fuente Vaqueros, Granada",
+    "deliversFor": [
+      "Visobath"
+    ],
+    "referenceFormats": {
+      "expedicion": "CS + 8-9 dígitos (ej: CS 10259211, CS 102573693)"
+    },
+    "avgLeadDays": 1.5,
+    "typicalData": {
+      "orderId": "sometimes",
+      "expedition": "always",
+      "manufacturer": "sometimes",
+      "packages": "sometimes",
+      "pallets": "never",
+      "weight": "never",
+      "desiredDate": "never"
+    },
+    "automated": false,
+    "samplePhrases": [
+      "Buenos días, adjunto albarán para cita",
+      "CITA ENTREGA"
+    ],
+    "phase": 1
+  },
+  {
+    "name": "Toro Bonilla",
+    "officialName": "Toro Bonilla, S.L.U.",
+    "type": "AGENCY",
+    "aliases": [
+      "Toro Bonilla",
+      "Daniel Toro Bonilla"
+    ],
+    "domains": [
+      "hotmail.com"
+    ],
+    "contacts": [
+      {
+        "name": "Daniel Toro Bonilla",
+        "email": "danieltorobonilla@hotmail.com",
+        "phone": "689 046 074",
+        "role": "Gerente/Conductor"
+      }
+    ],
+    "address": null,
+    "deliversFor": [
+      "Hogladih",
+      "Imab Group",
+      "Piel Palma Diseño",
+      "Industrias Rodrigo",
+      "Rimadesio",
+      "Portos Mobiliário"
+    ],
+    "referenceFormats": {},
+    "avgLeadDays": 1.5,
+    "typicalData": {
+      "orderId": "never",
+      "expedition": "never",
+      "manufacturer": "always",
+      "packages": "always",
+      "pallets": "never",
+      "weight": "never",
+      "desiredDate": "sometimes"
+    },
+    "automated": false,
+    "samplePhrases": [
+      "Solicito cita para descargar [X] bultos de [FABRICANTE]",
+      "Solicitud cita",
+      "Solicitud descarga"
+    ],
+    "phase": 1
+  },
+  {
+    "name": "Cotramu",
+    "officialName": "Cotramu S.A. / Transportes Sureste",
+    "type": "AGENCY",
+    "aliases": [
+      "Cotramu",
+      "Transportes Sureste",
+      "Rafa Cotramu"
+    ],
+    "domains": [
+      "cotramu.com",
+      "transportes-sureste.com"
+    ],
+    "contacts": [
+      {
+        "name": "Cotramu",
+        "email": "cotramu@cotramu.com",
+        "phone": "925 532 190",
+        "role": "General"
+      },
+      {
+        "name": "Rafa Cotramu",
+        "email": "rafacotramu@cotramu.com",
+        "phone": "925 532 191",
+        "role": "Logística"
+      },
+      {
+        "name": "Transportes Sureste",
+        "email": "comercial@transportes-sureste.com",
+        "phone": null,
+        "role": "Comercial"
+      }
+    ],
+    "address": null,
+    "deliversFor": [
+      "Forte Ibérica"
+    ],
+    "referenceFormats": {
+      "aviso": "AVIZO + 10 dígitos (ej: AVIZO 0000793955)"
+    },
+    "avgLeadDays": 3,
+    "typicalData": {
+      "orderId": "never",
+      "expedition": "sometimes",
+      "manufacturer": "sometimes",
+      "packages": "never",
+      "pallets": "never",
+      "weight": "never",
+      "desiredDate": "always",
+      "volume_m3": "always"
+    },
+    "automated": false,
+    "samplePhrases": [
+      "Solicitamos cita para el [DÍA], para entregaros sobre [X]m3",
+      "petición cita"
+    ],
+    "phase": 1
+  },
+  {
+    "name": "Redur",
+    "officialName": "Redur S.L. / Logística Astral",
+    "type": "AGENCY",
+    "aliases": [
+      "Redur",
+      "Logística Astral"
+    ],
+    "domains": [
+      "redur.es",
+      "astral.es"
+    ],
+    "contacts": [
+      {
+        "name": "Granada - Tráfico",
+        "email": "granada.trafico@redur.es",
+        "phone": "958 467 922",
+        "role": "Tráfico"
+      },
+      {
+        "name": "Granada - Inc Salida",
+        "email": "Granada.IncSalida@redur.es",
+        "phone": null,
+        "role": "Incidencias"
+      },
+      {
+        "name": "Logística Astral",
+        "email": "logistica@astral.es",
+        "phone": null,
+        "role": "Logística"
+      }
+    ],
+    "address": null,
+    "deliversFor": [
+      "Brabantia",
+      "Sergio Lupi",
+      "Taurus",
+      "Wenko",
+      "Inoxibar",
+      "Ikaya Textiles",
+      "Visobath"
+    ],
+    "referenceFormats": {
+      "expedicion": "9 dígitos (ej: 999197831)"
+    },
+    "avgLeadDays": 1.5,
+    "typicalData": {
+      "orderId": "sometimes",
+      "expedition": "always",
+      "manufacturer": "always",
+      "packages": "always",
+      "pallets": "always",
+      "weight": "never",
+      "desiredDate": "never"
+    },
+    "automated": false,
+    "samplePhrases": [
+      "Solicitud fecha de entrega.",
+      "Buenos días, solicitamos fecha de entrega de [expedición].",
+      "[X] palet de la firma [FABRICANTE]"
+    ],
+    "phase": 1
+  },
+  {
+    "name": "Tapicería Jaén",
+    "officialName": "Tapizados Jaén / Tapizados JJ",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "Tap. Jaén",
+      "Tapizados Jaen",
+      "Jose Antonio Jaen Bonilla",
+      "tapizadosjaen"
+    ],
+    "domains": [
+      "gmail.com"
+    ],
+    "identifyByEmail": [
+      "tapizadosjaen@gmail.com"
+    ],
+    "contacts": [
+      {
+        "name": "José Antonio Jaén Bonilla",
+        "email": "tapizadosjaen@gmail.com",
+        "phone": null,
+        "role": "Propietario/Conductor"
+      }
+    ],
+    "address": "Jaén (zona)",
+    "category": "Tapicería",
+    "subcategory": "Sofás, chaise-longues",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "medium_truck",
+    "usesAgencies": [],
+    "deliveryFrequency": "biweekly",
+    "typicalVolume": "medium_truck",
+    "avgLeadDays": 3,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "never",
+      "pallets": "never",
+      "weight": "never",
+      "volume_m3": "never",
+      "desiredDate": "always",
+      "desiredTime": "sometimes",
+      "itemList": "never"
+    },
+    "automated": false,
+    "specialNotes": "Comunicación muy informal (tono WhatsApp). José Antonio conduce personalmente. Puede cambiar/anular fechas con poca antelación. No aporta datos de albarán/pedido.",
+    "samplePhrases": [
+      "Buenas necesito que me pilles con tiempo cita de descarga para el viernes día 9 agosto",
+      "Buenas para pedir vez de descarga el martes que viene 29 octubre",
+      "Buenas para descargar el día 4 de marzo"
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Tapicería Zen",
+    "officialName": "Tapizados Zen S.L.",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "Tap. Zen",
+      "ZEN",
+      "Jose Zen",
+      "Living Pino",
+      "Tapizados Zen"
+    ],
+    "domains": [
+      "tapizadoszen.com",
+      "livingpino.com"
+    ],
+    "identifyByEmail": [
+      "jose.tapizadoszen@gmail.com",
+      "pedidos@tapizadoszen.com"
+    ],
+    "contacts": [
+      {
+        "name": "José (Zen)",
+        "email": "jose.tapizadoszen@gmail.com",
+        "phone": null,
+        "role": "Gerente/Conductor"
+      },
+      {
+        "name": "Remedios Moreno",
+        "email": "remedio@tapizadoszen.com",
+        "phone": null,
+        "role": "Administración"
+      }
+    ],
+    "category": "Tapicería",
+    "subcategory": "Sofás, chaise-longues",
+    "transportType": "MIXED",
+    "vehicleType": "medium_truck",
+    "usesAgencies": [
+      "agencia regional no identificada"
+    ],
+    "deliveryFrequency": "biweekly_to_monthly",
+    "typicalUnits": "14-60",
+    "unitType": "bultos",
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "always",
+      "pallets": "never",
+      "weight": "never",
+      "desiredDate": "always",
+      "desiredTime": "never",
+      "itemList": "sometimes"
+    },
+    "automated": false,
+    "specialNotes": "Camión propio para cargas grandes (14-60 bultos), agencia para pedidos pequeños (2-3 piezas). Hace ruta con varias paradas. También opera como 'Living Pino'.",
+    "samplePhrases": [
+      "Número de unidades a entregar: 14 CHAISE. (28 BULTOS)",
+      "El próximo lunes día 28, entregaremos mercancía (unos 60 bultos)",
+      "UNOS 30 BULTOS APROX."
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Tapicería JJ Sánchez",
+    "officialName": "Tapizados JJ Sánchez S.L.",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "Tap. JJ Sánchez",
+      "Tapizados JJ",
+      "JJ Sanchez"
+    ],
+    "domains": [
+      "tapizadosjj.com"
+    ],
+    "identifyByEmail": [
+      "pedidos@tapizadosjj.com",
+      "administracion@tapizadosjj.com",
+      "tapizadosjj@hotmail.com"
+    ],
+    "contacts": [
+      {
+        "name": "Pedidos",
+        "email": "pedidos@tapizadosjj.com",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Administración",
+        "email": "administracion@tapizadosjj.com",
+        "phone": null,
+        "role": "Administración"
+      }
+    ],
+    "category": "Tapicería",
+    "subcategory": "Sofás, chaise-longues, fundas",
+    "transportType": "MIXED",
+    "vehicleType": "truck_or_trailer",
+    "usesAgencies": [
+      "Transportes Lusán"
+    ],
+    "deliveryFrequency": "monthly",
+    "avgLeadDays": 7,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "sometimes",
+      "packages": "sometimes",
+      "pallets": "never",
+      "weight": "never",
+      "desiredDate": "always",
+      "desiredTime": "never",
+      "itemList": "never"
+    },
+    "automated": false,
+    "specialNotes": "Comunicación formal desde departamento de pedidos. Necesita muelle para tráiler. Empresa distinta de Tapicería Jaén aunque comparten marca 'Tapizados JJ'.",
+    "samplePhrases": [
+      "Buenos días, sería posible descargar el día 7 de Diciembre Jueves?",
+      "Buenos días, solicitamos cita de descarga para el 20 de marzo si es posible",
+      "Buenos días, solicitamos fecha de descarga para el 25 de enero Jueves"
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Tapicería Llogra",
+    "officialName": "Tapizados Llogrà",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "Tap. Llogra",
+      "LLOGRA",
+      "Tapizados Llogran"
+    ],
+    "domains": [
+      "tapizadosllogran.com"
+    ],
+    "identifyByEmail": [
+      "pedidos@tapizadosllogran.com"
+    ],
+    "category": "Tapicería",
+    "subcategory": "Sofás, chaise-longues",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "full_trailer",
+    "usesAgencies": [],
+    "deliveryFrequency": "monthly",
+    "avgLeadDays": 10,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "never",
+      "pallets": "never",
+      "weight": "never",
+      "desiredDate": "always",
+      "desiredTime": "never",
+      "itemList": "never"
+    },
+    "automated": false,
+    "specialNotes": "SIEMPRE tráiler completo — necesita muelle grande + tiempo largo. Conductor NO ayuda en descarga. Frecuentes cambios de fecha. Muchas incidencias con chaise-longues.",
+    "samplePhrases": [
+      "Buenos días, necesitaría fecha de descarga +- para finales de la semana del 14",
+      "BUENOS DIAS, PODEMOS DESCARGAR VIERNES 7/06 O LUNES 10",
+      "Buenos días, fecha de descarga para el 19/03?"
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Tapicería Pedro Ortiz",
+    "officialName": "Tapizados Pedro Ortiz S.L.U.",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "Tap. Pedro Ortiz",
+      "Pedro Ortiz",
+      "Conchi Albert"
+    ],
+    "domains": [
+      "pedroortiz.com"
+    ],
+    "identifyByEmail": [
+      "conchi@pedroortiz.com"
+    ],
+    "contacts": [
+      {
+        "name": "Conchi Albert",
+        "email": "conchi@pedroortiz.com",
+        "phone": null,
+        "role": "Dpto. Comercial"
+      },
+      {
+        "name": "Ángel Nieto Vizcaíno",
+        "email": "angel@nietorepresentaciones.com",
+        "phone": null,
+        "role": "Representante comercial"
+      }
+    ],
+    "address": "Ctra. de Jumilla S/N, Apdo. Correos 12, Yecla, Murcia",
+    "category": "Tapicería",
+    "subcategory": "Sofás premium",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "route_truck",
+    "deliveryFrequency": "monthly",
+    "avgLeadDays": 6,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "never",
+      "pallets": "never",
+      "weight": "never",
+      "desiredDate": "always",
+      "desiredTime": "sometimes",
+      "itemList": "never"
+    },
+    "automated": false,
+    "specialNotes": "Ruta fija desde Yecla. Llega 'por la mañana como siempre'. Asuntos predecibles: 'SOLICITUD CITA DESCARGA [DÍA] [FECHA]'.",
+    "samplePhrases": [
+      "SOLICITUD CITA DESCARGA JUEVES 14/12",
+      "CITA DESCARGA LUNES 24/06",
+      "estaría allí para descargar el miércoles 11/09, sería a última hora de la mañana"
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Tapicería Cayuela",
+    "officialName": "Tapizados Cayuelas S.L.",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "Tap. Cayuela",
+      "Cayuelas",
+      "José Manuel García Larrosa"
+    ],
+    "domains": [
+      "tapizadoscayuelas.es"
+    ],
+    "identifyByEmail": [
+      "jose@tapizadoscayuelas.es"
+    ],
+    "contacts": [
+      {
+        "name": "José Manuel García Larrosa",
+        "email": "jose@tapizadoscayuelas.es",
+        "phone": null,
+        "role": "Logística/Gerente"
+      },
+      {
+        "name": "María Daimiel",
+        "email": "trafico603@grupopantoja.com",
+        "phone": null,
+        "role": "Grupo Pantoja Logístico"
+      }
+    ],
+    "category": "Tapicería",
+    "subcategory": "Sofás, chaise-longues",
+    "transportType": "MIXED",
+    "vehicleType": "full_trailer",
+    "usesAgencies": [
+      "Grupo Pantoja"
+    ],
+    "deliveryFrequency": "monthly",
+    "avgLeadDays": 10,
+    "referenceFormats": [
+      "Pedido CHS 4-8 dígitos"
+    ],
+    "typicalData": {
+      "orderId": "always",
+      "deliveryNote": "never",
+      "packages": "never",
+      "pallets": "never",
+      "weight": "never",
+      "desiredDate": "always",
+      "desiredTime": "never",
+      "itemList": "never"
+    },
+    "automated": false,
+    "specialNotes": "SIEMPRE tráiler completo. Siempre menciona nº pedido CHS. Usa Grupo Pantoja como operador logístico.",
+    "samplePhrases": [
+      "Le informamos que la próxima entrega de tráiler completo con el pedido nº 24001861, podría realizarse a partir del Jueves 7 de Marzo.",
+      "Solicitamos cita de descarga de un tráiler completo, con el pedido nº 7934."
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Tapicería Alma Sofás",
+    "officialName": "Alma Sofás",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "Tap. Alma Sofás",
+      "ALMA SOFAS"
+    ],
+    "domains": [
+      "almasofas.com"
+    ],
+    "identifyByEmail": [
+      "pedidos@almasofas.com",
+      "administracion@almasofas.com"
+    ],
+    "contacts": [
+      {
+        "name": "Pedidos",
+        "email": "pedidos@almasofas.com",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Álvaro",
+        "email": "alvarosarriaj@gmail.com",
+        "phone": null,
+        "role": "Conductor"
+      }
+    ],
+    "category": "Tapicería",
+    "subcategory": "Sofás",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "medium_truck",
+    "deliveryFrequency": "monthly",
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "never",
+      "desiredDate": "always",
+      "desiredTime": "sometimes"
+    },
+    "automated": false,
+    "specialNotes": "Puede pedir hora específica ('a partir de la 13:30h'). Álvaro (alvarosarriaj@gmail.com) es contacto compartido con Tapicería Muñoz Robles.",
+    "samplePhrases": [
+      "CITA PARA ALMA SOFAS DIA 24/05/2024",
+      "CITA DESCARGA"
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Tapicería Santiago",
+    "officialName": "Tapizados Santiago",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "Tap. Santiago"
+    ],
+    "domains": [
+      "tapizadossantiago.com"
+    ],
+    "identifyByEmail": [
+      "clientes@tapizadossantiago.com"
+    ],
+    "contacts": [
+      {
+        "name": "Clientes",
+        "email": "clientes@tapizadossantiago.com",
+        "phone": null,
+        "role": "Atención al cliente"
+      }
+    ],
+    "fax": "953 56 55 44",
+    "category": "Tapicería",
+    "subcategory": "Sofás, conjuntos",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "medium_truck",
+    "deliveryFrequency": "biweekly_to_monthly",
+    "avgLeadDays": 2,
+    "typicalUnits": "3-9",
+    "unitType": "conjuntos",
+    "typicalData": {
+      "orderId": "never",
+      "packages": "always",
+      "desiredDate": "always"
+    },
+    "automated": false,
+    "specialNotes": "Siempre habla de 'conjuntos' (1 conjunto ≈ 2-3 bultos). Poca antelación (1-3 días).",
+    "samplePhrases": [
+      "Buenos días, solicito cita para descargar el lunes 4 conjuntos.",
+      "Buenos días, necesitamos cita para entregar mañana 9 conjuntos."
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Tapicería Muñoz Robles",
+    "officialName": "Tapizados Muñoz Robles",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "Tap. Muñoz Robles",
+      "Alvaro Sarria"
+    ],
+    "domains": [],
+    "identifyByEmail": [
+      "alvarosarriaj@gmail.com"
+    ],
+    "contacts": [
+      {
+        "name": "Álvaro Sarría",
+        "email": "alvarosarriaj@gmail.com",
+        "phone": null,
+        "role": "Comercial/Logística"
+      }
+    ],
+    "category": "Tapicería",
+    "subcategory": "Sofás",
+    "transportType": "MIXED",
+    "vehicleType": "medium_truck",
+    "usesAgencies": [
+      "Traesdemu"
+    ],
+    "deliveryFrequency": "monthly",
+    "avgLeadDays": 5,
+    "typicalUnits": "4-10",
+    "unitType": "bultos/sofás",
+    "typicalData": {
+      "orderId": "never",
+      "packages": "always",
+      "desiredDate": "always",
+      "desiredTime": "sometimes"
+    },
+    "automated": false,
+    "specialNotes": "Álvaro Sarría contacto COMPARTIDO con Alma Sofás. Usa agencia Traesdemu para pedidos fuera de ruta. 'juegos de sofás' = 2-4 bultos.",
+    "samplePhrases": [
+      "Solicito cita de descarga día 28 de diciembre para Muñoz Robles, a primera hora. 7 u 8 sofás.",
+      "Solicito cita para Tapizados Muñoz Robles día 16 de Julio a primera hora. 4 juegos de sofás."
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Tapicería Jumasi",
+    "officialName": "Tapizados Jumasi S.L.",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "Tap. Jumasi",
+      "JUMASI",
+      "Jumasi Confort"
+    ],
+    "domains": [
+      "tapizadosjumasi.es"
+    ],
+    "identifyByEmail": [
+      "tapizadosjumasi@gmail.com",
+      "contabilidadjumasi@gmail.com"
+    ],
+    "category": "Tapicería",
+    "subcategory": "Sofás",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "medium_truck",
+    "deliveryFrequency": "monthly",
+    "avgLeadDays": 5,
+    "typicalUnits": "~20",
+    "unitType": "piezas",
+    "typicalData": {
+      "orderId": "never",
+      "packages": "sometimes",
+      "desiredDate": "always"
+    },
+    "automated": false,
+    "specialNotes": "Especifica 'SOLO CAMION' para diferenciar de paquetería. Fórmula fija: 'necesitamos cita para descargar el [fecha]'.",
+    "samplePhrases": [
+      "Buenos días, necesitamos cita para descargar el próximo viernes 22/12 (aprox. 20 piezas)",
+      "Buenos días, necesitamos cita para descargar para el Lunes 17/06 (camión)"
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Tapicería Piel Palma",
+    "officialName": "Piel Palma Sofás",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "Tap. Piel Palma",
+      "Lola Sáez López"
+    ],
+    "domains": [
+      "pielpalmasofas.com.es"
+    ],
+    "identifyByEmail": [
+      "tapizados@pielpalmasofas.com.es"
+    ],
+    "contacts": [
+      {
+        "name": "Lola Sáez López",
+        "email": "tapizados@pielpalmasofas.com.es",
+        "phone": "968 79 42 79",
+        "role": "Dpto. Comercial"
+      }
+    ],
+    "address": "Ctra. Caudete, Km 2, Apdo. 654, Yecla (Murcia)",
+    "category": "Tapicería",
+    "subcategory": "Sofás de piel",
+    "transportType": "VIA_AGENCY",
+    "usesAgencies": [
+      "Copetrucks",
+      "Distribuciones Gallardo"
+    ],
+    "deliveryFrequency": "monthly",
+    "avgLeadDays": 2,
+    "typicalUnits": "2",
+    "unitType": "bultos",
+    "typicalData": {
+      "orderId": "sometimes",
+      "packages": "always",
+      "desiredDate": "always"
+    },
+    "automated": false,
+    "specialNotes": "Entregas siempre pequeñas (2 bultos). Vía agencia Copetrucks/Gallardo. Asunto: 'SOLICITUD DESCARGA 2 BULTOS [DÍA] [FECHA]'.",
+    "samplePhrases": [
+      "SOLICITUD DESCARGA 2 BULTOS JUEVES 14/12. GRACIAS",
+      "Os informo que mañana entregamos 2 bultos, del pedido 24003125 (24006241)."
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Tapiza2",
+    "officialName": "Tapiza2",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "TAPIZA2",
+      "Emilio Javier López Gómez"
+    ],
+    "domains": [],
+    "identifyByEmail": [
+      "infotapiza2@gmail.com"
+    ],
+    "contacts": [
+      {
+        "name": "Emilio Javier López Gómez",
+        "email": "infotapiza2@gmail.com",
+        "phone": null,
+        "role": "Propietario/Conductor"
+      }
+    ],
+    "category": "Tapicería",
+    "subcategory": "Butacas",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "van_or_small_truck",
+    "deliveryFrequency": "biweekly_to_monthly",
+    "avgLeadDays": 3,
+    "typicalUnits": "1-8",
+    "unitType": "butacas",
+    "typicalData": {
+      "orderId": "never",
+      "packages": "always",
+      "desiredDate": "always"
+    },
+    "automated": false,
+    "specialNotes": "Entregas muy pequeñas (butacas sueltas). Muy formal. Fórmula: 'ruego nos den cita para descargar en sus almacenes el [fecha] para entrega de [N] butacas'.",
+    "samplePhrases": [
+      "Buenos días, solicitamos nos den cita para descargar en sus almacenes el próximo miércoles día 27 para hacerles entrega de 4 butacas.",
+      "Buenos días, ruego nos den cita para mañana día 3 para entregar 1 butaca"
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Tapicería Diseño 10",
+    "officialName": "Diseño 10 S.L.",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "Tap. Diseño 10",
+      "DISEÑO 10"
+    ],
+    "domains": [
+      "diseno10.com"
+    ],
+    "identifyByEmail": [
+      "atencionalcliente@diseno10.com"
+    ],
+    "contacts": [
+      {
+        "name": "Atención al Cliente",
+        "email": "atencionalcliente@diseno10.com",
+        "phone": "953 56 41 41",
+        "role": "Atención al Cliente"
+      }
+    ],
+    "address": "C/ Méjico Nave 2, 23650 Torredonjimeno, Jaén",
+    "fax": "953 56 52 33",
+    "category": "Tapicería",
+    "subcategory": "Sofás, conjuntos",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "medium_truck",
+    "deliveryFrequency": "monthly",
+    "avgLeadDays": 7,
+    "typicalData": {
+      "orderId": "never",
+      "desiredDate": "always"
+    },
+    "automated": false,
+    "specialNotes": "Asunto SIEMPRE 'Previsión de entrega de mercancía' — ideal para clasificación automática. Tlf: 953 56 41 41.",
+    "samplePhrases": [
+      "Previsión de entrega de mercancía"
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Tapicería Martín Robledo",
+    "officialName": "Martín Robledo",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "Tapicería Martín Robledo",
+      "Paco"
+    ],
+    "domains": [
+      "martinrobledo.es"
+    ],
+    "identifyByEmail": [
+      "pedidos@martinrobledo.es"
+    ],
+    "contacts": [
+      {
+        "name": "Paco",
+        "email": "paco@martinrobledo.es",
+        "phone": null,
+        "role": "Conductor"
+      },
+      {
+        "name": "Francisco",
+        "email": "franciscojose.gs82@gmail.com",
+        "phone": null,
+        "role": "Conductor alternativo"
+      },
+      {
+        "name": "Encarnación",
+        "email": "encarniadmon@hotmail.com",
+        "phone": null,
+        "role": "Administración"
+      }
+    ],
+    "category": "Tapicería",
+    "subcategory": "Butacas, programas tapizados",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "small_truck",
+    "deliveryFrequency": "sporadic",
+    "avgLeadDays": 1,
+    "referenceFormats": [
+      "Albarán: AÑO-NNNNN"
+    ],
+    "typicalData": {
+      "deliveryNote": "always",
+      "desiredDate": "always",
+      "desiredTime": "sometimes"
+    },
+    "automated": false,
+    "specialNotes": "Volumen muy bajo. 'Paco' conduce, descarga rápida. Combina con Azor. Siempre adjunta albarán PDF. | También fabrica colchones marca CHS. Tres flujos logísticos: Tapicería Martín Robledo + Muebles Azor + Colchones CHS — un solo camión (Paco conduce).",
+    "samplePhrases": [
+      "Confirmado para mañana a las 11, me dice Paco que la descarga es muy rápida"
+    ],
+    "phase": 2
+  },
+  {
+    "name": "CODECO",
+    "officialName": "CODECO S.A.",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "CODECO",
+      "Codeco Electrodomésticos"
+    ],
+    "domains": [
+      "codeco.es",
+      "logodiscentergranada.es",
+      "samalogistica.es"
+    ],
+    "identifyByEmail": [
+      "auto-envio@codeco.es",
+      "sanchezginer@codeco.es",
+      "averias@codeco.es",
+      "trafico.granada@logodiscentergranada.es",
+      "csc.multicliente@samalogistica.es"
+    ],
+    "contacts": [
+      {
+        "name": "Sistema automático",
+        "email": "auto-envio@codeco.es",
+        "phone": null,
+        "role": "Avisos automáticos descarga"
+      },
+      {
+        "name": "Dpto. Averías",
+        "email": "averias@codeco.es",
+        "phone": null,
+        "role": "Averías/Devoluciones"
+      },
+      {
+        "name": "Jesús A. Vargas Moya",
+        "email": "trafico.granada@logodiscentergranada.es",
+        "phone": "615 88 40 02",
+        "role": "Responsable Tráfico Logodis Granada"
+      },
+      {
+        "name": "Logodis Granada",
+        "email": "trafico.granada@logodiscentergranada.es",
+        "phone": "958 43 91 61",
+        "role": "Operador logístico BSH"
+      },
+      {
+        "name": "CSC Multicliente Sama",
+        "email": "csc.multicliente@samalogistica.es",
+        "phone": null,
+        "role": "Logística Sama"
+      }
+    ],
+    "category": "Electrodomésticos",
+    "subcategory": "Línea blanca, TV, hornos, aires acondicionados",
+    "brands": [
+      "BSH/Bosch/Siemens",
+      "TCL",
+      "AEG",
+      "Samsung",
+      "Infiniton",
+      "Rommer",
+      "LG"
+    ],
+    "transportType": "DUAL_CHANNEL",
+    "vehicleType": "full_trailer",
+    "usesAgencies": [
+      "Logodis Granada (BSH)",
+      "Sama Logística"
+    ],
+    "deliveryFrequency": "biweekly",
+    "referenceFormats": [
+      "Albarán Logodis: 6 dígitos (313101, 314730)",
+      "Albarán auto-envio: 12 dígitos (202500023089)",
+      "Pedido CHS: 8 dígitos prefijo 25/26 (25118880)"
+    ],
+    "avgLeadDays": 1,
+    "typicalData": {
+      "orderId": "sometimes",
+      "deliveryNote": "always",
+      "packages": "never",
+      "pallets": "never",
+      "weight": "never",
+      "desiredDate": "always",
+      "desiredTime": "never",
+      "itemList": "never"
+    },
+    "automated": "semi",
+    "automatedFormat": "auto-envio@codeco.es envía 'DESCARGA DD/MM' + PDF Unigest. Logodis pide cita manual con albaranes.",
+    "specialNotes": "PROVEEDOR CRÍTICO. Doble canal: tráiler directo (auto-envio, automático) + Logodis Granada (manual, BSH). Tráiler precintado. Logodis requiere respuesta antes 17:00. Incidencias frecuentes (mercancía dañada). Jesús Vargas 615.88.40.02 para WhatsApp.",
+    "samplePhrases": [
+      "DESCARGA 11/07",
+      "Somos el operador logístico de B/S/H para confirmar la entrega. ALB: 313101. Espero su respuesta antes de las 17:00.",
+      "CITAS CODECO SANCHEZ GINER"
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Cecotec",
+    "officialName": "Cecotec Innovaciones S.L.",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "CECOTEC",
+      "Logística Cecotec"
+    ],
+    "domains": [
+      "cecotec.es"
+    ],
+    "identifyByEmail": [
+      "carmenrivera@cecotec.es",
+      "ariadnaisabelflores@cecotec.es",
+      "dpd@cecotec.es",
+      "logistica@cecotec.es",
+      "soniatur@cecotec.es",
+      "inmaculadafernandez@cecotec.es",
+      "claudiadianes@cecotec.es"
+    ],
+    "contacts": [
+      {
+        "name": "Mari Carmen Rivera",
+        "email": "carmenrivera@cecotec.es",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Ariadna Isabel Flores Castillo",
+        "email": "ariadnaisabelflores@cecotec.es",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Sonia Tur",
+        "email": "soniatur@cecotec.es",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Inmaculada Fernández",
+        "email": "inmaculadafernandez@cecotec.es",
+        "phone": null,
+        "role": "Comercial"
+      },
+      {
+        "name": "Claudia Dianes Rivera",
+        "email": "claudiadianes@cecotec.es",
+        "phone": null,
+        "role": "Logística"
+      }
+    ],
+    "address": "C/ Real Madrid S/N, Massalavés (Valencia) / Av. Reyes Católicos 60, 46910 Alfafar (Valencia)",
+    "category": "Electrodomésticos/PAE",
+    "subcategory": "Pequeño electrodoméstico, robots, aspiradoras",
+    "transportType": "OWN_LOGISTICS",
+    "vehicleType": "trailer_pallets",
+    "deliveryFrequency": "monthly_to_bimonthly",
+    "typicalUnits": "2-16",
+    "unitType": "palets",
+    "referenceFormats": [
+      "Código CC: CC + 7 dígitos (CC2300769, CC2400690)",
+      "Albarán TRD: [AÑO]TRD + 6 dígitos (23TRD012135)"
+    ],
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "always",
+      "deliveryNote": "sometimes",
+      "packages": "never",
+      "pallets": "sometimes",
+      "weight": "never",
+      "desiredDate": "always",
+      "desiredTime": "never",
+      "itemList": "sometimes"
+    },
+    "automated": false,
+    "specialNotes": "DOS DESTINOS: Albolote (almacén) y Peligros (tienda). Cecotec a veces confunde direcciones. Códigos CC en asunto son clave. Múltiples pedidos agrupados (3-6 CC por tráiler). Contactos: 600 266 453, 674 31 19 62, 625 54 75 31.",
+    "samplePhrases": [
+      "CITA ENTREGA VARIOS PEDIDOS SANCHEZ I GINER",
+      "CITA DE ENTREGA CC2400687 / CC2400688 / CC2400689",
+      "¡Buenas tardes! Solicitamos cita de entrega para su pedido en el asunto, a partir del..."
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Nova Cucine / Gugel",
+    "officialName": "Nova Cucina S.r.l. / Gugel S.r.l.",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "Nova Cucine",
+      "GUGEL LOGISTICS",
+      "Gugel SRL",
+      "Nova Cucina"
+    ],
+    "domains": [
+      "gugel.it",
+      "novacucina.com"
+    ],
+    "identifyByEmail": [
+      "giorgia@gugel.it",
+      "martinag@gugel.it",
+      "mariagraziapoletto@novacucina.com",
+      "elisapolles@novacucina.com",
+      "sales@gugel.it",
+      "info@novacucina.com"
+    ],
+    "contacts": [
+      {
+        "name": "Giorgia Pradal",
+        "email": "giorgia@gugel.it",
+        "phone": null,
+        "role": "Logística GUGEL"
+      },
+      {
+        "name": "Martina G.",
+        "email": "martinag@gugel.it",
+        "phone": null,
+        "role": "Logística GUGEL"
+      },
+      {
+        "name": "Elisa Polles",
+        "email": "elisapolles@novacucina.com",
+        "phone": null,
+        "role": "Comercial Nova Cucina"
+      },
+      {
+        "name": "Maria Grazia Poletto",
+        "email": "mariagraziapoletto@novacucina.com",
+        "phone": null,
+        "role": "Directora Comercial"
+      },
+      {
+        "name": "Representante local",
+        "email": null,
+        "phone": "663 913 997",
+        "role": "Representante"
+      }
+    ],
+    "category": "Cocinas",
+    "subcategory": "Cocinas completas importadas de Italia",
+    "transportType": "OWN_LOGISTICS_GROUPAGE",
+    "vehicleType": "groupage_truck",
+    "deliveryFrequency": "biweekly",
+    "typicalUnits": "10-40",
+    "unitType": "bultos",
+    "avgLeadDays": 7,
+    "typicalData": {
+      "orderId": "sometimes",
+      "deliveryNote": "never",
+      "packages": "sometimes",
+      "pallets": "never",
+      "weight": "never",
+      "desiredDate": "sometimes",
+      "desiredTime": "never",
+      "itemList": "sometimes"
+    },
+    "automated": "semi",
+    "automatedFormat": "Asunto automático: 'GUGEL LOGISTICS - AVISO DE ENTREGA (SANCHEZ GINER...)'",
+    "specialNotes": "Importación Italia, grupaje internacional. Camiones con múltiples entregas, difícil previsión exacta. CHS se queja de falta de antelación. Dos destinos posibles (Albolote + tiendas). Telf representante: 663 913 997. | Fergom como logística local (logistica@fergom.es). Envíos menores vía FedEx.",
+    "samplePhrases": [
+      "GUGEL LOGISTICS - AVISO DE ENTREGA (SANCHEZ GINER ALMACEN - Albolote)",
+      "por favor tomad nota de nuestro aviso de entrega en anexo.",
+      "Entregas semana 23"
+    ],
+    "usesAgencies": [
+      "Fergom"
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Distrigal",
+    "officialName": "Distribuciones Gallardo S.L.",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "DISTRIGAL",
+      "Distribuciones Gallardo",
+      "Javier Romero"
+    ],
+    "domains": [
+      "distribucionesgallardo.com"
+    ],
+    "identifyByEmail": [
+      "jromero@distribucionesgallardo.com",
+      "evazquez@distribucionesgallardo.com"
+    ],
+    "contacts": [
+      {
+        "name": "Javier Romero",
+        "email": "jromero@distribucionesgallardo.com",
+        "phone": "956 105 406",
+        "role": "Logística"
+      },
+      {
+        "name": "Elena Vázquez",
+        "email": "evazquez@distribucionesgallardo.com",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Olga Pérez",
+        "email": "operez@distribucionesgallardo.com",
+        "phone": null,
+        "role": "Logística"
+      }
+    ],
+    "fax": "956 158 107",
+    "category": "Muebles",
+    "subcategory": "Sofás (Shaislongue Paton), muebles diversos",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "medium_truck_plus_occasional_trailer",
+    "deliveryFrequency": "twice_weekly",
+    "avgLeadDays": 30,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "always",
+      "packages": "never",
+      "pallets": "never",
+      "weight": "never",
+      "desiredDate": "always",
+      "desiredTime": "never",
+      "itemList": "sometimes"
+    },
+    "automated": false,
+    "specialNotes": "MÁXIMA FRECUENCIA: 2 entregas/semana (Mi+Vi). Planifica por meses. Envía albaranes el día antes (PDF). A veces combina camión + tráiler Shaislongue Paton. Lleva chóferes propios para descarga. Tlf: 956 105 406.",
+    "samplePhrases": [
+      "Citas para Diciembre Distrigal",
+      "Buenos días, para confirmaros que esta semana serían los últimos 2 camiones del año",
+      "¿sería posible que el Miércoles 3/07, descargarais a parte de nuestro camión, un tráiler completo de Shaislongue Paton?"
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Grupo Exojo / Fabri-Kit",
+    "officialName": "Grupo Exojo S.L. / Fabri-Kit",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "GRUPO EXOJO",
+      "FABRI KIT",
+      "Exojo"
+    ],
+    "domains": [
+      "exojo.com"
+    ],
+    "identifyByEmail": [
+      "logistica@exojo.com",
+      "julio.rico@exojo.com",
+      "chaimae.zelmati@exojo.com",
+      "comercial@exojo.com"
+    ],
+    "contacts": [
+      {
+        "name": "Logística",
+        "email": "logistica@exojo.com",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Julio Rico",
+        "email": "julio.rico@exojo.com",
+        "phone": null,
+        "role": "Comercial"
+      },
+      {
+        "name": "Chaimae Zelmati",
+        "email": "chaimae.zelmati@exojo.com",
+        "phone": null,
+        "role": "Logística"
+      }
+    ],
+    "address": "Calle Mártires 154, 02630 La Roda (Albacete)",
+    "category": "Muebles kit",
+    "subcategory": "Muebles de montaje/kit",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "medium_truck",
+    "deliveryFrequency": "biweekly",
+    "typicalUnits": "1-35",
+    "unitType": "m3",
+    "avgLeadDays": 7,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "never",
+      "pallets": "never",
+      "weight": "never",
+      "volume_m3": "always",
+      "desiredDate": "always",
+      "desiredTime": "never",
+      "itemList": "never"
+    },
+    "automated": false,
+    "specialNotes": "ÚNICO PROVEEDOR QUE USA M³ como unidad de volumen. Fórmula fija: 'Podríamos entregar/descargar [N] m³ el [FECHA]?'. Desde La Roda, Albacete (~3h).",
+    "samplePhrases": [
+      "Buenos días, Podríamos entregar 11 m3 el 22/02/24?",
+      "Buenos días, Podríamos descargar 9 M3 el 13/05?",
+      "AVISO DE ENTREGA"
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Glicerio Chaves",
+    "officialName": "Glicerio Chaves S.A.",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "Glicerio Chaves",
+      "Luci",
+      "Lucía Ramírez Nadal"
+    ],
+    "domains": [],
+    "identifyByEmail": [
+      "pedidosluciramirez@hotmail.com"
+    ],
+    "contacts": [
+      {
+        "name": "Lucía Ramírez Nadal",
+        "email": "pedidosluciramirez@hotmail.com",
+        "phone": null,
+        "role": "Representante/Agente comercial"
+      }
+    ],
+    "category": "Muebles",
+    "subcategory": "Dormitorios, mobiliario juvenil",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "route_truck",
+    "deliveryFrequency": "biweekly_to_monthly",
+    "typicalUnits": "1-38",
+    "unitType": "bultos",
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "sometimes",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Usa email personal Hotmail — reconocer por 'Luci' o 'pedidosluciramirez'. Comunicación MUY INFORMAL. Siempre se identifica como 'Luci de Glicerio Chaves'. Camión en ruta, cambios de última hora frecuentes.",
+    "samplePhrases": [
+      "Muy buenas. Soy Luci de Glicerio Chaves. El día 13-03-2024 estaremos en vuestro almacén para la descarga",
+      "Muy buenas. El miércoles día 8/05/24 para la descarga",
+      "Hemos tenido un problema con las cargas. Podemos descargar el Martes"
+    ],
+    "phase": 2
+  },
+  {
+    "name": "IMECI",
+    "officialName": "IMECI",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "IMECI",
+      "Pedidos Imeci"
+    ],
+    "domains": [
+      "imeci.es"
+    ],
+    "identifyByEmail": [
+      "pedidos@imeci.es"
+    ],
+    "contacts": [
+      {
+        "name": "Pedidos",
+        "email": "pedidos@imeci.es",
+        "phone": null,
+        "role": "Logística"
+      }
+    ],
+    "category": "Muebles",
+    "subcategory": "Mobiliario general",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "route_truck",
+    "deliveryFrequency": "monthly_to_bimonthly",
+    "avgLeadDays": 3,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "never",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Cancela y reprograma con frecuencia ('finalmente no estaremos por Granada mañana'). Ruta por Granada — entregas oportunistas. No aporta datos de volumen. Posible relación con Item Internacional/RDA.",
+    "samplePhrases": [
+      "Buenos días, para deciros que estaremos por allí el viernes.",
+      "Buenos días, finalmente no estaremos por Granada mañana, le vuelvo a pedir cita cuando sepa seguro.",
+      "Buenos días, cogernos cita para descargar el lunes día 28/10/2024"
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Lan Mobel",
+    "officialName": "Lan Mobel S.L.",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "LAN MOBEL",
+      "Lan Mobel"
+    ],
+    "domains": [
+      "lanmobel.es"
+    ],
+    "identifyByEmail": [
+      "miren@lanmobel.es",
+      "maria@lanmobel.es",
+      "correo.lanmobel@gmail.com"
+    ],
+    "contacts": [
+      {
+        "name": "Miren Arenas",
+        "email": "miren@lanmobel.es",
+        "phone": "610 448 789",
+        "role": "Dpto. Logística"
+      },
+      {
+        "name": "María Jesús Aizpuru",
+        "email": "maria@lanmobel.es",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Francisco",
+        "email": "franciscojose.gs82@gmail.com",
+        "phone": null,
+        "role": "Conductor/Subcontratado"
+      }
+    ],
+    "category": "Muebles",
+    "subcategory": "Mobiliario (País Vasco)",
+    "transportType": "MIXED",
+    "vehicleType": "large_truck",
+    "usesAgencies": [
+      "agencia local para excedentes"
+    ],
+    "deliveryFrequency": "biweekly",
+    "typicalUnits": "20-400+",
+    "unitType": "bultos",
+    "avgLeadDays": 6,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "always",
+      "pallets": "never",
+      "weight": "never",
+      "desiredDate": "always",
+      "desiredTime": "always",
+      "itemList": "never"
+    },
+    "automated": false,
+    "specialNotes": "ALTO VOLUMEN — hasta 400+ bultos. CHS: 'si van a traer esa cantidad, no pueden llegar a media mañana'. Cierre almacén 15:00. Asunto: 'LAN MOBEL - DESCARGA SEMANA [FECHA]'. Siempre da hora aprox. Miren Arenas: 610 448 789.",
+    "samplePhrases": [
+      "LAN MOBEL - DESCARGA SEMANA 11/12",
+      "La semana que viene estaremos descargando en vuestro almacén el martes 12/12 hacia media mañana con 190 bultos, aprox.",
+      "Llevamos mucho género, más de 400 bultos."
+    ],
+    "phase": 2
+  },
+  {
+    "name": "Fores Group",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "FORES",
+      "Fores-Group"
+    ],
+    "domains": [
+      "fores-group.com",
+      "cevalogistics.com"
+    ],
+    "identifyByEmail": [
+      "logistica.4@fores-group.com",
+      "logistica.3@fores-group.com",
+      "logisitica.4@fores-group.com",
+      "commerce@fores-group.com",
+      "admon.comercial@fores-group.com",
+      "jesus.buedo@cevalogistics.com"
+    ],
+    "contacts": [
+      {
+        "name": "Lidia Beltrán",
+        "email": "logistica.4@fores-group.com",
+        "phone": "964 46 83 16",
+        "role": "Logística"
+      },
+      {
+        "name": "Silvia de la Iglesia",
+        "email": "logistica.3@fores-group.com",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Susanna Fuentes",
+        "email": "commerce@fores-group.com",
+        "phone": null,
+        "role": "Comercial"
+      },
+      {
+        "name": "Jesús Buedo",
+        "email": "jesus.buedo@cevalogistics.com",
+        "phone": null,
+        "role": "CEVA Logistics"
+      }
+    ],
+    "category": "Mobiliario",
+    "subcategory": "Muebles de hogar",
+    "transportType": "VIA_AGENCY",
+    "vehicleType": "pallet_truck",
+    "usesAgencies": [
+      "CEVA Logistics",
+      "MRW",
+      "RDA"
+    ],
+    "deliveryFrequency": "biweekly_to_monthly",
+    "typicalVolume": "groupage_pallets",
+    "typicalUnits": "5-6",
+    "unitType": "palets",
+    "referenceFormats": [
+      "Pedido CHS: 8 dígitos (24001535)",
+      "Envío CBL CEVA: 12 dígitos (830400072596)"
+    ],
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "always",
+      "deliveryNote": "sometimes",
+      "packages": "sometimes",
+      "pallets": "sometimes",
+      "weight": "never",
+      "desiredDate": "always",
+      "desiredTime": "never",
+      "itemList": "never"
+    },
+    "automated": false,
+    "specialNotes": "Usa CEVA Logistics como operador principal. Siempre indica REF pedido CHS en asunto. Necesita muelle para palets.",
+    "samplePhrases": [
+      "Aviso entrega CENTRO HOGAR SANCHEZ - REF. 24001535 para el miércoles 21/02",
+      "PETICION CITA",
+      "SOLICITUD FECHA DESCARGA"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "ITEM Internacional",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "ITEM",
+      "ITEM International S.A.",
+      "ITEM INTERNACIONAL S.A. (PALETS)"
+    ],
+    "domains": [
+      "itemint.com",
+      "ramoneda.es"
+    ],
+    "identifyByEmail": [
+      "amateo.cial@itemint.com",
+      "yjimenez.cial@itemint.com",
+      "jfranco.cial@itemint.com",
+      "cial@itemint.com",
+      "anacontrerasitem@gmail.com"
+    ],
+    "contacts": [
+      {
+        "name": "Anna Mateo",
+        "email": "amateo.cial@itemint.com",
+        "phone": null,
+        "role": "Comercial"
+      },
+      {
+        "name": "Yolanda Jiménez",
+        "email": "yjimenez.cial@itemint.com",
+        "phone": null,
+        "role": "Comercial"
+      },
+      {
+        "name": "Jessica Franco Hidalgo",
+        "email": "jfranco.cial@itemint.com",
+        "phone": null,
+        "role": "Comercial"
+      },
+      {
+        "name": "Ana Contreras",
+        "email": "anacontrerasitem@gmail.com",
+        "phone": null,
+        "role": "Comercial local"
+      }
+    ],
+    "category": "Mobiliario",
+    "subcategory": "Decoración, accesorios hogar",
+    "transportType": "VIA_AGENCY",
+    "usesAgencies": [
+      "Ramoneda/RDA"
+    ],
+    "deliveryFrequency": "monthly",
+    "referenceFormats": [
+      "Albarán ITEM: 8 dígitos prefijo 35 (35019523)",
+      "Expedición RDA: 8 dígitos (54627293)"
+    ],
+    "avgLeadDays": 3,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "always",
+      "packages": "never",
+      "pallets": "sometimes",
+      "weight": "never",
+      "desiredDate": "sometimes",
+      "desiredTime": "never",
+      "itemList": "never"
+    },
+    "automated": "semi",
+    "automatedFormat": "Seguimiento de envíos: ITEM INTERNACIONAL, S.A. (PALETS) / Mercancía lista para enviar - Albarán XXXXXXXX",
+    "specialNotes": "Sistema semi-automatizado con Ramoneda. Emails de seguimiento automáticos. Entregas en palets vía RDA.",
+    "samplePhrases": [
+      "Seguimiento de envíos: ITEM INTERNACIONAL, S.A. (PALETS)",
+      "Mercancía lista para enviar - Albarán 35019523",
+      "cita descarga exp. 54627293"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Muebles Azor",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "MUEBLES AZOR",
+      "Azor"
+    ],
+    "domains": [
+      "mueblesazor.com",
+      "martinrobledo.es"
+    ],
+    "identifyByEmail": [
+      "noemi@mueblesazor.com",
+      "facturacion@mueblesazor.com",
+      "pedidos@martinrobledo.es"
+    ],
+    "contacts": [
+      {
+        "name": "Noemí",
+        "email": "noemi@mueblesazor.com",
+        "phone": null,
+        "role": "Comercial"
+      },
+      {
+        "name": "Sara Bosch",
+        "email": null,
+        "phone": null,
+        "role": "Comercial Azor"
+      },
+      {
+        "name": "Paco",
+        "email": "paco@martinrobledo.es",
+        "phone": null,
+        "role": "Conductor"
+      }
+    ],
+    "category": "Mobiliario",
+    "subcategory": "Muebles de hogar",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "medium_truck",
+    "deliveryFrequency": "biweekly_to_monthly",
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "sometimes",
+      "deliveryNote": "sometimes",
+      "packages": "never",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Comparte logística con Martín Robledo — mismo camión, mismo conductor Paco. pedidos@martinrobledo.es gestiona las citas.",
+    "samplePhrases": [
+      "FECHAS DE ENTREGA",
+      "solo informarles que el próximo martes 11 descargaremos en...",
+      "RELACIÓN PEDIDOS PROGRAMA LIDER PUESTOS EN CARGA"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Muebles Ros",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "ROS",
+      "Ros1",
+      "MUEBLES ROS"
+    ],
+    "domains": [
+      "ros1.com",
+      "seguralogistica.com"
+    ],
+    "identifyByEmail": [
+      "chernandez@ros1.com",
+      "transportes@seguralogistica.com"
+    ],
+    "contacts": [
+      {
+        "name": "Cristina Hernández",
+        "email": "chernandez@ros1.com",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Segura Logística",
+        "email": "transportes@seguralogistica.com",
+        "phone": null,
+        "role": "Agencia"
+      }
+    ],
+    "category": "Mobiliario",
+    "subcategory": "Dormitorios, mobiliario infantil/juvenil",
+    "transportType": "VIA_AGENCY",
+    "usesAgencies": [
+      "Segura Logística",
+      "XPO"
+    ],
+    "deliveryFrequency": "biweekly",
+    "typicalUnits": "10-30",
+    "unitType": "bultos",
+    "avgLeadDays": 4,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "sometimes",
+      "desiredDate": "always",
+      "desiredTime": "sometimes"
+    },
+    "automated": false,
+    "specialNotes": "Cristina Hernández única interlocutora. Usa Segura Logística principal + XPO. A veces avisa mismo día.",
+    "samplePhrases": [
+      "SOLICITUD DE CITA PARA DESCARGA",
+      "descarga hoy a las 12h",
+      "DESCARGA 03/07"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Muebles Torga",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "MUEBLES TORGA",
+      "Torga"
+    ],
+    "domains": [
+      "mueblestorga.com"
+    ],
+    "identifyByEmail": [
+      "administracion@mueblestorga.com",
+      "pedidos@mueblestorga.com",
+      "mtorga@mueblestorga.com"
+    ],
+    "contacts": [
+      {
+        "name": "Administración",
+        "email": "administracion@mueblestorga.com",
+        "phone": null,
+        "role": "Administración"
+      },
+      {
+        "name": "Pedidos",
+        "email": "pedidos@mueblestorga.com",
+        "phone": null,
+        "role": "Logística"
+      }
+    ],
+    "category": "Mobiliario",
+    "subcategory": "Muebles de hogar",
+    "transportType": "MIXED",
+    "usesAgencies": [
+      "XPO"
+    ],
+    "deliveryFrequency": "monthly",
+    "typicalUnits": "5-20",
+    "unitType": "bultos",
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "sometimes",
+      "deliveryNote": "never",
+      "packages": "sometimes",
+      "desiredDate": "always",
+      "desiredTime": "sometimes"
+    },
+    "automated": false,
+    "specialNotes": "Bajo volumen (13 emails). A veces da hora específica. Entregas en bultos.",
+    "samplePhrases": [
+      "DESCARGA MERCANCIA MUEBLES TORGA",
+      "PEDIDOS PARA ENTREGAR LUNES 9 DE FEBRERO A 1ªH DE LA MAÑANA",
+      "10:00h 20 pedidos."
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Hermanos Casado",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "MUEBLES HNOS CASADO",
+      "Hnos. Casado",
+      "Casado Mobiliario"
+    ],
+    "domains": [
+      "hermanoscasado.com"
+    ],
+    "identifyByEmail": [
+      "antonio@hermanoscasado.com",
+      "victor@hermanoscasado.com"
+    ],
+    "contacts": [
+      {
+        "name": "Antonio",
+        "email": "antonio@hermanoscasado.com",
+        "phone": null,
+        "role": "Comercial/Logística"
+      },
+      {
+        "name": "Víctor",
+        "email": "victor@hermanoscasado.com",
+        "phone": null,
+        "role": "Comercial"
+      }
+    ],
+    "category": "Mobiliario",
+    "subcategory": "Muebles de hogar",
+    "transportType": "MIXED",
+    "usesAgencies": [
+      "XPO"
+    ],
+    "deliveryFrequency": "biweekly_to_monthly",
+    "avgLeadDays": 3,
+    "typicalData": {
+      "orderId": "sometimes",
+      "deliveryNote": "never",
+      "packages": "sometimes",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Usa XPO frecuentemente (23 menciones). Antonio informal. A veces urgente (CITA URGENTE PARA MAÑANA).",
+    "samplePhrases": [
+      "Buenos días el viernes dia 26-01-24 te va a dejar en el almacén 2 pedidos",
+      "Buenos días solicito cita de almacén para el jueves 27-06-24 para descargar",
+      "CITA URGENTE PARA MAÑANA"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Muebles Mágina",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "MUEBLES MAGINA"
+    ],
+    "domains": [
+      "mueblesmagina.com"
+    ],
+    "identifyByEmail": [
+      "pedidos@mueblesmagina.com",
+      "almudena@mueblesmagina.com",
+      "mueblesmagina@mueblesmagina.com"
+    ],
+    "contacts": [
+      {
+        "name": "Pedidos",
+        "email": "pedidos@mueblesmagina.com",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Jesús Campillo",
+        "email": null,
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Almudena",
+        "email": "almudena@mueblesmagina.com",
+        "phone": null,
+        "role": "Comercial"
+      },
+      {
+        "name": "Ángel Moreno",
+        "email": null,
+        "phone": null,
+        "role": "Representante"
+      }
+    ],
+    "fax": "953 355 084",
+    "category": "Mobiliario",
+    "subcategory": "Muebles de hogar",
+    "transportType": "MIXED",
+    "usesAgencies": [
+      "Traesdemu"
+    ],
+    "deliveryFrequency": "biweekly",
+    "typicalUnits": "10-20",
+    "unitType": "bultos",
+    "avgLeadDays": 3,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "sometimes",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Usa Traesdemu (misma agencia que Muñoz Robles). Zona de Jaén.",
+    "samplePhrases": [
+      "PARA DESCARGA DEL MIERCOLES",
+      "Cita de descarga traesdemu",
+      "CITA DESCARGA"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Grupo Seys",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "GRUPO SEYS",
+      "Muebles Grupo Seys"
+    ],
+    "domains": [
+      "gruposeys.com"
+    ],
+    "identifyByEmail": [
+      "nati@gruposeys.com",
+      "maribel@gruposeys.com"
+    ],
+    "contacts": [
+      {
+        "name": "Nati",
+        "email": "nati@gruposeys.com",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Maribel",
+        "email": "maribel@gruposeys.com",
+        "phone": null,
+        "role": "Logística"
+      }
+    ],
+    "fax": "957 513 434",
+    "category": "Mobiliario",
+    "subcategory": "Muebles de hogar (Córdoba)",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "medium_truck",
+    "deliveryFrequency": "biweekly",
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "sometimes",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Nati es interlocutora principal. Camión propio desde Córdoba. Fax 957 513 434.",
+    "samplePhrases": [
+      "Buenos dias, quisiéramos solicitar cita para el día 20 de Diciembre para...",
+      "quisiera cita para descargar el dia 26 de Febrero",
+      "DAR CITA"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Grupo Forma 5",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "GRUPO FORMA 5",
+      "Forma 5"
+    ],
+    "domains": [
+      "forma5.com"
+    ],
+    "identifyByEmail": [
+      "rarroyo@forma5.com",
+      "jgutierrez@forma5.com",
+      "anarosapr26@gmail.com",
+      "mgrinan@forma5.com"
+    ],
+    "contacts": [
+      {
+        "name": "Rosana Arroyo",
+        "email": "rarroyo@forma5.com",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Javier Gutiérrez",
+        "email": "jgutierrez@forma5.com",
+        "phone": null,
+        "role": "Comercial"
+      },
+      {
+        "name": "Ana Rosa Prieto",
+        "email": "anarosapr26@gmail.com",
+        "phone": null,
+        "role": "Representante local"
+      }
+    ],
+    "category": "Mobiliario",
+    "subcategory": "Sillas oficina, mobiliario contrato",
+    "transportType": "MIXED",
+    "usesAgencies": [
+      "RDA",
+      "Transportes Ortuño"
+    ],
+    "deliveryFrequency": "monthly",
+    "typicalUnits": "3-10",
+    "unitType": "bultos",
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "sometimes",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "CHS no acepta descargas por la tarde. Representante local Ana Rosa usa Gmail. Transportes Ortuño como subcontratado.",
+    "samplePhrases": [
+      "solicitud cita descarga",
+      "Ruego me asignen cita para descargar mercancía de Forma 5 para el jueves 24",
+      "descarga grupo forma 5"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Tegar Mobel",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "TEGAR MOBEL",
+      "Tegar",
+      "Kibuc"
+    ],
+    "domains": [
+      "tegarmobel.com",
+      "kibuc.com"
+    ],
+    "identifyByEmail": [
+      "logistica@tegarmobel.com",
+      "m.orenga@tegarmobel.com",
+      "maripaz.granada@kibuc.com"
+    ],
+    "contacts": [
+      {
+        "name": "Logística Tegar",
+        "email": "logistica@tegarmobel.com",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Maite Orenga",
+        "email": "m.orenga@tegarmobel.com",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Mari Paz Granada",
+        "email": "maripaz.granada@kibuc.com",
+        "phone": null,
+        "role": "Kibuc Granada"
+      }
+    ],
+    "category": "Mobiliario",
+    "subcategory": "Muebles hogar (marca Kibuc)",
+    "transportType": "VIA_AGENCY",
+    "deliveryFrequency": "monthly",
+    "typicalUnits": "5-10",
+    "unitType": "bultos",
+    "avgLeadDays": 7,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "sometimes",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Marca comercial Kibuc. Asuntos: 'Previsión de entrega: KIBUC GRANADA'. Bajo volumen.",
+    "samplePhrases": [
+      "Previsión de entrega: KIBUC GRANADA",
+      "Previsión de entrega: KIBUC GRANADA-TEGAR"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Rimobel",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "RIMOBEL",
+      "Carlos Cid"
+    ],
+    "domains": [
+      "rimobel.com"
+    ],
+    "identifyByEmail": [
+      "carloscid81@hotmail.com",
+      "manuel.miralles@rimobel.com",
+      "pablosv68@gmail.com"
+    ],
+    "contacts": [
+      {
+        "name": "Carlos Cid Ferré",
+        "email": "carloscid81@hotmail.com",
+        "phone": null,
+        "role": "Transportista habitual"
+      },
+      {
+        "name": "Manuel Miralles",
+        "email": "manuel.miralles@rimobel.com",
+        "phone": null,
+        "role": "Comercial"
+      },
+      {
+        "name": "Pablo Sanz Vidal",
+        "email": "pablosv68@gmail.com",
+        "phone": null,
+        "role": "Transportista suplente"
+      }
+    ],
+    "category": "Mobiliario",
+    "subcategory": "Dormitorios, muebles modulares",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "medium_truck",
+    "usesAgencies": [
+      "RDA"
+    ],
+    "deliveryFrequency": "biweekly_to_monthly",
+    "typicalUnits": "6-206",
+    "unitType": "bultos",
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "sometimes",
+      "deliveryNote": "never",
+      "packages": "always",
+      "pallets": "never",
+      "weight": "never",
+      "volume_m3": "sometimes",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Carlos Cid (Hotmail) es transportista habitual. A veces da m³. Necesita muelle. RDA como alternativa.",
+    "samplePhrases": [
+      "Buenos dias. Soy Carlos, el transportista de Rimobel, sirva este correo como aviso de que...",
+      "descarga en sus instalaciones de 11 pedidos que suben en total 206 bultos unos 11m3 para el jueves día 19/9/24"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Muebles Ramis",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "RAMIS"
+    ],
+    "domains": [
+      "mueblesramis.com",
+      "transportes-sureste.com"
+    ],
+    "identifyByEmail": [
+      "expediciones@mueblesramis.com",
+      "pedidos@mueblesramis.com",
+      "ventas@mueblesramis.com",
+      "comercial@mueblesramis.com"
+    ],
+    "contacts": [
+      {
+        "name": "Expediciones",
+        "email": "expediciones@mueblesramis.com",
+        "phone": "96 253 01 37",
+        "role": "Logística"
+      },
+      {
+        "name": "Pedidos",
+        "email": "pedidos@mueblesramis.com",
+        "phone": null,
+        "role": "Pedidos"
+      },
+      {
+        "name": "Javier Espert",
+        "email": null,
+        "phone": "96 253 84 47",
+        "role": "Comercial"
+      },
+      {
+        "name": "Transportes Sureste",
+        "email": "comercial@transportes-sureste.com",
+        "phone": null,
+        "role": "Agencia"
+      }
+    ],
+    "fax": "96 253 17 56",
+    "category": "Mobiliario",
+    "subcategory": "Muebles de hogar (Valencia)",
+    "transportType": "MIXED",
+    "usesAgencies": [
+      "Transportes Sureste"
+    ],
+    "deliveryFrequency": "biweekly",
+    "avgLeadDays": 7,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "always",
+      "packages": "never",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Envía albaranes siempre por adelantado (como Distrigal). Desde Valencia. Telf: 96 253 01 37.",
+    "samplePhrases": [
+      "ALBARANES RAMIS",
+      "RAMIS-petición cita descarga lunes 7-10-24",
+      "Confirmacion pedidos detalle"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Pikolín",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "PIKOLIN"
+    ],
+    "domains": [
+      "pikolin.com"
+    ],
+    "identifyByEmail": [
+      "manuel.gaona@pikolin.com"
+    ],
+    "contacts": [
+      {
+        "name": "Manuel Gaona Rivera",
+        "email": "manuel.gaona@pikolin.com",
+        "phone": null,
+        "role": "Logística/Comercial"
+      }
+    ],
+    "category": "Colchonería",
+    "subcategory": "Colchones, bases tapizadas",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "route_truck",
+    "deliveryFrequency": "biweekly",
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "never",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Manuel Gaona ÚNICO interlocutor. Asunto MUY consistente: 'CITA DESCARGA PIKOLIN [DÍA] [FECHA]'. Alta frecuencia.",
+    "samplePhrases": [
+      "CITA DESCARGA PIKOLIN",
+      "CITA DESCARGA PIKOLIN MIERCOLES 26/02",
+      "CITAS DESCARGA PIKOLIN"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Flex",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "FLEX"
+    ],
+    "domains": [],
+    "identifyByEmail": [
+      "oficinamudanzasf.cazorla@outlook.es"
+    ],
+    "contacts": [
+      {
+        "name": "Juan Francisco García",
+        "email": "oficinamudanzasf.cazorla@outlook.es",
+        "phone": null,
+        "role": "Distribuidor local (Cazorla)"
+      }
+    ],
+    "category": "Colchonería",
+    "subcategory": "Colchones, bases",
+    "transportType": "VIA_DISTRIBUTOR",
+    "vehicleType": "medium_truck",
+    "usesAgencies": [
+      "Transportes Cazorla (distribuidor local)",
+      "RDA"
+    ],
+    "deliveryFrequency": "weekly_to_biweekly",
+    "avgLeadDays": 3,
+    "typicalData": {
+      "orderId": "sometimes",
+      "deliveryNote": "never",
+      "packages": "never",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Flex NO contacta directamente. Juan Fco. García (Cazorla) es intermediario. Altísima frecuencia (148 emails). Cazorla = distribuidor local con almacén propio.",
+    "samplePhrases": [
+      "CITA FLEX",
+      "Cita descarga pedidos Flex",
+      "Citas miércoles 25 y jueves 26"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Samsung",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "SAMSUNG"
+    ],
+    "domains": [
+      "partner.samsung.com",
+      "samsung.com"
+    ],
+    "identifyByEmail": [
+      "paula.lopez@partner.samsung.com",
+      "j.cogollo@samsung.com",
+      "ma.berezo@samsung.com"
+    ],
+    "contacts": [
+      {
+        "name": "Paula López Díez",
+        "email": "paula.lopez@partner.samsung.com",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Javier Cogollo Huete",
+        "email": "j.cogollo@samsung.com",
+        "phone": null,
+        "role": "Comercial"
+      }
+    ],
+    "category": "Electrodomésticos",
+    "subcategory": "TV, electrodomésticos",
+    "transportType": "VIA_AGENCY",
+    "deliveryFrequency": "monthly_to_bimonthly",
+    "avgLeadDays": 4,
+    "typicalData": {
+      "orderId": "always",
+      "deliveryNote": "never",
+      "packages": "never",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": "semi",
+    "automatedFormat": "[SAMSUNG] Delivery Booking-YYYYMMDD-SANCHEZ GINER I, S.A.",
+    "specialNotes": "Sistema automatizado Delivery Booking. Muy bajo volumen entregas directas. Asunto predecible.",
+    "samplePhrases": [
+      "[SAMSUNG] Delivery Booking-20240531-SANCHEZ GINER I, S.A."
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Electrolux",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "ELECTROLUX"
+    ],
+    "domains": [
+      "electrolux.com"
+    ],
+    "identifyByEmail": [
+      "b2b.es@electrolux.com",
+      "laburu@electrolux.com",
+      "partner.es@electrolux.com",
+      "ruiz.laburu@electrolux.com"
+    ],
+    "contacts": [
+      {
+        "name": "B2B España",
+        "email": "b2b.es@electrolux.com",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Jorge Antonio Ruiz Laburu",
+        "email": "laburu@electrolux.com",
+        "phone": null,
+        "role": "Comercial"
+      }
+    ],
+    "category": "Electrodomésticos",
+    "subcategory": "Hornos, campanas, encimeras",
+    "transportType": "VIA_AGENCY",
+    "deliveryFrequency": "monthly",
+    "referenceFormats": [
+      "Case ID: 7 dígitos (2312002)"
+    ],
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "always",
+      "deliveryNote": "sometimes",
+      "packages": "never",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": "semi",
+    "automatedFormat": "[ Case ID: XXXXXXX ] SOLICITUD DESCARGA [Día] [DD/MM]",
+    "specialNotes": "Sistema de tickets Case ID. DOS DESTINOS: Albolote y Antequera. Adjunta Booking Excel.",
+    "samplePhrases": [
+      "[ Case ID: 2312002 ] SOLICITUD DESCARGA Jueves 04/04",
+      "[ Case ID: 2345865 ] SOLICITUD DESCARGA Jueves 25/04"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Daikin",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "DAIKIN",
+      "Suministros Daikin"
+    ],
+    "domains": [
+      "daikin.es"
+    ],
+    "identifyByEmail": [
+      "suministrosdaikin@daikin.es",
+      "martin.a@daikin.es"
+    ],
+    "contacts": [
+      {
+        "name": "Suministros Daikin",
+        "email": "suministrosdaikin@daikin.es",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Martin A.",
+        "email": "martin.a@daikin.es",
+        "phone": null,
+        "role": "Comercial"
+      }
+    ],
+    "category": "Climatización",
+    "subcategory": "Aires acondicionados, bombas calor",
+    "transportType": "VIA_AGENCY",
+    "usesAgencies": [
+      "TDN"
+    ],
+    "deliveryFrequency": "monthly",
+    "referenceFormats": [
+      "Pedido CHS: 8 dígitos (24000080)",
+      "Pedido DACS: 8 dígitos prefijo 78 (78455940)",
+      "Código ESD507"
+    ],
+    "avgLeadDays": 7,
+    "typicalData": {
+      "orderId": "always",
+      "deliveryNote": "never",
+      "packages": "never",
+      "desiredDate": "sometimes",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Asuntos muy informativos con múltiples códigos. Usa TDN. 'STOCK 24CS' = stock para Sánchez Giner.",
+    "samplePhrases": [
+      "S/ Pedido Nº 24000080 - Coordinación para Entregar - Pedido DACS 78459665 ESD507",
+      "STOCK 24CS ---RE: PEDIDO 24000081 78459678 ESD507"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Hevea",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "HEVEA"
+    ],
+    "domains": [
+      "hevea.es"
+    ],
+    "identifyByEmail": [
+      "ventas203@hevea.es",
+      "ismael@hevea.es"
+    ],
+    "contacts": [
+      {
+        "name": "Ventas 203",
+        "email": "ventas203@hevea.es",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Ismael",
+        "email": "ismael@hevea.es",
+        "phone": null,
+        "role": "Comercial"
+      }
+    ],
+    "category": "Mobiliario",
+    "subcategory": "Muebles de baño",
+    "transportType": "VIA_AGENCY",
+    "deliveryFrequency": "monthly",
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "never",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Asunto SIEMPRE 'CITA PARA ENTREGAR PEDIDO'. ventas203@hevea.es único contacto.",
+    "samplePhrases": [
+      "CITA PARA ENTREGAR PEDIDO"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Productos Kol",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "PRODUCTOS KOL"
+    ],
+    "domains": [
+      "productoskol.es"
+    ],
+    "identifyByEmail": [
+      "patricia.ibanez@productoskol.es",
+      "luisa.guindano@productoskol.es"
+    ],
+    "contacts": [
+      {
+        "name": "Patricia Ibáñez Bandres",
+        "email": "patricia.ibanez@productoskol.es",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Luisa Guindano",
+        "email": "luisa.guindano@productoskol.es",
+        "phone": null,
+        "role": "Logística"
+      }
+    ],
+    "category": "Mobiliario",
+    "subcategory": "Productos del hogar",
+    "transportType": "VIA_AGENCY",
+    "usesAgencies": [
+      "Granada Cargo"
+    ],
+    "deliveryFrequency": "monthly",
+    "referenceFormats": [
+      "Pedido CHS: 8 dígitos (24000323)",
+      "Albarán Kol: 10 dígitos (8002295992)",
+      "Código cliente: 8310090412"
+    ],
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "always",
+      "deliveryNote": "sometimes",
+      "packages": "never",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Asuntos con 'albolote [nº pedido]'. Usa Granada Cargo.",
+    "samplePhrases": [
+      "albolote 24000323",
+      "cita 7962 : sanchz giner 8310090412"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Kave Home / Urucat",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "KAVE HOME",
+      "KaveHome",
+      "Urucat Málaga"
+    ],
+    "domains": [
+      "urucat.com",
+      "kavehome.com"
+    ],
+    "identifyByEmail": [
+      "malaga@urucat.com"
+    ],
+    "contacts": [
+      {
+        "name": "Alejandro (Urucat Málaga)",
+        "email": "malaga@urucat.com",
+        "phone": "674 251 085",
+        "role": "Delegación reparto"
+      }
+    ],
+    "category": "Mobiliario/Decoración",
+    "subcategory": "Muebles de diseño",
+    "transportType": "VIA_AGENCY",
+    "usesAgencies": [
+      "Urucat"
+    ],
+    "deliveryFrequency": "biweekly",
+    "avgLeadDays": 3,
+    "typicalData": {
+      "orderId": "sometimes",
+      "deliveryNote": "sometimes",
+      "packages": "sometimes",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Urucat es repartidor de KaveHome. CHS no acepta descargas fuera horario. Telf: 674 251 085.",
+    "samplePhrases": [
+      "Buenos días, somos de la empresa de reparto de kavehome, necesitamos que nos...",
+      "Entrega KaveHome",
+      "cita descarga Kave home"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Cincocina",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "CINCOCINA SL",
+      "CINCOCINA S L"
+    ],
+    "domains": [
+      "cincocina.com"
+    ],
+    "identifyByEmail": [
+      "rmorillas@cincocina.com"
+    ],
+    "contacts": [
+      {
+        "name": "Raúl Morillas",
+        "email": "rmorillas@cincocina.com",
+        "phone": "663 913 997",
+        "role": "Logística/Comercial"
+      }
+    ],
+    "category": "Cocinas",
+    "subcategory": "Cocinas completas",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "truck_or_trailer",
+    "usesAgencies": [
+      "RDA"
+    ],
+    "deliveryFrequency": "monthly",
+    "avgLeadDays": 7,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "never",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Telf 663 913 997 COMPARTIDO con representante Nova Cucine. Necesita muelle. Asunto: 'CINCOCINA SL'.",
+    "samplePhrases": [
+      "CINCOCINA SL",
+      "Buenos días, el 14 de febrero, se le hará entrega de la mercancía con la..."
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Industrias Rodrigo",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "IND.RODRIGO"
+    ],
+    "domains": [
+      "industriasrodrigo.com"
+    ],
+    "identifyByEmail": [
+      "ana.rodrigo@industriasrodrigo.com",
+      "disenio@industriasrodrigo.com"
+    ],
+    "contacts": [
+      {
+        "name": "Ana Rodrigo Sanz",
+        "email": "ana.rodrigo@industriasrodrigo.com",
+        "phone": "921 14 08 70",
+        "role": "Logística"
+      }
+    ],
+    "category": "Mobiliario",
+    "subcategory": "Muebles (Segovia)",
+    "transportType": "OWN_TRUCK",
+    "deliveryFrequency": "monthly",
+    "typicalUnits": "5-15",
+    "unitType": "bultos",
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "sometimes",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Asuntos SIEMPRE 'PROXIMA DESCARGA' o 'PROXIMA ENTREGA'. Telf: 921 14 08 70.",
+    "samplePhrases": [
+      "PROXIMA DESCARGA",
+      "PROXIMA ENTREGA"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "D'Sueños",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "DALQSUEÑOS",
+      "D'Sueños J Mattres S.L.U."
+    ],
+    "domains": [
+      "dsuenos.es"
+    ],
+    "identifyByEmail": [
+      "almacen@dsuenos.es",
+      "nuria@dsuenos.es",
+      "datos@dsuenos.es"
+    ],
+    "contacts": [
+      {
+        "name": "Almacén",
+        "email": "almacen@dsuenos.es",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Nuria",
+        "email": "nuria@dsuenos.es",
+        "phone": null,
+        "role": "Logística"
+      }
+    ],
+    "category": "Colchonería",
+    "subcategory": "Colchones",
+    "transportType": "MIXED",
+    "usesAgencies": [
+      "Transportes Cazorla"
+    ],
+    "deliveryFrequency": "monthly",
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "always",
+      "deliveryNote": "never",
+      "packages": "never",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Siempre incluye nº pedido CHS en asunto. Usa Cazorla como distribuidor local (mismo que Flex).",
+    "samplePhrases": [
+      "CITA PREVIA DE DESCARGA",
+      "CITA PARA DESCARGA PEDIDO ON LINE 25147447"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Vamasur",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "VAMASUR"
+    ],
+    "domains": [
+      "vamasur.com"
+    ],
+    "identifyByEmail": [
+      "comercial@vamasur.com",
+      "gestion@vamasur.com"
+    ],
+    "contacts": [
+      {
+        "name": "Comercial",
+        "email": "comercial@vamasur.com",
+        "phone": null,
+        "role": "Comercial/Logística"
+      },
+      {
+        "name": "Pedro Camacho",
+        "email": "camachogarcia23429@gmail.com",
+        "phone": null,
+        "role": "Conductor"
+      }
+    ],
+    "category": "Mobiliario",
+    "subcategory": "Muebles de hogar",
+    "transportType": "OWN_TRUCK",
+    "deliveryFrequency": "biweekly_to_monthly",
+    "typicalUnits": "5-15",
+    "unitType": "bultos",
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "sometimes",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Asunto SIEMPRE 'Próxima descarga' o 'Próxima entrega'. Pedro Camacho usa Gmail.",
+    "samplePhrases": [
+      "Próxima descarga",
+      "Próxima entrega"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Muval",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "MUVAL"
+    ],
+    "domains": [],
+    "identifyByEmail": [
+      "abarriosmartin@gmail.com",
+      "tgtsbarrios@gmail.com"
+    ],
+    "contacts": [
+      {
+        "name": "Antonio Barrios",
+        "email": "abarriosmartin@gmail.com",
+        "phone": null,
+        "role": "Conductor/Propietario"
+      }
+    ],
+    "category": "Mobiliario",
+    "subcategory": "Muebles",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "medium_truck",
+    "deliveryFrequency": "biweekly_to_monthly",
+    "avgLeadDays": 1,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "never",
+      "desiredDate": "always",
+      "desiredTime": "sometimes"
+    },
+    "automated": false,
+    "specialNotes": "MUY INFORMAL (tono WhatsApp). Poca antelación. CHS pide más aviso. Gmail sin dominio corporativo.",
+    "samplePhrases": [
+      "mañana descarga muval",
+      "PROXIMO JUEVES DÍA 12/12",
+      "EL LUNES DIA 30/12 TE DESCARGA MUVAL 1 MESA"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "MJ Martinha",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "MANUEL JACINTO DA MARTINHA",
+      "MJM"
+    ],
+    "domains": [
+      "mjmartinha.pt"
+    ],
+    "identifyByEmail": [
+      "nunomartinha@mjmartinha.pt"
+    ],
+    "contacts": [
+      {
+        "name": "Nuno Martinha",
+        "email": "nunomartinha@mjmartinha.pt",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Helder Cristovao",
+        "email": "helder.cristovao@pt.dachser.com",
+        "phone": null,
+        "role": "Dachser PT"
+      },
+      {
+        "name": "Eduardo Junior",
+        "email": "eduardo.junior@pt.dachser.com",
+        "phone": null,
+        "role": "Dachser PT"
+      }
+    ],
+    "category": "Mobiliario",
+    "subcategory": "Puffs",
+    "transportType": "VIA_AGENCY",
+    "usesAgencies": [
+      "Dachser"
+    ],
+    "deliveryFrequency": "monthly_to_bimonthly",
+    "avgLeadDays": 8,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "never",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Proveedor portugués, bilingüe español/portugués. Usa Dachser internacional. Bajo volumen.",
+    "samplePhrases": [
+      "fecha de entrega",
+      "entrega",
+      "consulta"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Lumamar Granada",
+    "type": "LOCAL_DISTRIBUTOR",
+    "aliases": [
+      "LUMAMAR GRANADA",
+      "Encarnita"
+    ],
+    "domains": [
+      "lumamargranada.com"
+    ],
+    "identifyByEmail": [
+      "eperez@lumamargranada.com",
+      "paulino@lumamargranada.com",
+      "lumamargranada@lumamargranada.com"
+    ],
+    "contacts": [
+      {
+        "name": "Encarnita (Encarna Pérez)",
+        "email": "eperez@lumamargranada.com",
+        "phone": null,
+        "role": "Comercial/Logística"
+      },
+      {
+        "name": "Paulino",
+        "email": "paulino@lumamargranada.com",
+        "phone": null,
+        "role": "Logística"
+      }
+    ],
+    "category": "Mobiliario",
+    "subcategory": "Muebles, mesas camilla, decoración local",
+    "transportType": "OWN_TRUCK",
+    "vehicleType": "van_or_small_truck",
+    "deliveryFrequency": "biweekly_to_monthly",
+    "typicalUnits": "2-10",
+    "unitType": "bultos",
+    "avgLeadDays": 2,
+    "typicalData": {
+      "orderId": "sometimes",
+      "deliveryNote": "never",
+      "packages": "sometimes",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Distribuidor LOCAL Granada. Encarnita siempre se identifica. Dos destinos: Albolote y CENTRO 3 - JUNCARIL. Erratas frecuentes.",
+    "samplePhrases": [
+      "Buenos día, soy Encarnita de Lumamar Granada. Me podéis confirmar cita para...",
+      "CITA DESCARGA PARA EL JUEVES, 10/10/2024",
+      "CITA DIA 20/12/2024 CENTRO 3 - JUNCARIL"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Distribuciones Luna",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "DIST. LUNA"
+    ],
+    "domains": [
+      "distribuciones-luna.com",
+      "alejandraffernandez.com",
+      "transportesamate.com"
+    ],
+    "identifyByEmail": [
+      "comercial@alejandraffernandez.com",
+      "administracion@distribuciones-luna.com",
+      "ventas@distribuciones-luna.com"
+    ],
+    "contacts": [
+      {
+        "name": "Alejandra Fernández",
+        "email": "comercial@alejandraffernandez.com",
+        "phone": null,
+        "role": "Representante/Intermediaria"
+      },
+      {
+        "name": "María del Mar",
+        "email": null,
+        "phone": null,
+        "role": "Distribuciones Luna"
+      },
+      {
+        "name": "Transportes Amate",
+        "email": null,
+        "phone": null,
+        "role": "Agencia local"
+      }
+    ],
+    "category": "Mobiliario",
+    "subcategory": "Muebles",
+    "transportType": "MIXED",
+    "usesAgencies": [
+      "Transportes Amate"
+    ],
+    "deliveryFrequency": "biweekly_to_monthly",
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "never",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Alejandra Fernández es intermediaria principal. Usa Transportes Amate. Asunto: 'CITA DISTRIBUCIONES LUNA'.",
+    "samplePhrases": [
+      "CITA DISTRIBUCIONES LUNA"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Transportes Chacón",
+    "type": "AGENCY",
+    "aliases": [
+      "TRANSP.CHACON",
+      "Francisco Javier Chacón Gómez"
+    ],
+    "domains": [],
+    "identifyByEmail": [
+      "chacontransport2016@gmail.com"
+    ],
+    "contacts": [
+      {
+        "name": "Francisco Javier Chacón Gómez",
+        "email": "chacontransport2016@gmail.com",
+        "phone": null,
+        "role": "Transportista"
+      }
+    ],
+    "category": "Agencia transporte",
+    "transportType": "ES_AGENCIA",
+    "deliveryFrequency": "biweekly",
+    "deliversFor": [
+      "Tegar Mobel"
+    ],
+    "avgLeadDays": 2,
+    "automated": false,
+    "specialNotes": "Transportista local. Siempre 'Coger cita' como asunto. Gmail personal. Entrega para Tegar Mobel.",
+    "samplePhrases": [
+      "Coger cita",
+      "Buenos días, para coger cita para el jueves día 13/12/2023"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Tecum Logística",
+    "type": "AGENCY",
+    "aliases": [
+      "TRANS.TECUMLOGISTICA"
+    ],
+    "domains": [
+      "tecumlogistica.com"
+    ],
+    "identifyByEmail": [
+      "operaciones@tecumlogistica.com",
+      "augusto@tecumlogistica.com"
+    ],
+    "contacts": [
+      {
+        "name": "Operaciones",
+        "email": "operaciones@tecumlogistica.com",
+        "phone": null,
+        "role": "Operaciones"
+      },
+      {
+        "name": "Augusto",
+        "email": "augusto@tecumlogistica.com",
+        "phone": null,
+        "role": "Logística"
+      }
+    ],
+    "category": "Agencia transporte",
+    "transportType": "ES_AGENCIA",
+    "deliveryFrequency": "biweekly",
+    "deliversFor": [],
+    "avgLeadDays": 2,
+    "automated": false,
+    "specialNotes": "Agencia genérica. Asuntos: CITA ENTREGA, SOLICITUD CITA, CITA TECUM. Da nº bultos.",
+    "samplePhrases": [
+      "CITA ENTREGA",
+      "SOLICITUD CITA",
+      "CITA TECUM"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Transportes Ortuño",
+    "type": "AGENCY",
+    "aliases": [
+      "TRANSP.ORTUÁNEO",
+      "José Manuel Ortuño Puche"
+    ],
+    "domains": [],
+    "identifyByEmail": [
+      "transportesortuno@gmail.com"
+    ],
+    "contacts": [
+      {
+        "name": "José Manuel Ortuño Puche",
+        "email": "transportesortuno@gmail.com",
+        "phone": null,
+        "role": "Transportista autónomo"
+      }
+    ],
+    "category": "Agencia transporte",
+    "transportType": "ES_AGENCIA",
+    "deliveryFrequency": "biweekly",
+    "deliversFor": [
+      "Tapizados Muñoz Robles",
+      "Tapizados Formas",
+      "Grupo Forma 5"
+    ],
+    "avgLeadDays": 1,
+    "automated": false,
+    "specialNotes": "Transportista autónomo. TODO en asunto: fabricante + bultos + fecha + hora. Gmail personal.",
+    "samplePhrases": [
+      "CITA PARA DESCARGA DE 2 SOFAS DE MUÑOZ ROBLES PARA MIERCOLES 13/3/2024",
+      "CITA PARA DESCARGA JUEVES 8/5/25 A ULTIMA HORA DE LA MAÑANA 2 BULTOS DE TAPIZADOS FORMAS"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Cayco",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "CAYCO"
+    ],
+    "domains": [
+      "cayco.es"
+    ],
+    "identifyByEmail": [
+      "jmiguelgarcia@cayco.es"
+    ],
+    "contacts": [
+      {
+        "name": "Juan Miguel García González",
+        "email": "jmiguelgarcia@cayco.es",
+        "phone": null,
+        "role": "Comercial/Logística"
+      }
+    ],
+    "category": "Mobiliario",
+    "subcategory": "Muebles de baño/cocina",
+    "transportType": "OWN_TRUCK",
+    "deliveryFrequency": "biweekly_to_monthly",
+    "typicalUnits": "2-5",
+    "unitType": "palets",
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "never",
+      "pallets": "always",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Asunto siempre 'PETICION FECHA DE ENTREGA [DD-MM-AA]'. Entregas en palets. Relación con JANCOR.",
+    "samplePhrases": [
+      "PETICION FECHA DE ENTREGA 10-04-24",
+      "Si pueden pasarse mañana para la descarga"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Transportes Hernández",
+    "type": "AGENCY",
+    "aliases": [
+      "TRANS.HERNANDEZ"
+    ],
+    "domains": [
+      "transporteshernandez.es"
+    ],
+    "identifyByEmail": [
+      "maricarmen@transporteshernandez.es",
+      "natalia@transporteshernandez.es",
+      "inmaculada@transporteshernandez.es"
+    ],
+    "contacts": [
+      {
+        "name": "Mari Carmen",
+        "email": "maricarmen@transporteshernandez.es",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Natalia",
+        "email": "natalia@transporteshernandez.es",
+        "phone": null,
+        "role": "Logística"
+      },
+      {
+        "name": "Inmaculada",
+        "email": "inmaculada@transporteshernandez.es",
+        "phone": null,
+        "role": "Logística"
+      }
+    ],
+    "category": "Agencia transporte",
+    "transportType": "ES_AGENCIA",
+    "deliveryFrequency": "weekly",
+    "deliversFor": [],
+    "avgLeadDays": 3,
+    "automated": false,
+    "specialNotes": "Patrón JUEVES — casi siempre descargan los jueves. Envían albaranes. 'ATT/ SR.VAQUERO'.",
+    "samplePhrases": [
+      "DESCARGA JUEVES 17",
+      "CITA DESCARGA - ATT/ SR.VAQUERO",
+      "SOLICITUD DESCARGA"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Transportes Carson",
+    "type": "AGENCY",
+    "aliases": [
+      "TRANSP.CARSON",
+      "Carlos J. Pérez"
+    ],
+    "domains": [],
+    "identifyByEmail": [
+      "transportescarson@hotmail.com"
+    ],
+    "contacts": [
+      {
+        "name": "Carlos J. Pérez",
+        "email": "transportescarson@hotmail.com",
+        "phone": null,
+        "role": "Transportista"
+      }
+    ],
+    "category": "Agencia transporte",
+    "transportType": "ES_AGENCIA",
+    "deliveryFrequency": "monthly",
+    "deliversFor": [
+      "Muebles Ros"
+    ],
+    "avgLeadDays": 1,
+    "automated": false,
+    "specialNotes": "MUY INFORMAL. Hotmail. Asuntos mínimos. Envía fotos mercancía. Entrega para Muebles Ros.",
+    "samplePhrases": [
+      "Descargar",
+      "Para poder descargar mañana viernes doce bultos de muebles ros"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Panasonic",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "AGENCIA PANASONIC",
+      "CT Valencia"
+    ],
+    "domains": [
+      "eu.panasonic.com"
+    ],
+    "identifyByEmail": [
+      "aircon.ct.es@eu.panasonic.com",
+      "claudia.perrotta@eu.panasonic.com",
+      "Ricardo.Velasco@eu.panasonic.com"
+    ],
+    "contacts": [
+      {
+        "name": "CT Valencia",
+        "email": "aircon.ct.es@eu.panasonic.com",
+        "phone": null,
+        "role": "Centro Técnico"
+      },
+      {
+        "name": "Claudia Perrotta",
+        "email": "claudia.perrotta@eu.panasonic.com",
+        "phone": null,
+        "role": "Logística"
+      }
+    ],
+    "category": "Climatización",
+    "subcategory": "Aires acondicionados Panasonic",
+    "transportType": "VIA_AGENCY",
+    "usesAgencies": [
+      "SEUR"
+    ],
+    "deliveryFrequency": "monthly_to_bimonthly",
+    "avgLeadDays": 7,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "sometimes",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": "semi",
+    "automatedFormat": "SOLICITUD FECHA DE ENTREGA-SANCHEZ GINER-ALBOLOTE-GRANADA DD.MM",
+    "specialNotes": "Asunto predecible automatizado. Bajo volumen. Múltiples contactos Panasonic en CC.",
+    "samplePhrases": [
+      "SOLICITUD FECHA DE ENTREGA-SANCHEZ GINER-ALBOLOTE-GRANADA 17.01"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Transportes Cazorla",
+    "type": "LOCAL_DISTRIBUTOR",
+    "aliases": [
+      "TRANSP.CAZORLA",
+      "Mudanzas F. Cazorla"
+    ],
+    "domains": [],
+    "identifyByEmail": [
+      "oficinamudanzasf.cazorla@outlook.es"
+    ],
+    "contacts": [
+      {
+        "name": "Juan Francisco García",
+        "email": "oficinamudanzasf.cazorla@outlook.es",
+        "phone": null,
+        "role": "Distribuidor local"
+      }
+    ],
+    "category": "Distribuidor local",
+    "transportType": "ES_DISTRIBUIDOR",
+    "deliveryFrequency": "weekly",
+    "deliversFor": [
+      "Flex",
+      "D'Sueños"
+    ],
+    "avgLeadDays": 2,
+    "automated": false,
+    "specialNotes": "Almacén intermedio local. Recibe de Flex y D'Sueños, reparte a CHS. Outlook personal. Mismo contacto que en Flex.",
+    "samplePhrases": [
+      "Pedidos recibidos en nuestro almacén",
+      "Cita Flex",
+      "Citas descarga"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "Contenedores China / JANCOR",
+    "type": "IMPORT_PROCESS",
+    "aliases": [
+      "CONTENEDORES CHINA",
+      "JANCOR"
+    ],
+    "domains": [
+      "jancornegocios.com",
+      "interglobo.com",
+      "navaforwarding.com"
+    ],
+    "identifyByEmail": [
+      "jancornegocios@jancornegocios.com",
+      "contabilidad@jancornegocios.com",
+      "vsaez@interglobo.com",
+      "b.balaguer@navaforwarding.com"
+    ],
+    "contacts": [
+      {
+        "name": "JANCOR",
+        "email": "jancornegocios@jancornegocios.com",
+        "phone": null,
+        "role": "Trading company"
+      },
+      {
+        "name": "Vicente Sáez Cotino",
+        "email": "vsaez@interglobo.com",
+        "phone": null,
+        "role": "Transitario Interglobo"
+      },
+      {
+        "name": "Belén Balaguer",
+        "email": "b.balaguer@navaforwarding.com",
+        "phone": null,
+        "role": "Transitario Nava Forwarding"
+      },
+      {
+        "name": "Laura León",
+        "email": "laura.modelgestion@gmail.com",
+        "phone": null,
+        "role": "Gestión"
+      },
+      {
+        "name": "Carlos Alcániz",
+        "email": "carlos.alcaniz@dhl.com",
+        "phone": null,
+        "role": "DHL Transitario marítimo"
+      },
+      {
+        "name": "Mario Marcos Velasco",
+        "email": "mario.marcosvelasco@dhl.com",
+        "phone": null,
+        "role": "DHL Transitario marítimo"
+      },
+      {
+        "name": "Irene López Bielsa",
+        "email": "irene.lopezbielsa@dhl.com",
+        "phone": null,
+        "role": "DHL Transitario marítimo"
+      },
+      {
+        "name": "JANCOR Logística",
+        "email": "logistica@jancornegocios.es",
+        "phone": null,
+        "role": "Logística JANCOR"
+      }
+    ],
+    "category": "Importación marítima",
+    "transportType": "MARITIME_CONTAINER",
+    "referenceFormats": [
+      "Pedido CHS: 8 dígitos (24018925)",
+      "Expedición Nava: NVMI + 7 dígitos",
+      "Contenedor: formato estándar (TH252301)",
+      "Booking DHL: HGHB + 8 dígitos (HGHB35370)",
+      "Contenedor: 4 letras + 7 dígitos (TCNU5622403, MRKU3535606)",
+      "Pedido JANCOR: N-NNN (5-58, 5-129, 5-208)"
+    ],
+    "avgLeadDays": 14,
+    "automated": false,
+    "specialNotes": "Importación marítima. Contenedores 40 HC. Requiere personal extra. No es cita convencional — derivar a gestión interna CHS. | Fase 4: DHL también actúa como transitario marítimo. 8+ contenedores/mes típico. Formato booking DHL: HGHB + ref.",
+    "samplePhrases": [
+      "CONTENEDORES",
+      "CONTENEDORES EN PUERTO - 3x40 HC MOGENS MAERSK",
+      "Hay que solicitar gente para descargar contenedor mañana"
+    ],
+    "phase": 3
+  },
+  {
+    "name": "LG Electronics",
+    "type": "DIRECT_SUPPLIER",
+    "aliases": [
+      "LG",
+      "ELECTRODOMESTICOS LG"
+    ],
+    "domains": [
+      "lgepartner.com",
+      "lge.com"
+    ],
+    "identifyByEmail": [
+      "kelly.cabello@lgepartner.com",
+      "ignacio.diaz@lge.com",
+      "susana.segura@lgepartner.com"
+    ],
+    "contacts": [
+      {
+        "name": "Kelly Cabello",
+        "email": "kelly.cabello@lgepartner.com",
+        "phone": null,
+        "role": "Logística principal"
+      },
+      {
+        "name": "Ignacio Díaz",
+        "email": "ignacio.diaz@lge.com",
+        "phone": null,
+        "role": "Comercial LG"
+      },
+      {
+        "name": "Susana Segura",
+        "email": "susana.segura@lgepartner.com",
+        "phone": null,
+        "role": "Logística"
+      }
+    ],
+    "category": "Electrodomésticos",
+    "subcategory": "Electrodomésticos LG, aires acondicionados",
+    "transportType": "VIA_AGENCY",
+    "deliveryFrequency": "monthly",
+    "avgLeadDays": 5,
+    "typicalData": {
+      "orderId": "never",
+      "deliveryNote": "never",
+      "packages": "never",
+      "desiredDate": "always",
+      "desiredTime": "never"
+    },
+    "automated": false,
+    "specialNotes": "Canal propio LG separado de CODECO (que distribuye BSH). Kelly Cabello contacto principal. Asunto: 'LG ENTREGA [MES] - SANCHEZ GINER [DD/MM]'.",
+    "samplePhrases": [
+      "LG ENTREGA ABRIL - SACHEZ GINER 11/04",
+      "ENTREGA LG AIRE - SANCHEZ GINER 18/04"
+    ],
+    "phase": 3
+  }
+]

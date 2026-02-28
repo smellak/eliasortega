@@ -28,14 +28,69 @@ enum UserRole {
 }
 
 model Provider {
-  id           String        @id @default(cuid())
-  name         String        @unique
-  notes        String?
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
-  appointments Appointment[]
+  id              String    @id @default(cuid())
+  name            String    @unique
+  officialName    String?   @map("official_name")
+  type            String    @default("DIRECT_SUPPLIER") // AGENCY, DIRECT_SUPPLIER, LOCAL_DISTRIBUTOR, IMPORT_PROCESS
+  notes           String?
+
+  // Datos del perfil de proveedor
+  category        String?   // Tapicería, Electro, Mobiliario, Cocina, Colchonería, etc.
+  subcategory     String?
+  transportType   String?   @map("transport_type") // OWN_TRUCK, VIA_AGENCY, MIXED, IS_AGENCY, COURIER
+  typicalVolume   String?   @map("typical_volume") // full_truck, half_truck, groupage, parcels, container
+  avgLeadDays     Float?    @map("avg_lead_days")
+  automated       Boolean   @default(false)
+  specialNotes    String?   @map("special_notes")
+  profileJson     Json?     @map("profile_json")
+
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  appointments    Appointment[]
+  contacts        ProviderContact[]
+  aliases         ProviderAlias[]
+  agencyLinks     ProviderAgencyLink[] @relation("supplier")
+  supplierLinks   ProviderAgencyLink[] @relation("agency")
 
   @@map("providers")
+}
+
+model ProviderContact {
+  id         String   @id @default(cuid())
+  providerId String   @map("provider_id")
+  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  name       String
+  email      String?
+  phone      String?
+  role       String?
+
+  @@index([phone])
+  @@index([email])
+  @@map("provider_contacts")
+}
+
+model ProviderAlias {
+  id         String   @id @default(cuid())
+  providerId String   @map("provider_id")
+  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  alias      String
+  domain     String?
+
+  @@index([alias])
+  @@index([domain])
+  @@map("provider_aliases")
+}
+
+model ProviderAgencyLink {
+  id         String   @id @default(cuid())
+  supplierId String   @map("supplier_id")
+  agencyId   String   @map("agency_id")
+  supplier   Provider @relation("supplier", fields: [supplierId], references: [id], onDelete: Cascade)
+  agency     Provider @relation("agency", fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@unique([supplierId, agencyId])
+  @@map("provider_agency_links")
 }
 
 model CapacityShift {

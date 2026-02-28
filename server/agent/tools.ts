@@ -379,10 +379,17 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
 
   const { size, points: pointsUsed } = slotCapacityValidator.determineSizeAndPoints(workMinutesNeeded);
 
-  // Find or create provider
+  // Find or create provider — use lookup service to match by alias/name
   let provider = await prisma.provider.findFirst({
     where: { name: providerName },
   });
+  if (!provider) {
+    // Try lookup by name (catches aliases like "Jaén" -> "Tapicería Jaén")
+    const profile = await lookupProvider({ name: providerName });
+    if (profile) {
+      provider = await prisma.provider.findUnique({ where: { id: profile.id } });
+    }
+  }
   if (!provider) {
     provider = await prisma.provider.create({
       data: { name: providerName },

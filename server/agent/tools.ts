@@ -4,6 +4,7 @@ import { slotCapacityValidator } from "../services/slot-validator";
 import { prisma } from "../db/client";
 import { logAudit } from "../services/audit-service";
 import { sendAppointmentConfirmation } from "../services/provider-email-service";
+import { lookupProvider } from "../services/provider-lookup";
 import { formatInTimeZone } from "date-fns-tz";
 import { getMadridDayOfWeek, getMadridMidnight, getMadridDateStr } from "../utils/madrid-date";
 import {
@@ -157,11 +158,104 @@ const CALCULATOR_TOOL: Anthropic.Tool = {
   },
 };
 
+const PROVIDER_LOOKUP_TOOL: Anthropic.Tool = {
+  name: "provider_lookup",
+  description:
+    "Busca un proveedor o agencia de transporte en la base de datos por nombre, email o teléfono. " +
+    "Devuelve el perfil completo: tipo de mercancía habitual, volumen típico, agencias de transporte, contactos y notas. " +
+    "Úsala cuando el proveedor se identifique al inicio de la conversación para adaptar el trato.",
+  input_schema: {
+    type: "object",
+    properties: {
+      name: {
+        type: "string",
+        description:
+          "Nombre de la empresa/proveedor/agencia (o parte del nombre). Ej: 'Tapicería Jaén', 'Mengualba'",
+      },
+      email: {
+        type: "string",
+        description:
+          "Email del contacto (ej: 'pedidos@tapiceriajaen.com'). También funciona buscar por dominio.",
+      },
+      phone: {
+        type: "string",
+        description:
+          "Teléfono del contacto. Se normaliza automáticamente (acepta '+34 XXX XXX XXX', '953 123 456', etc.)",
+      },
+    },
+    required: [],
+  },
+};
+
 export const AGENT_TOOLS: Anthropic.Tool[] = [
+  PROVIDER_LOOKUP_TOOL,
   CALENDAR_AVAILABILITY_TOOL,
   CALENDAR_BOOK_TOOL,
   CALCULATOR_TOOL,
 ];
+
+/**
+ * Execute provider_lookup: search by name, email, or phone.
+ * Returns a formatted profile summary for the agent.
+ */
+async function executeProviderLookup(input: Record<string, any>): Promise<string> {
+  const profile = await lookupProvider({
+    name: input.name || undefined,
+    email: input.email || undefined,
+    phone: input.phone || undefined,
+  });
+
+  if (!profile) {
+    return JSON.stringify({
+      found: false,
+      message: "No se encontró ningún proveedor con esos datos. Es un proveedor nuevo.",
+    });
+  }
+
+  // Build a concise summary for the agent
+  const summary: Record<string, any> = {
+    found: true,
+    name: profile.name,
+    officialName: profile.officialName,
+    type: profile.type,
+    category: profile.category,
+    subcategory: profile.subcategory,
+  };
+
+  if (profile.transportType) summary.transportType = profile.transportType;
+  if (profile.typicalVolume) summary.typicalVolume = profile.typicalVolume;
+  if (profile.avgLeadDays) summary.avgLeadDays = profile.avgLeadDays;
+  if (profile.specialNotes) summary.specialNotes = profile.specialNotes;
+  if (profile.typicalUnits) summary.typicalUnits = profile.typicalUnits;
+  if (profile.unitType) summary.unitType = profile.unitType;
+  if (profile.deliveryFrequency) summary.deliveryFrequency = profile.deliveryFrequency;
+
+  if (profile.contacts.length > 0) {
+    summary.contacts = profile.contacts;
+  }
+
+  if (profile.agencies.length > 0) {
+    summary.agencies = profile.agencies.map((a) => a.name);
+  }
+
+  if (profile.suppliersServed.length > 0) {
+    summary.suppliersServed = profile.suppliersServed.map((s) => s.name);
+  }
+
+  if (profile.samplePhrases.length > 0) {
+    summary.samplePhrases = profile.samplePhrases;
+  }
+
+  if (profile.referenceFormats) {
+    summary.referenceFormats = profile.referenceFormats;
+  }
+
+  summary.hint =
+    "RECUERDA: Esta información es orientativa. Confirma los datos con el proveedor antes de usarlos. " +
+    "No menciones que tienes un perfil guardado — úsalo para agilizar la conversación de forma natural.";
+
+  return JSON.stringify(summary, null, 2);
+}
 
 /**
  * Execute calendar_availability using the slot validator directly.
@@ -534,6 +628,9 @@ export async function executeToolCall(
 
         return resultStr;
       }
+
+      case "provider_lookup":
+        return await executeProviderLookup(toolInput);
 
       case "calendar_availability":
         return await executeCalendarAvailability(toolInput);

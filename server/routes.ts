@@ -13,6 +13,7 @@ import configRoutes from "./routes/config";
 import adminChatRoutes from "./routes/admin-chat";
 import analyticsRoutes from "./routes/analytics";
 import calibrationRoutes from "./routes/calibration";
+import rulesRoutes from "./routes/rules";
 
 const router = Router();
 
@@ -30,5 +31,6 @@ router.use(configRoutes);
 router.use(adminChatRoutes);
 router.use(analyticsRoutes);
 router.use(calibrationRoutes);
+router.use(rulesRoutes);
 
 export default router;

@@ -20,6 +20,7 @@ import ChatPublic from "@/pages/chat-public";
 import ChatAdmin from "@/pages/chat-admin";
 import WarehousePage from "@/pages/warehouse-page";
 import AnalyticsPage from "@/pages/analytics-page";
+import RulesPage from "@/pages/rules-page";
 import NotFound from "@/pages/not-found";
 import { authApi, getAuthToken, clearAuth } from "@/lib/api";
 import { useNewAppointmentToast } from "@/hooks/use-new-appointment-toast";
@@ -81,6 +82,7 @@ function Router({ user }: { user: UserResponse }) {
       <Route path="/appointments" component={() => <AppointmentsPage userRole={user.role} />} />
       <Route path="/capacity" component={() => <CapacityPage userRole={user.role} />} />
       <Route path="/docks" component={() => <DocksPage userRole={user.role} />} />
+      {(user.role === "ADMIN" || user.role === "PLANNER") && <Route path="/rules" component={() => <RulesPage userRole={user.role} />} />}
       <Route path="/providers" component={() => <ProvidersPage userRole={user.role} />} />
       {user.role === "ADMIN" && <Route path="/notifications" component={() => <NotificationsPage userRole={user.role} />} />}
       {user.role === "ADMIN" && <Route path="/users" component={UsersPage} />}

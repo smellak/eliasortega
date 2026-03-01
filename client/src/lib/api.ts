@@ -1029,6 +1029,39 @@ export interface ProviderEmailConfig {
   provider_email_contact_phone: string;
 }
 
+// ─── Scheduling Rules ────────────────────────────────────────────────
+
+export interface SchedulingRules {
+  avoidConcurrency: { enabled: boolean; mode: "suggest" | "enforce" };
+  maxSimultaneous: { enabled: boolean; count: number };
+  dockBuffer: { enabled: boolean; minutes: number };
+  sizePriority: { enabled: boolean; largeSlots: string[]; smallSlots: string[] };
+  dailyConcentration: { enabled: boolean; threshold: number };
+  dockDistribution: { enabled: boolean; largePreferred: string; smallPreferred: string };
+  categoryPreferredTime: { enabled: boolean; map: Record<string, string> };
+  minLeadTime: { enabled: boolean; hours: number };
+}
+
+export const rulesApi = {
+  getRules: async (): Promise<SchedulingRules> => {
+    const response = await fetch(`${API_BASE}/scheduling-rules`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<SchedulingRules>(response, () =>
+      fetch(`${API_BASE}/scheduling-rules`, { headers: getHeaders() })
+    );
+  },
+
+  updateRules: async (rules: Partial<SchedulingRules>): Promise<SchedulingRules> => {
+    const response = await fetch(`${API_BASE}/scheduling-rules`, {
+      method: "PUT",
+      headers: getHeaders(),
+      body: JSON.stringify(rules),
+    });
+    return handleResponse<SchedulingRules>(response);
+  },
+};
+
 export const providerEmailConfigApi = {
   get: async (): Promise<ProviderEmailConfig> => {
     const response = await fetch(`${API_BASE}/config/provider-emails`, {

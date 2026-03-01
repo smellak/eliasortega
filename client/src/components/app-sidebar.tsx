@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Calendar, List, Gauge, Package, Users, LogOut, Bell, Shield, Warehouse, MessageSquare, ClipboardCheck, BarChart3 } from "lucide-react";
+import { Calendar, List, Gauge, Package, Users, LogOut, Bell, Shield, Warehouse, MessageSquare, ClipboardCheck, BarChart3, Settings2 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -61,6 +61,7 @@ export function AppSidebar({ userRole, userEmail, onLogout }: AppSidebarProps) {
 
   const managementItems = [
     { title: "Capacidad", url: "/capacity", icon: Gauge, roles: ["ADMIN", "PLANNER"], badge: null },
+    { title: "Reglas", url: "/rules", icon: Settings2, roles: ["ADMIN", "PLANNER"], badge: null },
     { title: "Muelles", url: "/docks", icon: Warehouse, roles: ["ADMIN", "PLANNER"], badge: null },
     { title: "Proveedores", url: "/providers", icon: Package, roles: ["ADMIN", "PLANNER"], badge: providerCount },
     { title: "Notificaciones", url: "/notifications", icon: Bell, roles: ["ADMIN"], badge: null },

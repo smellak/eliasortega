@@ -139,8 +139,8 @@ export default function WarehousePage({ userRole }: { userRole: UserRole }) {
         </div>
       ) : sorted.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
-          <p className="text-lg font-medium">Sin citas este dia</p>
-          <p className="text-sm mt-1">Navega a otro dia con las flechas</p>
+          <p className="text-lg font-medium">Sin citas este día</p>
+          <p className="text-sm mt-1">Navega a otro día con las flechas</p>
         </div>
       ) : (
         <div className="space-y-3">

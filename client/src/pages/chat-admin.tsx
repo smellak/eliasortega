@@ -84,10 +84,10 @@ function MarkdownContent({ content, isUser }: { content: string; isUser: boolean
 function ToolIndicator({ toolName }: { toolName: string }) {
   const labels: Record<string, string> = {
     consultar_citas: "Buscando citas...",
-    consultar_ocupacion: "Consultando ocupacion...",
+    consultar_ocupacion: "Consultando ocupación...",
     consultar_proveedores: "Buscando proveedores...",
-    modificar_cita: "Preparando modificacion...",
-    cancelar_cita: "Preparando cancelacion...",
+    modificar_cita: "Preparando modificación...",
+    cancelar_cita: "Preparando cancelación...",
     crear_cita_manual: "Creando cita...",
     consultar_muelles: "Consultando muelles...",
     resumen_diario: "Generando resumen...",
@@ -105,7 +105,7 @@ export default function ChatAdmin() {
     {
       id: "welcome",
       role: "assistant",
-      content: "Hola, soy tu asistente de gestion. Puedo consultar citas, ocupacion, proveedores, mover o cancelar citas, y explicarte como funciona cualquier parte de la app. ¿En que te ayudo?",
+      content: "Hola, soy tu asistente de gestión. Puedo consultar citas, ocupación, proveedores, mover o cancelar citas, y explicarte como funciona cualquier parte de la app. ¿En qué te ayudo?",
       timestamp: new Date(),
     },
   ]);
@@ -240,10 +240,10 @@ export default function ChatAdmin() {
             <AIAvatar size="lg" />
             <div className="flex-1 min-w-0">
               <h2 className="text-sm sm:text-base font-semibold text-white truncate">Asistente IA</h2>
-              <p className="text-[10px] sm:text-xs text-slate-300">Panel de Administracion</p>
+              <p className="text-[10px] sm:text-xs text-slate-300">Panel de Administración</p>
             </div>
             <Badge variant="secondary" className="bg-violet-500 text-white border-0 text-[10px] sm:text-xs px-2 py-0.5">
-              En linea
+              En línea
             </Badge>
             <button
               onClick={toggleSound}
@@ -320,7 +320,7 @@ export default function ChatAdmin() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Preguntame sobre citas, ocupacion, proveedores..."
+              placeholder="Pregúntame sobre citas, ocupación, proveedores..."
               className="resize-none min-h-[44px] sm:min-h-[52px] max-h-[120px] rounded-xl border-slate-300 focus-visible:ring-violet-500 text-sm sm:text-base"
               disabled={isStreaming}
               data-testid="admin-chat-input"

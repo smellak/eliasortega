@@ -48,7 +48,7 @@ export function CalibrationPanel() {
   const applyMutation = useMutation({
     mutationFn: (id: string) => calibrationApi.apply(id),
     onSuccess: () => {
-      toast({ title: "Calibracion aplicada" });
+      toast({ title: "Calibración aplicada" });
       setCalcResult(null);
       setApplyConfirm(null);
       queryClient.invalidateQueries({ queryKey: ["calibration-history"] });
@@ -70,10 +70,10 @@ export function CalibrationPanel() {
         <CardContent className="space-y-4">
           <div className="flex gap-3 items-end">
             <div className="flex-1">
-              <label className="text-sm font-medium mb-1 block">Categoria</label>
+              <label className="text-sm font-medium mb-1 block">Categoría</label>
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecciona categoria" />
+                  <SelectValue placeholder="Selecciona categoría" />
                 </SelectTrigger>
                 <SelectContent>
                   {CATEGORIES.map((c) => (
@@ -145,7 +145,7 @@ export function CalibrationPanel() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Fecha</TableHead>
-                    <TableHead>Categoria</TableHead>
+                    <TableHead>Categoría</TableHead>
                     <TableHead className="text-right">Muestras</TableHead>
                     <TableHead className="text-right">MAE ant.</TableHead>
                     <TableHead className="text-right">MAE nuevo</TableHead>
@@ -180,8 +180,8 @@ export function CalibrationPanel() {
         open={!!applyConfirm}
         onOpenChange={(v) => !v && setApplyConfirm(null)}
         onConfirm={() => applyConfirm && applyMutation.mutate(applyConfirm)}
-        title="Aplicar calibracion"
-        description="Los nuevos coeficientes se usaran para todas las estimaciones futuras de esta categoria. Esta accion no se puede deshacer facilmente."
+        title="Aplicar calibración"
+        description="Los nuevos coeficientes se usarán para todas las estimaciones futuras de esta categoría. Esta acción no se puede deshacer fácilmente."
         confirmLabel="Aplicar"
         variant="default"
       />

@@ -40,8 +40,8 @@ export default function AnalyticsPage({ userRole }: { userRole: UserRole }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Precision IA</h1>
-        <p className="text-muted-foreground">Analisis de la calidad de las estimaciones de tiempo</p>
+        <h1 className="text-2xl font-bold">Precisión IA</h1>
+        <p className="text-muted-foreground">Análisis de la calidad de las estimaciones de tiempo</p>
       </div>
 
       {/* KPI Cards */}
@@ -104,25 +104,25 @@ export default function AnalyticsPage({ userRole }: { userRole: UserRole }) {
         <Card>
           <CardContent className="py-16 text-center">
             <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-1">Sin datos de precision todavia</h3>
+            <h3 className="text-lg font-semibold mb-1">Sin datos de precisión todavía</h3>
             <p className="text-muted-foreground">
-              Registra tiempos reales de descarga en la pagina <span className="font-medium">Almacen</span> para ver la precision de las estimaciones.
+              Registra tiempos reales de descarga en la página <span className="font-medium">Almacén</span> para ver la precisión de las estimaciones.
             </p>
           </CardContent>
         </Card>
       ) : (
         <Tabs defaultValue="categories" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="categories">Por categoria</TabsTrigger>
+            <TabsTrigger value="categories">Por categoría</TabsTrigger>
             <TabsTrigger value="providers">Por proveedor</TabsTrigger>
-            {userRole === "ADMIN" && <TabsTrigger value="calibration">Calibracion</TabsTrigger>}
+            {userRole === "ADMIN" && <TabsTrigger value="calibration">Calibración</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="categories" className="space-y-4">
             {/* Scatter plot */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Estimado vs Real (media por categoria)</CardTitle>
+                <CardTitle className="text-base">Estimado vs Real (media por categoría)</CardTitle>
               </CardHeader>
               <CardContent>
                 <PredictionScatter data={accuracy} />
@@ -132,7 +132,7 @@ export default function AnalyticsPage({ userRole }: { userRole: UserRole }) {
             {/* Category table */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Precision por categoria</CardTitle>
+                <CardTitle className="text-base">Precisión por categoría</CardTitle>
               </CardHeader>
               <CardContent>
                 <CategoryTable data={accuracy} />

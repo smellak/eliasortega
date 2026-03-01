@@ -55,7 +55,7 @@ export function AppSidebar({ userRole, userEmail, onLogout }: AppSidebarProps) {
   const mainItems = [
     { title: "Calendario", url: "/", icon: Calendar, badge: null },
     { title: "Citas", url: "/appointments", icon: List, badge: pendingCount },
-    { title: "Almacen", url: "/warehouse", icon: ClipboardCheck, badge: null },
+    { title: "Almacén", url: "/warehouse", icon: ClipboardCheck, badge: null },
     { title: "Asistente IA", url: "/admin-chat", icon: MessageSquare, badge: null },
   ];
 
@@ -66,7 +66,7 @@ export function AppSidebar({ userRole, userEmail, onLogout }: AppSidebarProps) {
     { title: "Notificaciones", url: "/notifications", icon: Bell, roles: ["ADMIN"], badge: null },
     { title: "Usuarios", url: "/users", icon: Users, roles: ["ADMIN"], badge: null },
     { title: "Auditoría", url: "/audit", icon: Shield, roles: ["ADMIN", "PLANNER"], badge: null },
-    { title: "Precision IA", url: "/analytics", icon: BarChart3, roles: ["ADMIN", "PLANNER"], badge: null },
+    { title: "Precisión IA", url: "/analytics", icon: BarChart3, roles: ["ADMIN", "PLANNER"], badge: null },
   ];
 
   const filteredManagementItems = managementItems.filter(

@@ -22,7 +22,7 @@ function r2Badge(r2: number | null) {
 
 export function CategoryTable({ data }: CategoryTableProps) {
   if (data.length === 0) {
-    return <p className="text-center text-muted-foreground py-8">Sin datos de precision todavia. Registra tiempos reales en la pagina Almacen.</p>;
+    return <p className="text-center text-muted-foreground py-8">Sin datos de precisión todavía. Registra tiempos reales en la página Almacén.</p>;
   }
 
   return (
@@ -30,7 +30,7 @@ export function CategoryTable({ data }: CategoryTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Categoria</TableHead>
+            <TableHead>Categoría</TableHead>
             <TableHead className="text-right">Muestras</TableHead>
             <TableHead className="text-right">Estimado</TableHead>
             <TableHead className="text-right">Real</TableHead>

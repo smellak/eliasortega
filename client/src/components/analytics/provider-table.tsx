@@ -7,14 +7,14 @@ interface ProviderTableProps {
 }
 
 const reliabilityConfig = {
-  fast: { label: "Rapido", className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
+  fast: { label: "Rápido", className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
   normal: { label: "Normal", className: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" },
   slow: { label: "Lento", className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
 };
 
 export function ProviderTable({ data }: ProviderTableProps) {
   if (data.length === 0) {
-    return <p className="text-center text-muted-foreground py-8">Sin perfiles de proveedor todavia. Se necesitan al menos 3 descargas por proveedor.</p>;
+    return <p className="text-center text-muted-foreground py-8">Sin perfiles de proveedor todavía. Se necesitan al menos 3 descargas por proveedor.</p>;
   }
 
   return (
@@ -24,7 +24,7 @@ export function ProviderTable({ data }: ProviderTableProps) {
           <TableRow>
             <TableHead>Proveedor</TableHead>
             <TableHead className="text-right">Descargas</TableHead>
-            <TableHead className="text-right">Duracion media</TableHead>
+            <TableHead className="text-right">Duración media</TableHead>
             <TableHead className="text-right">Uds. media</TableHead>
             <TableHead className="text-right">Error medio</TableHead>
             <TableHead className="text-right">Fiabilidad</TableHead>

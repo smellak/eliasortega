@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ResponsiveTable } from "@/components/responsive-table";
-import { emailRecipientsApi, emailApi, providerEmailConfigApi } from "@/lib/api";
-import type { ProviderEmailConfig } from "@/lib/api";
+import { emailRecipientsApi, emailApi, providerEmailConfigApi, teamEmailApi, getAuthToken } from "@/lib/api";
+import type { ProviderEmailConfig, TeamEmailToggles } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type {
@@ -452,6 +452,116 @@ function ProvidersTab() {
   );
 }
 
+// ── Team Email Types Card ──
+
+const TEAM_EMAIL_TYPES = [
+  { key: "team_email_daily_summary_enabled", previewType: "daily_summary", label: "Resumen diario", description: "Se envia cada manana con las citas del dia", icon: FileText },
+  { key: "team_email_new_appointment_enabled", previewType: "new_appointment", label: "Alerta de nueva cita", description: "Se envia cuando se crea una cita nueva (chat o manual)", icon: Bell },
+  { key: "team_email_updated_appointment_enabled", previewType: "updated_appointment", label: "Alerta de cita modificada", description: "Se envia cuando se modifica una cita existente", icon: Pencil },
+  { key: "team_email_deleted_appointment_enabled", previewType: "deleted_appointment", label: "Alerta de cita cancelada", description: "Se envia cuando se cancela una cita", icon: XCircle },
+] as const;
+
+function TeamEmailTypesCard({ readOnly }: { readOnly: boolean }) {
+  const { toast } = useToast();
+  const [previewType, setPreviewType] = useState<string | null>(null);
+
+  const { data: toggles, isLoading } = useQuery<TeamEmailToggles>({
+    queryKey: ["/api/email/team-toggles"],
+    queryFn: () => teamEmailApi.getToggles(),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (update: Partial<TeamEmailToggles>) => teamEmailApi.updateToggles(update),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/email/team-toggles"] });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "No se pudo actualizar", variant: "destructive" });
+    },
+  });
+
+  const token = getAuthToken();
+  const previewUrl = previewType
+    ? `${teamEmailApi.getPreviewUrl(previewType)}?_token=${token}`
+    : null;
+
+  if (isLoading) {
+    return (
+      <Card className="p-4">
+        <div className="space-y-3">
+          <div className="h-5 rounded w-1/3 skeleton-shimmer" />
+          <div className="h-4 rounded w-2/3 skeleton-shimmer" />
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      <Card className="p-4">
+        <h3 className="font-semibold text-base mb-1">Tipos de correo al equipo</h3>
+        <p className="text-xs text-muted-foreground mb-4">
+          Activa o desactiva cada tipo de email globalmente
+        </p>
+        <div className="space-y-3">
+          {TEAM_EMAIL_TYPES.map((t) => {
+            const enabled = toggles?.[t.key] ?? true;
+            const Icon = t.icon;
+            return (
+              <div key={t.key} className={`flex items-center justify-between gap-3 rounded-lg border p-3 transition-colors ${enabled ? "border-border" : "border-border/50 opacity-60"}`}>
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`p-1.5 rounded-md shrink-0 ${enabled ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" : "bg-muted text-muted-foreground"}`}>
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{t.label}</p>
+                    <p className="text-xs text-muted-foreground">{t.description}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs gap-1"
+                    onClick={() => setPreviewType(t.previewType)}
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Preview</span>
+                  </Button>
+                  <Switch
+                    checked={enabled}
+                    disabled={readOnly}
+                    onCheckedChange={(v) => updateMutation.mutate({ [t.key]: v })}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      {previewUrl && (
+        <Dialog open={!!previewType} onOpenChange={(v) => { if (!v) setPreviewType(null); }}>
+          <DialogContent className="max-w-2xl max-h-[85vh]">
+            <DialogHeader>
+              <DialogTitle>
+                Preview: {TEAM_EMAIL_TYPES.find((t) => t.previewType === previewType)?.label}
+              </DialogTitle>
+            </DialogHeader>
+            <iframe
+              src={previewUrl}
+              className="w-full border rounded"
+              style={{ height: "500px" }}
+              title="Vista previa del email"
+              sandbox="allow-same-origin"
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
+  );
+}
+
 // ── Tab: Equipo ──
 
 function TeamTab({ readOnly }: { readOnly: boolean }) {
@@ -589,6 +699,8 @@ function TeamTab({ readOnly }: { readOnly: boolean }) {
 
   return (
     <div className="space-y-4">
+      <TeamEmailTypesCard readOnly={readOnly} />
+
       <Card className="p-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>

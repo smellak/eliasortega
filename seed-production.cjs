@@ -127,6 +127,11 @@ async function seed() {
     { key: "rule_category_preferred_map", value: '{"Tapicería":"08:00","Mobiliario":"08:00","Electro":"10:00","Colchonería":"10:00","PAE":"14:00","Baño":"14:00","Cocina":"12:00","Asientos":"08:00","Climatización":"12:00"}', description: "Hora preferida por categoría (JSON)" },
     { key: "rule_min_lead_time", value: "false", description: "Requerir antelación mínima para reservas" },
     { key: "rule_min_lead_time_hours", value: "24", description: "Horas mínimas de antelación para nueva reserva" },
+    // --- Team email toggles ---
+    { key: "team_email_daily_summary_enabled", value: "true", description: "Enviar resumen diario al equipo" },
+    { key: "team_email_new_appointment_enabled", value: "true", description: "Enviar alerta al crear cita" },
+    { key: "team_email_updated_appointment_enabled", value: "true", description: "Enviar alerta al modificar cita" },
+    { key: "team_email_deleted_appointment_enabled", value: "true", description: "Enviar alerta al cancelar cita" },
   ];
 
   var configCreated = 0;

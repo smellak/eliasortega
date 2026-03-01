@@ -1062,6 +1062,24 @@ export const rulesApi = {
   },
 };
 
+export type TeamEmailToggles = Record<string, boolean>;
+
+export const teamEmailApi = {
+  getToggles: async (): Promise<TeamEmailToggles> => {
+    const response = await fetch(`${API_BASE}/email/team-toggles`, { headers: getHeaders() });
+    return handleResponse<TeamEmailToggles>(response);
+  },
+  updateToggles: async (toggles: Partial<TeamEmailToggles>): Promise<TeamEmailToggles> => {
+    const response = await fetch(`${API_BASE}/email/team-toggles`, {
+      method: "PUT",
+      headers: getHeaders(),
+      body: JSON.stringify(toggles),
+    });
+    return handleResponse<TeamEmailToggles>(response);
+  },
+  getPreviewUrl: (type: string) => `${API_BASE}/email/preview/team/${type}`,
+};
+
 export const providerEmailConfigApi = {
   get: async (): Promise<ProviderEmailConfig> => {
     const response = await fetch(`${API_BASE}/config/provider-emails`, {

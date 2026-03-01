@@ -98,6 +98,13 @@ export async function sendEmail(
  * for the next day's appointments.
  */
 export async function sendDailySummary(targetDate?: Date): Promise<number> {
+  // Check global toggle
+  const toggle = await prisma.appConfig.findUnique({ where: { key: "team_email_daily_summary_enabled" } });
+  if (toggle?.value === "false") {
+    console.log("[EMAIL] Daily summary globally disabled");
+    return 0;
+  }
+
   const date = targetDate || addDays(new Date(), 1);
   const dateStr = formatInTimeZone(date, "Europe/Madrid", "dd/MM/yyyy");
   const dayStart = getMadridMidnight(date);
@@ -169,6 +176,14 @@ export async function sendAppointmentAlert(
     dockName?: string | null;
   }
 ): Promise<number> {
+  // Check global toggle for this alert type
+  const toggleKey = `team_email_${type}_enabled`;
+  const toggle = await prisma.appConfig.findUnique({ where: { key: toggleKey } });
+  if (toggle?.value === "false") {
+    console.log(`[EMAIL] Alert type "${type}" globally disabled`);
+    return 0;
+  }
+
   const recipients = await prisma.emailRecipient.findMany({
     where: { active: true, receivesAlerts: true },
   });

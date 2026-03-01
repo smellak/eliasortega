@@ -10,6 +10,7 @@ import {
 } from "../middleware/auth";
 import { sendTestEmail, sendDailySummary, sendEmail } from "../services/email-service";
 import { getConfirmationPreviewHtml, getReminderPreviewHtml } from "../services/provider-email-service";
+import { buildDailySummaryHtml, buildAlertHtml } from "../services/email-templates";
 import { prisma } from "../db/client";
 
 const router = Router();
@@ -215,6 +216,105 @@ router.post("/api/email/test-confirmation", authenticateToken, requireRole("ADMI
     }
   } catch (error: any) {
     console.error("Send test confirmation error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Team email preview (returns raw HTML for iframe rendering)
+router.get("/api/email/preview/team/:type", (req, res, next) => {
+  if (req.query._token && !req.headers.authorization) {
+    req.headers.authorization = `Bearer ${req.query._token}`;
+  }
+  next();
+}, authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
+  try {
+    const type = req.params.type as string;
+    let html: string;
+
+    if (type === "daily_summary") {
+      html = buildDailySummaryHtml({
+        date: "03/03/2026",
+        totalAppointments: 3,
+        appointments: [
+          { providerName: "Tapiceria Jaen", startTime: "08:00", endTime: "08:50", size: "S", pointsUsed: 1, goodsType: "Tapiceria", workMinutesNeeded: 50, dockCode: "M2" },
+          { providerName: "Jancor", startTime: "10:00", endTime: "13:30", size: "L", pointsUsed: 3, goodsType: "Colchones", workMinutesNeeded: 210, dockCode: "M1" },
+          { providerName: "Electro Ruiz", startTime: "14:00", endTime: "15:20", size: "M", pointsUsed: 2, goodsType: "Electro", workMinutesNeeded: 80, dockCode: "M3" },
+        ],
+      });
+    } else {
+      const alertTypeMap: Record<string, "new_appointment" | "updated_appointment" | "deleted_appointment"> = {
+        new_appointment: "new_appointment",
+        updated_appointment: "updated_appointment",
+        deleted_appointment: "deleted_appointment",
+      };
+      const alertType = alertTypeMap[type] || "new_appointment";
+      html = buildAlertHtml({
+        type: alertType,
+        appointment: {
+          providerName: "Tapiceria Jaen",
+          startTime: "03/03/2026 08:00",
+          endTime: "08:50",
+          size: "M",
+          pointsUsed: 2,
+          goodsType: "Tapiceria",
+          workMinutesNeeded: 50,
+          dockName: "Muelle 2",
+        },
+      });
+    }
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(html);
+  } catch (error) {
+    console.error("Team email preview error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Team email toggle status (GET/PUT)
+router.get("/api/email/team-toggles", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
+  try {
+    const keys = [
+      "team_email_daily_summary_enabled",
+      "team_email_new_appointment_enabled",
+      "team_email_updated_appointment_enabled",
+      "team_email_deleted_appointment_enabled",
+    ];
+    const configs = await prisma.appConfig.findMany({ where: { key: { in: keys } } });
+    const result: Record<string, boolean> = {};
+    for (const k of keys) {
+      const found = configs.find((c) => c.key === k);
+      result[k] = found ? found.value !== "false" : true;
+    }
+    res.json(result);
+  } catch (error) {
+    console.error("Get team toggles error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/api/email/team-toggles", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
+  try {
+    const body = req.body as Record<string, boolean>;
+    for (const [key, value] of Object.entries(body)) {
+      if (key.startsWith("team_email_") && key.endsWith("_enabled")) {
+        await prisma.appConfig.upsert({
+          where: { key },
+          update: { value: String(value) },
+          create: { key, value: String(value), description: "" },
+        });
+      }
+    }
+    // Return updated state
+    const keys = Object.keys(body).filter((k) => k.startsWith("team_email_"));
+    const configs = await prisma.appConfig.findMany({ where: { key: { in: keys } } });
+    const result: Record<string, boolean> = {};
+    for (const c of configs) {
+      result[c.key] = c.value !== "false";
+    }
+    res.json(result);
+  } catch (error) {
+    console.error("Update team toggles error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

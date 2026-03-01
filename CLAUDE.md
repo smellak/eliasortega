@@ -1,3 +1,12 @@
+## REGLAS GIT OBLIGATORIAS — LEER ANTES DE CADA SESION
+1. SIEMPRE hacer `git pull origin main` ANTES de empezar cualquier tarea
+2. NUNCA usar `git add -A` ni `git add .` — siempre `git add <archivos específicos>`
+3. ANTES de cada commit, verificar con `git diff --cached --stat` que solo incluyes archivos de tu tarea
+4. El repo está en /root/eliasortega. /home/claudeuser/eliasortega es un symlink al mismo directorio. NO crear copias adicionales.
+5. Después de cada push, verificar con `git log --oneline -3` que el commit es correcto
+6. Si arrancas una nueva sesión, SIEMPRE empieza con `git pull origin main && git status`
+7. NUNCA compiles ni despliegues desde un directorio que no sea /root/eliasortega
+
 # Proyecto: Sistema de Citas CentroHogar Sánchez (Elías Ortega)
 ## Qué es
 Sistema web para gestionar citas de descarga en almacén. Agente IA atiende proveedores por chat, calcula tiempos y reserva citas.

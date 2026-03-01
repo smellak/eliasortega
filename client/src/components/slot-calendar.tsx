@@ -1,12 +1,13 @@
-import { useMemo, useEffect, useState } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { slotsApi, type WeekDay, type WeekSlot, type WeekSlotAppointment } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, Clock, Check, X } from "lucide-react";
-import { format, addDays, addWeeks, subWeeks, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, Clock, Check, X, Moon, Info } from "lucide-react";
+import { format, addDays, addWeeks, subWeeks, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, getISOWeek } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { es } from "date-fns/locale";
 
@@ -281,7 +282,8 @@ function WeekView({
   const cols = weekData.length;
 
   return (
-    <Card className="overflow-hidden" data-testid="slot-calendar-week">
+    <Card className="overflow-hidden relative" data-testid="slot-calendar-week">
+      <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-card to-transparent pointer-events-none z-10" />
       <div className="overflow-x-auto">
         <div style={{ minWidth: Math.max(840, cols * 150 + 56) }}>
           {/* ── Day Headers ── */}
@@ -335,9 +337,9 @@ function WeekView({
                 <div
                   key={i}
                   className="absolute left-0 right-0 flex items-start justify-end pr-1.5"
-                  style={{ top: i * HOUR_PX - 6 }}
+                  style={{ top: i * HOUR_PX - 7 }}
                 >
-                  <span className="text-[10px] font-mono text-muted-foreground leading-none">
+                  <span className="text-[10px] font-mono text-muted-foreground leading-none select-none">
                     {String(timeRange.start + i).padStart(2, "0")}:00
                   </span>
                 </div>
@@ -405,7 +407,7 @@ function WeekView({
                             )}
                           </div>
                           {slot.appointments.length === 0 && canClick && (
-                            <div className="flex items-center justify-center flex-1 opacity-15 hover:opacity-50 transition-opacity">
+                            <div className="flex items-center justify-center flex-1 opacity-30 dark:opacity-40 hover:opacity-60 transition-opacity">
                               <div className="flex flex-col items-center gap-0.5">
                                 <Plus className="h-3 w-3 text-muted-foreground" />
                                 <span className="text-[8px] text-muted-foreground font-medium">Libre</span>
@@ -460,13 +462,24 @@ function DayView({
   }
 
   if (!dayData || dayData.slots.length === 0) {
+    const isSunday = currentDate.getDay() === 0;
+    const isSaturday = currentDate.getDay() === 6;
     return (
       <Card className="p-8 text-center text-muted-foreground">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center">
-            <Clock className="h-6 w-6 text-muted-foreground/50" />
+          <div className={`h-12 w-12 rounded-full flex items-center justify-center ${isSunday || isSaturday ? "bg-blue-50 dark:bg-blue-950/30" : "bg-muted/50"}`}>
+            {isSunday || isSaturday ? (
+              <Moon className="h-6 w-6 text-blue-400 dark:text-blue-300" />
+            ) : (
+              <Clock className="h-6 w-6 text-muted-foreground/50" />
+            )}
           </div>
-          <p>No hay franjas configuradas para {format(currentDate, "EEEE dd/MM/yyyy", { locale: es })}.</p>
+          <p className="font-medium">
+            {isSunday || isSaturday
+              ? `${format(currentDate, "EEEE", { locale: es })} — almacén cerrado`
+              : `No hay franjas configuradas para ${format(currentDate, "EEEE dd/MM/yyyy", { locale: es })}.`
+            }
+          </p>
         </div>
       </Card>
     );
@@ -487,22 +500,22 @@ function DayView({
         key={`${slot.startTime}-${slot.endTime}`}
         className={`overflow-hidden border ${getOccupationBorderColor(slot.usedPoints, slot.maxPoints)}`}
       >
-        <div className={`px-4 py-3 flex items-center justify-between border-b ${getOccupationBg(slot.usedPoints, slot.maxPoints)}`}>
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="text-lg font-mono font-bold">
+        <div className={`px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between border-b ${getOccupationBg(slot.usedPoints, slot.maxPoints)}`}>
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
+              <span className="text-base sm:text-lg font-mono font-bold">
                 {slot.startTime} – {slot.endTime}
               </span>
             </div>
-            <Badge variant="outline" className="font-mono text-xs">
+            <Badge variant="outline" className="font-mono text-[10px] sm:text-xs">
               {slot.usedPoints}/{slot.maxPoints} pts
             </Badge>
-            <span className={`text-sm font-semibold ${pct >= 80 ? "text-red-600 dark:text-red-400" : pct >= 50 ? "text-yellow-600 dark:text-yellow-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+            <span className={`text-xs sm:text-sm font-semibold ${pct >= 80 ? "text-red-600 dark:text-red-400" : pct >= 50 ? "text-yellow-600 dark:text-yellow-400" : "text-emerald-600 dark:text-emerald-400"}`}>
               {pct}%
             </span>
             {showDocks && dockCount > 0 && (
-              <Badge variant="secondary" className="text-[10px]">
+              <Badge variant="secondary" className="text-[10px] hidden sm:inline-flex">
                 {dockCount} muelles
               </Badge>
             )}
@@ -679,14 +692,23 @@ function MonthView({
 
   return (
     <Card className="overflow-hidden" data-testid="slot-calendar-month">
-      <div className="grid grid-cols-7">
+      <div className="grid grid-cols-[28px_repeat(7,1fr)] sm:grid-cols-[36px_repeat(7,1fr)]">
+        <div className="p-1 text-center text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/50 border-b bg-muted/30 flex items-center justify-center">
+          Sem
+        </div>
         {dayHeaders.map((dh) => (
           <div key={dh} className="p-2 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground border-b bg-muted/30">
             {dh}
           </div>
         ))}
-        {calendarWeeks.map((week) =>
-          week.map((day) => {
+        {calendarWeeks.map((week, weekIdx) => (
+          <React.Fragment key={weekIdx}>
+            <div className="p-1 border-b border-r bg-muted/10 flex items-center justify-center">
+              <span className="text-[10px] font-mono text-muted-foreground/50">
+                {getISOWeek(week[0])}
+              </span>
+            </div>
+          {week.map((day) => {
             const dateStr = toMadridDateStr(day);
             const isCurrentMonth = day.getMonth() === currentDate.getMonth();
             const isToday = dateStr === today;
@@ -743,7 +765,7 @@ function MonthView({
                     </div>
                     {/* Provider names (up to 2) — hidden on mobile */}
                     {info.providerNames.length > 0 && (
-                      <div className="space-y-0 hidden sm:block">
+                      <div className="space-y-0 hidden lg:block">
                         {info.providerNames.slice(0, 2).map((name) => (
                           <div key={name} className="text-[9px] text-foreground/70 truncate leading-tight">
                             {name}
@@ -758,13 +780,19 @@ function MonthView({
                     )}
                   </div>
                 )}
+                {isCurrentMonth && info && info.maxPoints > 0 && info.appointments === 0 && (
+                  <div className="mt-1 text-[10px] text-muted-foreground/50 hidden sm:block">
+                    ○ {info.maxPoints} pts
+                  </div>
+                )}
                 {isCurrentMonth && ((info && info.maxPoints === 0) || (!info && day.getDay() === 0)) && (
                   <div className="mt-1 text-[10px] text-muted-foreground italic hidden sm:block">Cerrado</div>
                 )}
               </button>
             );
-          })
-        )}
+          })}
+          </React.Fragment>
+        ))}
       </div>
     </Card>
   );
@@ -928,6 +956,24 @@ export function SlotCalendar({
             Día
           </Button>
         </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-7 w-7 sm:h-9 sm:w-9 p-0 shrink-0" data-testid="button-category-legend">
+              <Info className="h-3.5 w-3.5 text-muted-foreground" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-52 p-3" align="end">
+            <p className="text-xs font-semibold text-muted-foreground mb-2">Categorías</p>
+            <div className="space-y-1.5">
+              {Object.entries(CATEGORY_COLORS).map(([name, style]) => (
+                <div key={name} className="flex items-center gap-2 text-xs">
+                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${style.dot}`} />
+                  <span>{name}</span>
+                </div>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* View Content */}

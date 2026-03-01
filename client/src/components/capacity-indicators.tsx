@@ -49,9 +49,9 @@ export function CapacityIndicators({
   return (
     <div className="space-y-4">
       {/* ── 4 KPI Cards (MEJORA 7) ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 2xl:gap-4">
         {/* 1. Citas de Descarga */}
-        <Card className="p-4" data-testid="card-appointment-count">
+        <Card className="p-4 dark:border-border/60 dark:bg-card/90" data-testid="card-appointment-count">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 flex items-center justify-center shrink-0">
               <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -67,7 +67,7 @@ export function CapacityIndicators({
         </Card>
 
         {/* 2. Ocupación */}
-        <Card className="p-4" data-testid="card-capacity-percentage">
+        <Card className="p-4 dark:border-border/60 dark:bg-card/90" data-testid="card-capacity-percentage">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 flex items-center justify-center shrink-0">
               <Gauge className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -89,7 +89,7 @@ export function CapacityIndicators({
         </Card>
 
         {/* 3. Slot Pico (NEW) */}
-        <Card className="p-4" data-testid="card-peak-slot">
+        <Card className="p-4 dark:border-border/60 dark:bg-card/90" data-testid="card-peak-slot">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 flex items-center justify-center shrink-0">
               <TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />
@@ -113,7 +113,7 @@ export function CapacityIndicators({
         </Card>
 
         {/* 4. Capacidad Disponible (NEW) */}
-        <Card className="p-4" data-testid="card-free-capacity">
+        <Card className="p-4 dark:border-border/60 dark:bg-card/90" data-testid="card-free-capacity">
           <div className="flex items-center gap-3">
             <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
               freePercentage > 20

@@ -12,6 +12,12 @@ import {
   estimateLines,
   estimateDeliveryNotes,
 } from "../config/estimation-ratios";
+import {
+  getSchedulingRules,
+  evaluateSlot,
+  rankAvailableSlots,
+  type AvailableSlot,
+} from "../services/scheduling-rules";
 
 const DAY_NAMES_ES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 
@@ -313,14 +319,68 @@ async function executeCalendarAvailability(input: Record<string, any>): Promise<
     formattedDays.push(`${dayName.charAt(0).toUpperCase() + dayName.slice(1)} ${formattedDate}: ${slotTexts.join(", ")}`);
   }
 
-  return JSON.stringify({
+  // ─── Scheduling rules: rank slots + add warnings ───────────────
+  const rules = await getSchedulingRules();
+  const anyRankingEnabled = rules.avoidConcurrency.enabled || rules.sizePriority.enabled || rules.categoryPreferredTime.enabled;
+  const goodsType = input.goodsType || "";
+
+  let recommendations: any[] | undefined;
+  const schedulingWarnings: string[] = [];
+
+  if (anyRankingEnabled) {
+    const rankInput: AvailableSlot[] = formattedSlots.map((s) => ({
+      date: s.date,
+      slotStartTime: s.slotStartTime,
+      slotEndTime: s.slotEndTime,
+      pointsAvailable: s.pointsAvailable,
+      docksAvailable: s.docksAvailable,
+    }));
+    const ranked = await rankAvailableSlots(rankInput, size, goodsType);
+    recommendations = ranked.map((r) => ({
+      date: r.date,
+      slotStartTime: r.slotStartTime,
+      slotEndTime: r.slotEndTime,
+      score: r.score,
+      reason: r.reason,
+    }));
+  }
+
+  // Daily concentration warnings
+  if (rules.dailyConcentration.enabled) {
+    for (const day of availableSlots) {
+      const dayDate = new Date(day.date + "T12:00:00");
+      const dateStart = new Date(day.date + "T00:00:00+01:00");
+      const dateEnd = new Date(day.date + "T23:59:59+01:00");
+      const dailyCount = await prisma.appointment.count({
+        where: {
+          slotDate: { gte: dateStart, lte: dateEnd },
+          confirmationStatus: { not: "cancelled" },
+        },
+      });
+      if (dailyCount >= rules.dailyConcentration.threshold) {
+        const formattedDate = day.date.split("-").reverse().join("/");
+        schedulingWarnings.push(`El ${formattedDate} ya tiene ${dailyCount} citas programadas`);
+      }
+    }
+  }
+
+  const result: Record<string, any> = {
     success: true,
     slotsFound: formattedSlots.length,
     size,
     pointsNeeded,
     summary: formattedDays.join("\n"),
     slots: formattedSlots,
-  }, null, 2);
+  };
+
+  if (recommendations) {
+    result.recommendations = recommendations;
+  }
+  if (schedulingWarnings.length > 0) {
+    result.warnings = schedulingWarnings;
+  }
+
+  return JSON.stringify(result, null, 2);
 }
 
 /**
@@ -405,6 +465,19 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
 
   const externalRef = `agent-${providerName}-${input.start}-${input.units}-${lines ?? 0}`;
   const durationMs = endDate.getTime() - startDate.getTime();
+
+  // ─── Evaluate scheduling rules before booking ─────────────────
+  const slotTime = formatInTimeZone(startDate, "Europe/Madrid", "HH:mm");
+  const ruleEval = await evaluateSlot(startDate, slotTime, startDate, endDate, size, input.goodsType || "", undefined);
+
+  if (!ruleEval.allowed) {
+    return JSON.stringify({
+      success: false,
+      error: ruleEval.warnings.join(". "),
+      suggestion: ruleEval.suggestion,
+      alternativeTime: ruleEval.suggestedTime,
+    }, null, 2);
+  }
 
   // Attempt to book in the requested slot first
   const maxAttempts = 3;
@@ -537,6 +610,11 @@ async function executeCalendarBook(input: Record<string, any>): Promise<string> 
 
       if (estimatedFields.length > 0) {
         responseObj.note = `Nota: se han estimado ${estimatedFields.join(" y ")} a partir de datos históricos de ${input.goodsType}.`;
+      }
+
+      // Include scheduling rule warnings for Elías to communicate naturally
+      if (ruleEval.warnings.length > 0) {
+        responseObj.schedulingWarnings = ruleEval.warnings;
       }
 
       return JSON.stringify(responseObj, null, 2);

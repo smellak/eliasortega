@@ -17,6 +17,7 @@ import {
   findAppointmentsWithDockFallback,
   normalizeAppointmentResponse,
 } from "../helpers/appointment-helpers";
+import { evaluateSlot } from "../services/scheduling-rules";
 
 const router = Router();
 
@@ -60,6 +61,20 @@ router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNE
       return res.status(400).json({ error: "No se aceptan citas en domingo. El almacén está cerrado." });
     }
     const slotDate = getMadridMidnight(startDate);
+
+    // Evaluate scheduling rules (pre-transaction check)
+    const endDate = new Date(data.end);
+    const slotTime = formatInTimeZone(startDate, "Europe/Madrid", "HH:mm");
+    const ruleEval = await evaluateSlot(startDate, slotTime, startDate, endDate, size, data.goodsType ?? "", undefined);
+
+    if (!ruleEval.allowed) {
+      return res.status(409).json({
+        error: "Scheduling rule conflict",
+        warnings: ruleEval.warnings,
+        suggestion: ruleEval.suggestion,
+        suggestedTime: ruleEval.suggestedTime,
+      });
+    }
 
     const result = await prisma.$transaction(async (tx) => {
       const resolvedSlotStart = await slotCapacityValidator.resolveSlotStartTime(startDate, tx);
@@ -149,7 +164,11 @@ router.post("/api/appointments", authenticateToken, requireRole("ADMIN", "PLANNE
       dockName: result.assignedDock?.name || null,
     }).catch((e) => console.error("[EMAIL] Alert error:", e));
 
-    res.status(201).json(normalizeAppointmentResponse(result.appointment));
+    const response: any = normalizeAppointmentResponse(result.appointment);
+    if (ruleEval.warnings.length > 0) {
+      response.schedulingWarnings = ruleEval.warnings;
+    }
+    res.status(201).json(response);
   } catch (error: any) {
     if (error.name === "ZodError") {
       return res.status(400).json({ error: "Invalid input", details: error.errors });

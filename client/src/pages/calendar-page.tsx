@@ -197,7 +197,7 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
     : undefined;
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6 animate-fadeIn pb-20">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
           <div className="page-icon">
@@ -221,8 +221,8 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
               onClick={handleNewAppointmentButton}
               data-testid="button-new-appointment"
             >
-              <Plus className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Nueva Cita</span>
+              <Plus className="h-4 w-4 lg:mr-2" />
+              <span className="hidden lg:inline">Nueva Cita</span>
             </Button>
           )}
         </div>

@@ -643,8 +643,14 @@ function MonthView({
                 } ${isToday ? "ring-2 ring-inset ring-primary/40" : ""} ${cellBg}`}
                 onClick={() => onDayClick(day)}
               >
-                <div className={`text-xs sm:text-sm font-semibold ${isToday ? "text-primary" : ""}`}>
-                  {day.getDate()}
+                <div className="flex items-start">
+                  <span className={`inline-flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full text-xs sm:text-sm font-semibold ${
+                    isToday
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : ""
+                  }`}>
+                    {day.getDate()}
+                  </span>
                 </div>
                 {/* Mobile: dot indicator for days with appointments */}
                 {info && isCurrentMonth && info.appointments > 0 && (
@@ -796,7 +802,9 @@ export function SlotCalendar({
   const titleText = useMemo(() => {
     let text: string;
     if (currentView === "day") {
-      text = format(currentDate, "EEEE dd 'de' MMMM yyyy", { locale: es });
+      text = isMobile
+        ? format(currentDate, "EEE dd MMM yyyy", { locale: es })
+        : format(currentDate, "EEEE dd 'de' MMMM yyyy", { locale: es });
     } else if (currentView === "month") {
       text = format(currentDate, "MMMM yyyy", { locale: es });
     } else if (weekData.length >= 2) {
@@ -807,7 +815,7 @@ export function SlotCalendar({
       text = format(currentDate, "MMMM yyyy", { locale: es });
     }
     return text.charAt(0).toUpperCase() + text.slice(1);
-  }, [currentView, currentDate, weekData]);
+  }, [currentView, currentDate, weekData, isMobile]);
 
   return (
     <div className="space-y-4">

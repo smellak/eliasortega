@@ -14,7 +14,7 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Appointment, Provider, CreateAppointmentInput, UpdateAppointmentInput, UserRole, SlotUtilization } from "@shared/types";
 import type { WeekSlotAppointment } from "@/lib/api";
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay } from "date-fns";
 
 interface CalendarPageProps {
   userRole: UserRole;
@@ -35,6 +35,12 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
 
   // Date range for capacity utilization query
   const getDateRange = () => {
+    if (currentView === "day") {
+      return {
+        startDate: startOfDay(currentDate),
+        endDate: endOfDay(currentDate),
+      };
+    }
     if (currentView === "month") {
       return {
         startDate: startOfMonth(currentDate),

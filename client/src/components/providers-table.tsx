@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Save, X, Search, Building2, Truck, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, Save, X, Search, Building2, Truck, Users, AlertCircle } from "lucide-react";
 import type { Provider } from "@shared/types";
 
 interface ProvidersTableProps {
@@ -12,6 +12,10 @@ interface ProvidersTableProps {
   onEditClick: (provider: Provider) => void;
   onDelete: (id: string) => void;
   readOnly?: boolean;
+}
+
+function isIncompleteProvider(p: Provider): boolean {
+  return !p.category && (p._count?.contacts ?? 0) === 0 && !p.transportType;
 }
 
 function getTypeBadge(type: string | undefined | null) {
@@ -61,15 +65,23 @@ export function ProvidersTable({
   });
 
   const filteredProviders = useMemo(() => {
-    if (!searchQuery.trim()) return providers;
-    const q = searchQuery.toLowerCase();
-    return providers.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        (p.officialName && p.officialName.toLowerCase().includes(q)) ||
-        (p.category && p.category.toLowerCase().includes(q)) ||
-        (p.type && p.type.toLowerCase().includes(q))
-    );
+    let list = providers;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = providers.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          (p.officialName && p.officialName.toLowerCase().includes(q)) ||
+          (p.category && p.category.toLowerCase().includes(q)) ||
+          (p.type && p.type.toLowerCase().includes(q))
+      );
+    }
+    return [...list].sort((a, b) => {
+      const aInc = isIncompleteProvider(a) ? 1 : 0;
+      const bInc = isIncompleteProvider(b) ? 1 : 0;
+      if (aInc !== bInc) return aInc - bInc;
+      return a.name.localeCompare(b.name);
+    });
   }, [providers, searchQuery]);
 
   const handleSaveNew = () => {
@@ -89,6 +101,15 @@ export function ProvidersTable({
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
           <Building2 className="h-4 w-4" />
           <span>{providers.length} proveedores</span>
+          {(() => {
+            const incCount = providers.filter(isIncompleteProvider).length;
+            return incCount > 0 ? (
+              <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                <AlertCircle className="h-3.5 w-3.5" />
+                {incCount} sin perfil
+              </span>
+            ) : null;
+          })()}
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
@@ -157,13 +178,20 @@ export function ProvidersTable({
             {filteredProviders.map((provider) => (
               <TableRow
                 key={provider.id}
-                className="hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-colors cursor-pointer"
+                className={`hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-colors cursor-pointer ${isIncompleteProvider(provider) ? "opacity-70" : ""}`}
                 onClick={() => onEditClick(provider)}
                 data-testid={`row-provider-${provider.id}`}
               >
                 <TableCell>
                   <div>
-                    <div className="font-medium">{provider.name}</div>
+                    <div className="font-medium flex items-center gap-1.5">
+                      {provider.name}
+                      {isIncompleteProvider(provider) && (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded px-1.5 py-0.5">
+                          <AlertCircle className="h-2.5 w-2.5" />Sin perfil
+                        </span>
+                      )}
+                    </div>
                     {provider.officialName && provider.officialName !== provider.name && (
                       <div className="text-xs text-muted-foreground truncate max-w-[200px]">{provider.officialName}</div>
                     )}

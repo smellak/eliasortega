@@ -3,14 +3,13 @@ import {
   Send, Loader2, User, Volume2, VolumeX, Clock, Truck, MessageCircle,
   RotateCcw, ArrowDown, Copy, Check, ThumbsUp, ThumbsDown,
   Square, MapPin, Phone, Mail, ExternalLink, WifiOff, CheckCheck, Sparkles,
+  Moon, Sun,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import ReactMarkdown from "react-markdown";
 import { useNotificationSound } from "@/hooks/use-notification-sound";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 /* ═══════════════════════════════════════════════════════════════
    CONSTANTS
@@ -95,6 +94,23 @@ function saveSession(messages: Message[], sessionId: string) {
    HOOKS
    ═══════════════════════════════════════════════════════════════ */
 
+function useThemeToggle() {
+  const [theme, setThemeState] = useState<"light" | "dark">("light");
+  useEffect(() => {
+    const saved = localStorage.getItem("theme") as "light" | "dark" | null;
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const initial = saved || (prefersDark ? "dark" : "light");
+    setThemeState(initial);
+    document.documentElement.classList.toggle("dark", initial === "dark");
+  }, []);
+  const setTheme = useCallback((t: "light" | "dark") => {
+    setThemeState(t);
+    localStorage.setItem("theme", t);
+    document.documentElement.classList.toggle("dark", t === "dark");
+  }, []);
+  return { theme, setTheme };
+}
+
 function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
   useEffect(() => {
@@ -112,11 +128,12 @@ function useOnlineStatus() {
    ═══════════════════════════════════════════════════════════════ */
 
 function EliasAvatar({ size = "sm" }: { size?: "sm" | "lg" | "xl" }) {
-  const cls = size === "xl" ? "h-16 w-16" : size === "lg" ? "h-10 w-10" : "h-8 w-8";
+  const cls = size === "xl" ? "h-20 w-20" : size === "lg" ? "h-10 w-10" : "h-8 w-8";
+  const ring = size === "xl" ? "ring-4 ring-white/30" : "ring-2 ring-blue-100 dark:ring-blue-900";
   return (
-    <Avatar className={`${cls} shrink-0 ring-2 ring-white dark:ring-stone-800 shadow-sm`}>
+    <Avatar className={`${cls} shrink-0 ${ring} shadow-md`}>
       <AvatarImage src="/elias-avatar.png" alt="Elías Ortega" />
-      <AvatarFallback className="bg-blue-600 text-white font-bold text-sm">EO</AvatarFallback>
+      <AvatarFallback className="bg-gradient-to-br from-blue-600 to-cyan-500 text-white font-bold text-sm">EO</AvatarFallback>
     </Avatar>
   );
 }
@@ -136,9 +153,9 @@ function MarkdownContent({ content, isUser }: { content: string; isUser: boolean
         h3: ({ children }) => <h3 className="text-sm font-bold mb-1">{children}</h3>,
         code: ({ children, className }) => {
           if (className?.includes("language-")) {
-            return <pre className={`rounded-lg p-3 my-2 text-xs overflow-x-auto ${isUser ? "bg-white/10" : "bg-stone-100 dark:bg-stone-700"}`}><code>{children}</code></pre>;
+            return <pre className={`rounded-lg p-3 my-2 text-xs overflow-x-auto ${isUser ? "bg-white/10" : "bg-gray-100 dark:bg-gray-700"}`}><code>{children}</code></pre>;
           }
-          return <code className={`px-1.5 py-0.5 rounded text-xs font-mono ${isUser ? "bg-white/10" : "bg-stone-200 dark:bg-stone-600"}`}>{children}</code>;
+          return <code className={`px-1.5 py-0.5 rounded text-xs font-mono ${isUser ? "bg-white/15" : "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"}`}>{children}</code>;
         },
         a: ({ href, children }) => (
           <a href={href} target="_blank" rel="noopener noreferrer" className={`underline underline-offset-2 ${isUser ? "text-white/90" : "text-blue-600 dark:text-blue-400"}`}>{children}</a>
@@ -153,25 +170,25 @@ function MarkdownContent({ content, isUser }: { content: string; isUser: boolean
 function ProgressStepper({ currentStep }: { currentStep: number }) {
   if (currentStep < 0) return null;
   return (
-    <div className="px-4 py-2.5 bg-white dark:bg-stone-900 border-b border-stone-100 dark:border-stone-800 shrink-0">
+    <div data-testid="progress-stepper" className="px-4 py-2.5 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shrink-0">
       <div className="max-w-2xl mx-auto flex items-center">
         {STEPS.map((step, i) => (
           <div key={step.key} className="flex items-center flex-1 last:flex-none">
             <div className="flex flex-col items-center gap-1">
               <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                i < currentStep ? "bg-blue-600 text-white" :
-                i === currentStep ? "bg-blue-600 text-white ring-[3px] ring-blue-600/20" :
-                "bg-stone-200 dark:bg-stone-700 text-stone-400 dark:text-stone-500"
+                i < currentStep ? "bg-gradient-to-br from-blue-600 to-cyan-500 text-white shadow-md shadow-blue-500/25" :
+                i === currentStep ? "bg-gradient-to-br from-blue-600 to-cyan-500 text-white ring-[3px] ring-blue-400/30 shadow-md shadow-blue-500/25" :
+                "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500"
               }`}>
                 {i < currentStep ? "✓" : i + 1}
               </div>
               <span className={`text-[10px] font-medium ${
-                i <= currentStep ? "text-blue-600 dark:text-blue-400" : "text-stone-400 dark:text-stone-500"
+                i <= currentStep ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500"
               }`}>{step.label}</span>
             </div>
             {i < STEPS.length - 1 && (
               <div className={`flex-1 h-[2px] mx-2 rounded-full transition-colors duration-300 ${
-                i < currentStep ? "bg-blue-600" : "bg-stone-200 dark:bg-stone-700"
+                i < currentStep ? "bg-gradient-to-r from-blue-600 to-cyan-500" : "bg-gray-100 dark:bg-gray-800"
               }`} />
             )}
           </div>
@@ -184,12 +201,15 @@ function ProgressStepper({ currentStep }: { currentStep: number }) {
 function WelcomeCard({ onSuggestion }: { onSuggestion: (text: string) => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-8 sm:py-12 animate-fadeIn px-4">
-      <EliasAvatar size="xl" />
-      <h2 className="mt-4 text-xl font-bold text-stone-900 dark:text-white tracking-tight">Elías Ortega</h2>
-      <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">Asistente de Almacén</p>
+      <div className="relative">
+        <div className="absolute -inset-3 bg-gradient-to-br from-blue-600/20 to-cyan-400/20 rounded-full blur-xl" />
+        <EliasAvatar size="xl" />
+      </div>
+      <h2 className="mt-5 text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Elías Ortega</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Asistente de Almacén</p>
 
-      <div className="mt-6 max-w-lg bg-white dark:bg-stone-800 rounded-3xl px-6 py-5 shadow-sm ring-1 ring-stone-900/5 dark:ring-white/5 text-center">
-        <p className="text-[15px] text-stone-600 dark:text-stone-300 leading-relaxed">{WELCOME_TEXT}</p>
+      <div className="mt-6 max-w-lg bg-gradient-to-br from-blue-50 to-cyan-50/50 dark:from-blue-950/40 dark:to-cyan-950/20 rounded-2xl px-6 py-5 ring-1 ring-blue-100 dark:ring-blue-800/30 text-center">
+        <p className="text-[15px] text-gray-700 dark:text-gray-300 leading-relaxed">{WELCOME_TEXT}</p>
       </div>
 
       <div className="mt-6 flex flex-wrap justify-center gap-2.5">
@@ -197,7 +217,7 @@ function WelcomeCard({ onSuggestion }: { onSuggestion: (text: string) => void })
           <button
             key={s.label}
             onClick={() => onSuggestion(s.label)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white dark:bg-stone-800 ring-1 ring-stone-200 dark:ring-stone-700 text-stone-700 dark:text-stone-300 text-sm font-medium shadow-sm hover:shadow-md hover:ring-blue-300 dark:hover:ring-blue-700 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white dark:bg-gray-800 ring-1 ring-blue-200/60 dark:ring-blue-700/40 text-gray-700 dark:text-gray-300 text-sm font-medium shadow-sm hover:shadow-md hover:ring-blue-400 dark:hover:ring-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
             data-testid={`button-suggestion-${s.label.slice(0, 10).toLowerCase().replace(/\s/g, "-")}`}
           >
             <s.icon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -206,7 +226,7 @@ function WelcomeCard({ onSuggestion }: { onSuggestion: (text: string) => void })
         ))}
       </div>
 
-      <p className="mt-8 text-xs text-stone-400 dark:text-stone-500">O escribe directamente abajo</p>
+      <p className="mt-8 text-xs text-gray-400 dark:text-gray-500">O escribe directamente abajo</p>
     </div>
   );
 }
@@ -216,11 +236,11 @@ function ScrollToBottomFAB({ visible, onClick }: { visible: boolean; onClick: ()
   return (
     <button
       onClick={onClick}
-      className="absolute bottom-4 right-4 z-10 h-10 w-10 rounded-full bg-white dark:bg-stone-800 ring-1 ring-stone-200 dark:ring-stone-700 shadow-lg flex items-center justify-center hover:bg-stone-50 dark:hover:bg-stone-700 transition-all animate-fadeIn"
+      className="absolute bottom-4 right-4 z-10 h-10 w-10 rounded-full bg-white dark:bg-gray-800 ring-1 ring-gray-200 dark:ring-gray-700 shadow-lg flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-all animate-fadeIn"
       aria-label="Ir al último mensaje"
       data-testid="button-scroll-bottom"
     >
-      <ArrowDown className="h-4 w-4 text-stone-600 dark:text-stone-300" />
+      <ArrowDown className="h-4 w-4 text-gray-600 dark:text-gray-300" />
     </button>
   );
 }
@@ -232,8 +252,8 @@ function CopyButton({ text }: { text: string }) {
   }, [text]);
 
   return (
-    <button onClick={handleCopy} className="p-1 rounded-md hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors" aria-label="Copiar" title="Copiar">
-      {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5 text-stone-400" />}
+    <button onClick={handleCopy} className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors" aria-label="Copiar" title="Copiar" data-testid="button-copy-message">
+      {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400" />}
     </button>
   );
 }
@@ -241,8 +261,8 @@ function CopyButton({ text }: { text: string }) {
 function FeedbackButtons({ feedback, onFeedback }: { feedback: "up" | "down" | null | undefined; onFeedback: (v: "up" | "down") => void }) {
   return (
     <div className="flex items-center gap-0.5">
-      <button onClick={() => onFeedback("up")} className={`p-1 rounded-md transition-colors ${feedback === "up" ? "text-emerald-500" : "text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700 hover:text-emerald-500"}`} aria-label="Útil"><ThumbsUp className="h-3.5 w-3.5" /></button>
-      <button onClick={() => onFeedback("down")} className={`p-1 rounded-md transition-colors ${feedback === "down" ? "text-red-500" : "text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700 hover:text-red-500"}`} aria-label="No útil"><ThumbsDown className="h-3.5 w-3.5" /></button>
+      <button onClick={() => onFeedback("up")} className={`p-1.5 rounded-lg transition-colors ${feedback === "up" ? "text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30" : "text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-emerald-500"}`} aria-label="Útil" data-testid="button-feedback-up"><ThumbsUp className="h-3.5 w-3.5" /></button>
+      <button onClick={() => onFeedback("down")} className={`p-1.5 rounded-lg transition-colors ${feedback === "down" ? "text-red-500 bg-red-50 dark:bg-red-900/30" : "text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-red-500"}`} aria-label="No útil" data-testid="button-feedback-down"><ThumbsDown className="h-3.5 w-3.5" /></button>
     </div>
   );
 }
@@ -270,6 +290,7 @@ export default function ChatPublic() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const { soundEnabled, toggle: toggleSound, play: playSound } = useNotificationSound();
   const isOnline = useOnlineStatus();
+  const { theme, setTheme } = useThemeToggle();
 
   const hasConversation = messages.length > 1;
   const typingText = currentTool && CONTEXTUAL_TYPING[currentTool] ? CONTEXTUAL_TYPING[currentTool] : "Escribiendo...";
@@ -288,6 +309,10 @@ export default function ChatPublic() {
   useEffect(() => { if (messages.length > 1) saveSession(messages, sessionId); }, [messages, sessionId]);
   useEffect(() => { document.title = "Elías · Centro Hogar Sánchez"; return () => { document.title = "Reserva tu cita de descarga — CentroHogar Sánchez"; }; }, []);
   useEffect(() => { inputRef.current?.focus(); }, []);
+
+  const toggleTheme = useCallback(() => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  }, [theme, setTheme]);
 
   const startNewConversation = useCallback(() => {
     if (!hasConversation) return;
@@ -394,9 +419,9 @@ export default function ChatPublic() {
      ═══════════════════════════════════════════════════════════ */
 
   return (
-    <div className="h-dvh flex flex-col bg-stone-100 dark:bg-stone-950">
+    <div className="h-dvh flex flex-col bg-gray-50 dark:bg-gray-950">
 
-      {/* Offline */}
+      {/* Offline banner */}
       {!isOnline && (
         <div className="bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs text-center py-2 px-3 flex items-center justify-center gap-2 shrink-0 border-b border-amber-200 dark:border-amber-800">
           <WifiOff className="h-3.5 w-3.5" />
@@ -405,40 +430,38 @@ export default function ChatPublic() {
       )}
 
       {/* ═══════════════════════════════════════════════════
-          MOBILE HEADER (<lg) — clean, minimal
+          MOBILE HEADER (<lg) — Blue gradient brand
          ═══════════════════════════════════════════════════ */}
-      <header className="lg:hidden flex items-center gap-3 px-4 h-14 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 shrink-0">
-        <img src="/logo-sanchez.png" alt="Centro Hogar Sánchez" className="h-8 w-auto" data-testid="img-logo" />
+      <header className="lg:hidden flex items-center gap-3 px-4 h-14 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 shrink-0 shadow-lg shadow-blue-500/20" data-testid="header-mobile">
+        <img src="/logo-sanchez.png" alt="Centro Hogar Sánchez" className="h-7 w-auto brightness-0 invert" data-testid="img-logo" />
         <div className="min-w-0 flex-1">
-          <h1 className="text-sm font-semibold text-stone-900 dark:text-white truncate">Elías Ortega</h1>
+          <h1 className="text-sm font-semibold text-white truncate">Elías Ortega</h1>
         </div>
-        <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] px-2 py-0.5 font-medium">
-          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5 animate-pulse inline-block" />
+        <span className="flex items-center gap-1.5 text-[10px] font-medium text-white/90 bg-white/15 backdrop-blur-sm px-2.5 py-1 rounded-full">
+          <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
           En línea
-        </Badge>
+        </span>
         {hasConversation && (
-          <button onClick={startNewConversation} className="p-2 -mr-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors" aria-label="Nueva conversación" data-testid="button-new-conversation">
-            <RotateCcw className="h-4 w-4 text-stone-500" />
+          <button onClick={startNewConversation} className="p-2 -mr-1 rounded-lg hover:bg-white/10 transition-colors" aria-label="Nueva conversación" data-testid="button-new-conversation">
+            <RotateCcw className="h-4 w-4 text-white/80" />
           </button>
         )}
-        <button onClick={toggleSound} className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors" aria-label="Sonido" data-testid="button-sound-toggle">
-          {soundEnabled ? <Volume2 className="h-4 w-4 text-stone-500" /> : <VolumeX className="h-4 w-4 text-stone-400" />}
+        <button onClick={toggleSound} className="p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="Sonido" data-testid="button-sound-toggle">
+          {soundEnabled ? <Volume2 className="h-4 w-4 text-white/80" /> : <VolumeX className="h-4 w-4 text-white/60" />}
         </button>
-        <div className="[&_button]:h-8 [&_button]:w-8 [&_button]:text-stone-500">
-          <ThemeToggle />
-        </div>
+        <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="Tema" data-testid="button-theme-toggle-mobile">
+          {theme === "dark" ? <Sun className="h-4 w-4 text-white/80" /> : <Moon className="h-4 w-4 text-white/80" />}
+        </button>
       </header>
 
       {/* ═══════════════════════════════════════════════════
           MOBILE VIDEO — always visible (<lg)
          ═══════════════════════════════════════════════════ */}
-      <div className="lg:hidden shrink-0 px-4 py-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800">
-        <div className="rounded-xl overflow-hidden bg-stone-900 shadow-sm ring-1 ring-stone-900/10 dark:ring-white/5">
-          <video controls preload="metadata" className="w-full max-h-[160px] object-contain" data-testid="video-tutorial-mobile">
-            <source src="/tutorial-video.mp4" type="video/mp4" />
-            <track src="/tutorial-captions.vtt" kind="captions" srcLang="es" label="Español" default />
-          </video>
-        </div>
+      <div className="lg:hidden shrink-0 bg-gray-900">
+        <video controls preload="metadata" className="w-full max-h-[180px] object-contain" data-testid="video-tutorial-mobile">
+          <source src="/tutorial-video.mp4" type="video/mp4" />
+          <track src="/tutorial-captions.vtt" kind="captions" srcLang="es" label="Español" default />
+        </video>
       </div>
 
       {/* ═══════════════════════════════════════════════════
@@ -446,28 +469,32 @@ export default function ChatPublic() {
          ═══════════════════════════════════════════════════ */}
       <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
 
-        {/* ── LEFT PANEL (lg+) ── */}
-        <div className="hidden lg:flex lg:w-[400px] xl:w-[440px] flex-col shrink-0 bg-white dark:bg-stone-900 border-r border-stone-200 dark:border-stone-800 overflow-hidden">
-          <div className="flex flex-col h-full overflow-y-auto">
+        {/* ── LEFT PANEL (lg+) — Blue gradient brand panel ── */}
+        <div className="hidden lg:flex lg:w-[380px] xl:w-[420px] flex-col shrink-0 bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-400 dark:from-blue-900 dark:via-blue-800 dark:to-cyan-900 overflow-hidden relative">
+          {/* Decorative elements */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.1),transparent_60%)]" />
+          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/10 to-transparent" />
+
+          <div className="flex flex-col h-full overflow-y-auto relative z-10">
 
             {/* Branding */}
-            <div className="p-6 pb-0">
+            <div className="p-6 pb-4">
               <div className="flex items-center gap-3.5">
-                <img src="/logo-sanchez.png" alt="Centro Hogar Sánchez" className="h-10 w-auto" data-testid="img-logo-desktop" />
+                <img src="/logo-sanchez.png" alt="Centro Hogar Sánchez" className="h-9 w-auto brightness-0 invert drop-shadow-lg" data-testid="img-logo-desktop" />
                 <div>
-                  <h1 className="text-lg font-bold text-stone-900 dark:text-white tracking-tight">Elías Ortega</h1>
-                  <p className="text-xs text-stone-500 dark:text-stone-400">Asistente de Almacén</p>
+                  <h1 className="text-lg font-bold text-white tracking-tight drop-shadow-sm">Elías Ortega</h1>
+                  <p className="text-xs text-white/70">Asistente de Almacén</p>
                 </div>
               </div>
-              <Badge className="mt-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-xs px-2.5 py-0.5 font-medium">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5 animate-pulse inline-block" />
+              <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-white/90 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
                 En línea
-              </Badge>
+              </span>
             </div>
 
-            {/* Video — always visible */}
-            <div className="p-6 pb-0">
-              <div className="rounded-2xl overflow-hidden bg-stone-900 shadow-lg ring-1 ring-stone-900/10 dark:ring-white/5">
+            {/* Video */}
+            <div className="px-6 pb-4">
+              <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/20 ring-1 ring-white/20">
                 <video controls preload="metadata" className="w-full aspect-video" data-testid="video-tutorial">
                   <source src="/tutorial-video.mp4" type="video/mp4" />
                   <track src="/tutorial-captions.vtt" kind="captions" srcLang="es" label="Español" default />
@@ -475,73 +502,69 @@ export default function ChatPublic() {
               </div>
             </div>
 
-            {/* Info */}
-            <div className="p-6 pb-0 space-y-1">
-              <div className="flex items-center gap-3 py-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950 flex items-center justify-center shrink-0">
-                  <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            {/* Info bullets */}
+            <div className="px-6 pb-4 space-y-1">
+              {[
+                { icon: Clock, text: "Lunes a Viernes, 8:00 – 20:00" },
+                { icon: Truck, text: "Dime qué traes y busco hueco" },
+                { icon: MessageCircle, text: "Respondo las 24 horas del día" },
+              ].map(({ icon: Icon, text }) => (
+                <div key={text} className="flex items-center gap-3 py-2">
+                  <div className="w-8 h-8 rounded-lg bg-white/15 backdrop-blur-sm flex items-center justify-center shrink-0">
+                    <Icon className="h-4 w-4 text-white" />
+                  </div>
+                  <p className="text-sm text-white/85">{text}</p>
                 </div>
-                <p className="text-sm text-stone-600 dark:text-stone-400">Lunes a Viernes, 8:00 – 20:00</p>
-              </div>
-              <div className="flex items-center gap-3 py-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950 flex items-center justify-center shrink-0">
-                  <Truck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <p className="text-sm text-stone-600 dark:text-stone-400">Dime qué traes y busco hueco</p>
-              </div>
-              <div className="flex items-center gap-3 py-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950 flex items-center justify-center shrink-0">
-                  <MessageCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <p className="text-sm text-stone-600 dark:text-stone-400">Respondo las 24 horas del día</p>
-              </div>
+              ))}
             </div>
 
             {/* Contact */}
-            <div className="p-6 pt-4 mt-auto space-y-2">
-              <div className="h-px bg-stone-200 dark:bg-stone-800 mb-4" />
-              <a href="tel:+34953250000" className="flex items-center gap-2.5 text-sm text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition-colors">
-                <Phone className="h-4 w-4" /><span>953 25 00 00</span>
-              </a>
-              <a href="mailto:almacen@centrohogarsanchez.es" className="flex items-center gap-2.5 text-sm text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition-colors">
-                <Mail className="h-4 w-4" /><span>almacen@centrohogarsanchez.es</span>
-              </a>
-              <a href="https://maps.google.com/?q=Centro+Hogar+Sanchez+Jaen" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-sm text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition-colors">
-                <MapPin className="h-4 w-4" /><span>Ver ubicación</span>
-              </a>
-              <div className="flex items-center justify-between pt-3">
-                <a href="https://centrohogarsanchez.es" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <div className="px-6 py-4 mt-auto">
+              <div className="h-px bg-white/15 mb-4" />
+              <div className="space-y-2.5">
+                <a href="tel:+34953250000" className="flex items-center gap-2.5 text-sm text-white/70 hover:text-white transition-colors">
+                  <Phone className="h-4 w-4" /><span>953 25 00 00</span>
+                </a>
+                <a href="mailto:almacen@centrohogarsanchez.es" className="flex items-center gap-2.5 text-sm text-white/70 hover:text-white transition-colors">
+                  <Mail className="h-4 w-4" /><span>almacen@centrohogarsanchez.es</span>
+                </a>
+                <a href="https://maps.google.com/?q=Centro+Hogar+Sanchez+Jaen" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-sm text-white/70 hover:text-white transition-colors">
+                  <MapPin className="h-4 w-4" /><span>Ver ubicación</span>
+                </a>
+              </div>
+              <div className="flex items-center justify-between pt-4 mt-3 border-t border-white/10">
+                <a href="https://centrohogarsanchez.es" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-white hover:text-white/90 font-medium">
                   <ExternalLink className="h-3.5 w-3.5" /><span>centrohogarsanchez.es</span>
                 </a>
-                <div className="[&_button]:text-stone-400 [&_button]:hover:text-stone-600 dark:[&_button]:hover:text-white">
-                  <ThemeToggle />
-                </div>
+                <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors" aria-label="Cambiar tema" data-testid="button-theme-toggle">
+                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </button>
               </div>
             </div>
           </div>
         </div>
 
         {/* ── CHAT PANEL ── */}
-        <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-white dark:bg-stone-900 lg:bg-stone-50 lg:dark:bg-stone-950">
+        <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-white dark:bg-gray-900">
 
-          {/* Desktop-only chat header */}
-          <div className="hidden lg:flex items-center gap-3 px-5 h-14 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 shrink-0">
+          {/* Desktop chat header */}
+          <div className="hidden lg:flex items-center gap-3 px-5 h-14 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shrink-0">
             <EliasAvatar size="lg" />
             <div className="flex-1 min-w-0">
-              <h2 className="text-sm font-semibold text-stone-900 dark:text-white">Elías Ortega</h2>
-              <p className="text-xs text-stone-500 dark:text-stone-400">Asistente de Almacén</p>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Elías Ortega</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Asistente de Almacén</p>
             </div>
-            <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] font-medium">
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5 animate-pulse inline-block" />
+            <span className="flex items-center gap-1.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 rounded-full ring-1 ring-emerald-200 dark:ring-emerald-800/40">
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
               En línea
-            </Badge>
+            </span>
             {hasConversation && (
-              <button onClick={startNewConversation} className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors" aria-label="Nueva conversación" data-testid="button-new-conversation-desktop">
-                <RotateCcw className="h-4 w-4 text-stone-400" />
+              <button onClick={startNewConversation} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Nueva conversación" data-testid="button-new-conversation-desktop">
+                <RotateCcw className="h-4 w-4 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400" />
               </button>
             )}
-            <button onClick={toggleSound} className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors" aria-label="Sonido" data-testid="button-sound-toggle-desktop">
-              {soundEnabled ? <Volume2 className="h-4 w-4 text-stone-400" /> : <VolumeX className="h-4 w-4 text-stone-300" />}
+            <button onClick={toggleSound} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Sonido" data-testid="button-sound-toggle-desktop">
+              {soundEnabled ? <Volume2 className="h-4 w-4 text-gray-400" /> : <VolumeX className="h-4 w-4 text-gray-300" />}
             </button>
           </div>
 
@@ -557,7 +580,7 @@ export default function ChatPublic() {
             aria-label="Mensajes"
             data-testid="chat-messages"
           >
-            <div className="space-y-4 max-w-2xl mx-auto">
+            <div className="space-y-5 max-w-2xl mx-auto">
               {!hasConversation ? (
                 <WelcomeCard onSuggestion={(text) => sendMessage(text)} />
               ) : (
@@ -566,15 +589,15 @@ export default function ChatPublic() {
                   const displayContent = isError ? msg.content.replace("__ERROR__", "") : msg.content;
 
                   return (
-                    <div key={msg.id} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`} data-testid={`message-${msg.role}-${msg.id}`}>
+                    <div key={msg.id} className={`group flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`} data-testid={`message-${msg.role}-${msg.id}`}>
                       {msg.role === "assistant" && <EliasAvatar />}
                       <div className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"} max-w-[80%] sm:max-w-[70%]`}>
-                        <div className={`rounded-3xl px-4 py-3 ${
+                        <div className={`rounded-2xl px-4 py-3 ${
                           msg.role === "user"
-                            ? "bg-stone-900 dark:bg-blue-600 text-white rounded-br-lg"
+                            ? "bg-gradient-to-br from-blue-600 to-blue-700 dark:from-blue-600 dark:to-blue-700 text-white shadow-md shadow-blue-500/20 rounded-br-md"
                             : isError
-                              ? "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 ring-1 ring-red-200 dark:ring-red-800 rounded-bl-lg"
-                              : "bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-200 shadow-sm ring-1 ring-stone-100 dark:ring-stone-700 rounded-bl-lg"
+                              ? "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 ring-1 ring-red-200 dark:ring-red-800 rounded-bl-md"
+                              : "bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 ring-1 ring-gray-100 dark:ring-gray-700 rounded-bl-md"
                         }`}>
                           {isError ? (
                             <div className="text-sm">
@@ -589,21 +612,21 @@ export default function ChatPublic() {
                             <p className="whitespace-pre-wrap break-words leading-relaxed text-[15px]">{displayContent}</p>
                           )}
                         </div>
-                        {/* Timestamp + status */}
-                        <div className="flex items-center gap-1.5 mt-1.5 px-1">
-                          <span className="text-[11px] text-stone-400 dark:text-stone-500">
+                        {/* Timestamp + status + actions */}
+                        <div className="flex items-center gap-1.5 mt-1 px-1">
+                          <span className="text-[11px] text-gray-400 dark:text-gray-500">
                             {msg.timestamp.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
                           </span>
                           {msg.role === "user" && msg.status && (
-                            <span className="text-stone-400 dark:text-stone-500">
+                            <span className="text-gray-400 dark:text-gray-500">
                               {msg.status === "sending" && <Clock className="h-3 w-3 inline" />}
                               {msg.status === "sent" && <Check className="h-3 w-3 inline" />}
                               {msg.status === "delivered" && <CheckCheck className="h-3 w-3 inline text-blue-500" />}
                             </span>
                           )}
-                          {/* Actions */}
+                          {/* Actions — visible on group hover */}
                           {msg.role === "assistant" && !isError && displayContent && (
-                            <div className="flex items-center gap-0.5 ml-1 opacity-0 hover:opacity-100 transition-opacity" onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; }} onMouseLeave={(e) => { e.currentTarget.style.opacity = "0"; }}>
+                            <div className="flex items-center gap-0.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                               <CopyButton text={displayContent} />
                               <FeedbackButtons feedback={msg.feedback} onFeedback={(v) => handleFeedback(msg.id, v)} />
                             </div>
@@ -611,8 +634,8 @@ export default function ChatPublic() {
                         </div>
                       </div>
                       {msg.role === "user" && (
-                        <Avatar className="h-8 w-8 shrink-0 ring-2 ring-white dark:ring-stone-800 shadow-sm">
-                          <AvatarFallback className="bg-stone-900 dark:bg-blue-600 text-white"><User className="h-4 w-4" /></AvatarFallback>
+                        <Avatar className="h-8 w-8 shrink-0 shadow-md ring-2 ring-blue-100 dark:ring-blue-900">
+                          <AvatarFallback className="bg-gradient-to-br from-blue-600 to-blue-700 text-white"><User className="h-4 w-4" /></AvatarFallback>
                         </Avatar>
                       )}
                     </div>
@@ -620,18 +643,18 @@ export default function ChatPublic() {
                 })
               )}
 
-              {/* Typing */}
+              {/* Typing indicator */}
               {isStreaming && messages[messages.length - 1]?.content === "" && (
                 <div className="flex gap-3 justify-start" aria-label={typingText}>
                   <EliasAvatar />
-                  <div className="bg-white dark:bg-stone-800 shadow-sm ring-1 ring-stone-100 dark:ring-stone-700 rounded-3xl rounded-bl-lg px-4 py-3">
+                  <div className="bg-gray-50 dark:bg-gray-800 ring-1 ring-gray-100 dark:ring-gray-700 rounded-2xl rounded-bl-md px-4 py-3">
                     <div className="flex items-center gap-2.5">
                       <div className="flex gap-1">
-                        <span className="w-2 h-2 bg-stone-400 dark:bg-stone-500 rounded-full dot-bounce" style={{ animationDelay: "0ms" }} />
-                        <span className="w-2 h-2 bg-stone-400 dark:bg-stone-500 rounded-full dot-bounce" style={{ animationDelay: "0.2s" }} />
-                        <span className="w-2 h-2 bg-stone-400 dark:bg-stone-500 rounded-full dot-bounce" style={{ animationDelay: "0.4s" }} />
+                        <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "0ms", animationDuration: "0.8s" }} />
+                        <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "0.2s", animationDuration: "0.8s" }} />
+                        <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: "0.4s", animationDuration: "0.8s" }} />
                       </div>
-                      <span className="text-xs text-stone-400 dark:text-stone-500">{typingText}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500 italic">{typingText}</span>
                     </div>
                   </div>
                 </div>
@@ -641,11 +664,11 @@ export default function ChatPublic() {
             <ScrollToBottomFAB visible={showScrollFAB} onClick={() => scrollToBottom()} />
           </div>
 
-          {/* Input */}
-          <div className="p-3 sm:p-4 bg-white dark:bg-stone-900 border-t border-stone-200 dark:border-stone-800 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          {/* Input area */}
+          <div className="p-3 sm:p-4 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {isStreaming && (
               <div className="flex justify-center mb-2.5">
-                <button onClick={stopStreaming} className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium text-stone-600 dark:text-stone-400 bg-stone-100 dark:bg-stone-800 rounded-full hover:bg-stone-200 dark:hover:bg-stone-700 ring-1 ring-stone-200 dark:ring-stone-700 transition-colors" data-testid="button-stop-streaming">
+                <button onClick={stopStreaming} className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 ring-1 ring-gray-200 dark:ring-gray-700 transition-colors" data-testid="button-stop-streaming">
                   <Square className="h-3 w-3 fill-current" /> Detener
                 </button>
               </div>
@@ -658,14 +681,14 @@ export default function ChatPublic() {
                   onChange={(e) => { if (e.target.value.length <= MAX_MESSAGE_LENGTH) setInput(e.target.value); }}
                   onKeyDown={handleKeyDown}
                   placeholder="Escribe tu mensaje..."
-                  className="resize-none min-h-[48px] max-h-[120px] rounded-xl bg-stone-50 dark:bg-stone-800 border-stone-200 dark:border-stone-700 focus-visible:ring-blue-500 text-[15px] pr-14"
+                  className="resize-none min-h-[48px] max-h-[120px] rounded-2xl bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus-visible:ring-blue-500 focus-visible:border-blue-500 text-[15px] pr-14 transition-colors"
                   disabled={isStreaming || !isOnline}
                   data-testid="input-message"
                   aria-label="Mensaje"
                   maxLength={MAX_MESSAGE_LENGTH}
                 />
                 {input.length > MAX_MESSAGE_LENGTH * 0.8 && (
-                  <span className={`absolute bottom-2 right-3 text-[10px] ${input.length >= MAX_MESSAGE_LENGTH ? "text-red-500 font-bold" : "text-stone-400"}`}>
+                  <span className={`absolute bottom-2 right-3 text-[10px] ${input.length >= MAX_MESSAGE_LENGTH ? "text-red-500 font-bold" : "text-gray-400"}`}>
                     {input.length}/{MAX_MESSAGE_LENGTH}
                   </span>
                 )}
@@ -674,7 +697,7 @@ export default function ChatPublic() {
                 onClick={() => sendMessage()}
                 disabled={!input.trim() || isStreaming || !isOnline}
                 size="icon"
-                className="shrink-0 h-12 w-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm active:scale-95 transition-all"
+                className="shrink-0 h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/25 active:scale-95 transition-all disabled:shadow-none"
                 aria-label="Enviar"
                 data-testid="button-send"
               >
@@ -682,11 +705,11 @@ export default function ChatPublic() {
               </Button>
             </div>
             <div className="mt-2 text-center">
-              <p className="text-[10px] text-stone-400 dark:text-stone-500 hidden sm:block">Enter para enviar · Shift+Enter para nueva línea</p>
-              <p className="text-[9px] text-stone-400/70 dark:text-stone-500/70 mt-0.5 flex items-center justify-center gap-1">
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 hidden sm:block">Enter para enviar · Shift+Enter para nueva línea</p>
+              <p className="text-[9px] text-gray-400/70 dark:text-gray-500/70 mt-0.5 flex items-center justify-center gap-1">
                 <Sparkles className="h-2.5 w-2.5" />
                 Asistente de IA ·{" "}
-                <a href="https://centrohogarsanchez.es/privacidad" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-stone-500">Privacidad</a>
+                <a href="https://centrohogarsanchez.es/privacidad" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-gray-500">Privacidad</a>
               </p>
             </div>
           </div>

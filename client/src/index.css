@@ -535,3 +535,48 @@
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
 }
+
+/* ── P3-4: Print-optimized CSS ── */
+@media print {
+  /* Hide non-essential UI */
+  [data-sidebar],
+  [data-testid="button-sidebar-toggle"],
+  .glass-header,
+  [data-testid="floating-assistant"],
+  [data-testid="button-new-appointment"],
+  [data-testid="button-quick-adjust"],
+  [data-testid="button-category-legend"],
+  [data-testid="button-calendar-prev"],
+  [data-testid="button-calendar-next"],
+  [data-testid="button-calendar-today"],
+  [data-testid="button-view-month"],
+  [data-testid="button-view-week"],
+  [data-testid="button-view-day"],
+  .fixed,
+  button[class*="floating"] {
+    display: none !important;
+  }
+
+  /* Full width for content */
+  body, html {
+    background: white !important;
+    color: black !important;
+  }
+
+  main {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Remove shadows and backgrounds */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Force light colors for readability */
+  .dark & {
+    background: white !important;
+    color: black !important;
+  }
+}

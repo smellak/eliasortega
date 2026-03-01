@@ -147,7 +147,7 @@ function CompactCard({ appt, onClick }: { appt: WeekSlotAppointment; onClick?: (
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-      className={`w-full text-left p-1.5 rounded-md text-[10px] leading-tight border-l-[3px] ${catStyle.border} ${catStyle.bg} shadow-sm hover:shadow-md transition-all duration-150 ${isCancelled ? "opacity-50" : ""}`}
+      className={`w-full text-left p-1.5 rounded-md text-[10px] leading-tight border-l-[3px] ${catStyle.border} ${catStyle.bg} shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-150 ${isCancelled ? "opacity-50" : ""}`}
     >
       <div className="flex items-center gap-0.5">
         {isConfirmed && <Check className="h-2.5 w-2.5 text-emerald-600 shrink-0" />}
@@ -179,7 +179,7 @@ function FullCard({ appt, onClick }: { appt: WeekSlotAppointment; onClick?: () =
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-      className={`w-full text-left p-3 rounded-lg border-l-4 ${catStyle.border} bg-card border border-border/50 hover:shadow-lg transition-all duration-200 ${isCancelled ? "opacity-60" : ""}`}
+      className={`w-full text-left p-3 rounded-lg border-l-4 ${catStyle.border} bg-card border border-border/50 hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 ${isCancelled ? "opacity-60" : ""}`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="font-semibold text-sm flex items-center gap-1.5">
@@ -892,6 +892,26 @@ export function SlotCalendar({
     onViewChange("day");
   };
 
+  // P3-3: Keyboard navigation
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      switch (e.key) {
+        case "ArrowLeft":  e.preventDefault(); handlePrev(); break;
+        case "ArrowRight": e.preventDefault(); handleNext(); break;
+        case "t": handleToday(); break;
+        case "w": if (!isMobile) onViewChange("week"); break;
+        case "d": onViewChange("day"); break;
+        case "m": onViewChange("month"); break;
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  });
+
   const titleText = useMemo(() => {
     let text: string;
     if (currentView === "day") {
@@ -976,8 +996,9 @@ export function SlotCalendar({
         </Popover>
       </div>
 
-      {/* View Content */}
+      {/* View Content — with fade-in transition (P3-1) */}
       {currentView === "week" && (
+        <div key="week" className="animate-fadeIn">
         <WeekView
           weekData={weekData}
           isLoading={isLoading}
@@ -985,8 +1006,10 @@ export function SlotCalendar({
           onAppointmentClick={onAppointmentClick}
           readOnly={readOnly}
         />
+        </div>
       )}
       {currentView === "day" && (
+        <div key="day" className="animate-fadeIn">
         <DayView
           weekData={activeData}
           currentDate={currentDate}
@@ -995,14 +1018,17 @@ export function SlotCalendar({
           readOnly={readOnly}
           isLoading={isLoading}
         />
+        </div>
       )}
       {currentView === "month" && (
+        <div key="month" className="animate-fadeIn">
         <MonthView
           weekData={activeData}
           currentDate={currentDate}
           onDayClick={handleMonthDayClick}
           isLoading={isLoading}
         />
+        </div>
       )}
     </div>
   );

@@ -110,7 +110,7 @@ export function QuickCapacityAdjust({ date }: QuickCapacityAdjustProps) {
   })();
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex items-center gap-1">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -126,6 +126,11 @@ export function QuickCapacityAdjust({ date }: QuickCapacityAdjustProps) {
               <Badge variant="outline" className={`text-xs ${config.badgeClass}`}>
                 <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${config.color}`} />
                 {config.label}
+                {daySummary && (
+                  <span className="ml-1.5 hidden lg:inline text-[10px] opacity-70">
+                    {daySummary.used}/{daySummary.max} pts
+                  </span>
+                )}
               </Badge>
             )}
           </Button>
@@ -164,8 +169,8 @@ export function QuickCapacityAdjust({ date }: QuickCapacityAdjustProps) {
         </PopoverContent>
       </Popover>
       {daySummary && (
-        <p className="text-[10px] text-muted-foreground" data-testid="text-day-summary">
-          Hoy: {daySummary.used}/{daySummary.max} puntos en {daySummary.slotCount} franjas
+        <p className="text-[10px] text-muted-foreground hidden lg:block" data-testid="text-day-summary">
+          {daySummary.slotCount} franjas
         </p>
       )}
     </div>

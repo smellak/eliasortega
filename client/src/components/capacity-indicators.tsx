@@ -3,6 +3,8 @@ import { Package, Gauge, TrendingUp, ChevronDown, ChevronUp, Zap } from "lucide-
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
 import type { SlotUtilization } from "@shared/types";
 import type { CalendarViewType } from "./slot-calendar";
 
@@ -100,7 +102,7 @@ export function CapacityIndicators({
                     {peakSlot.percentage.toFixed(0)}%
                   </p>
                   <p className="text-[10px] text-muted-foreground font-mono">
-                    {peakSlot.date.slice(5)} {peakSlot.startTime}
+                    {(() => { try { return format(parseISO(peakSlot.date), "dd/MM"); } catch { return peakSlot.date.slice(5); } })()}{" "}{peakSlot.startTime}
                   </p>
                 </>
               ) : (
@@ -139,8 +141,8 @@ export function CapacityIndicators({
         </Card>
       </div>
 
-      {/* ── Expandable Details ── */}
-      <Card className="p-4">
+      {/* ── Expandable Details (hidden on mobile to save space) ── */}
+      <Card className="p-4 hidden sm:block">
         <Button
           variant="ghost"
           className="w-full justify-between gap-2"
@@ -162,7 +164,9 @@ export function CapacityIndicators({
               });
               return Array.from(grouped.entries()).map(([date, daySlots]) => (
                 <div key={date}>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{date}</p>
+                  <p className="text-xs font-semibold text-muted-foreground tracking-wide mb-2 capitalize">
+                    {(() => { try { return format(parseISO(date), "EEEE dd/MM", { locale: es }); } catch { return date; } })()}
+                  </p>
                   <div className="space-y-2 pl-2 border-l-2 border-muted">
                     {daySlots.map((slot, idx) => {
                       const pct = slot.maxPoints > 0 ? (slot.pointsUsed / slot.maxPoints) * 100 : 0;

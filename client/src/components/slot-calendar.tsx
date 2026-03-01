@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronLeft, ChevronRight, Plus, Clock, Check, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, Clock, Check, X } from "lucide-react";
 import { format, addDays, addWeeks, subWeeks, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { es } from "date-fns/locale";
@@ -293,6 +293,7 @@ function WeekView({
             {weekData.map((day) => {
               const dUsed = day.slots.reduce((s, sl) => s + sl.usedPoints, 0);
               const dMax = day.slots.reduce((s, sl) => s + sl.maxPoints, 0);
+              const dPct = dMax > 0 ? Math.round((dUsed / dMax) * 100) : 0;
               const isToday = day.date === today;
               return (
                 <div
@@ -305,7 +306,19 @@ function WeekView({
                   <div className={`text-base font-bold ${isToday ? "text-primary" : ""}`}>
                     {format(new Date(day.date + "T12:00:00"), "dd/MM", { locale: es })}
                   </div>
-                  <PointsBar used={dUsed} max={dMax} className="mt-1" />
+                  {dMax > 0 && (
+                    <div className="mt-1 flex items-center justify-center gap-1">
+                      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden max-w-[60px]">
+                        <div
+                          className={`h-full rounded-full ${getProgressColor(dUsed, dMax)}`}
+                          style={{ width: `${Math.max(Math.min(dPct, 100), dPct > 0 ? 8 : 0)}%` }}
+                        />
+                      </div>
+                      <span className={`text-[9px] font-bold ${
+                        dPct >= 80 ? "text-red-600 dark:text-red-400" : dPct >= 50 ? "text-yellow-600 dark:text-yellow-400" : dPct > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
+                      }`}>{dUsed}/{dMax}</span>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -432,6 +445,7 @@ function DayView({
 }) {
   const dateStr = toMadridDateStr(currentDate);
   const dayData = weekData.find((d) => d.date === dateStr);
+  const [emptyExpanded, setEmptyExpanded] = useState(false);
 
   if (isLoading) {
     return (
@@ -458,89 +472,140 @@ function DayView({
     );
   }
 
+  // Group slots: separate those with appointments from empty ones
+  const slotsWithAppts = dayData.slots.filter(s => s.appointments.length > 0);
+  const emptySlots = dayData.slots.filter(s => s.appointments.length === 0);
+  const totalEmptyPts = emptySlots.reduce((s, sl) => s + sl.availablePoints, 0);
+  const dockCount = dayData.slots[0]?.activeDocks || 0;
+
+  // Render a single slot card (for slots with appointments or expanded empty)
+  const renderSlotCard = (slot: WeekSlot, showDocks: boolean) => {
+    const isFull = slot.availablePoints <= 0;
+    const pct = slot.maxPoints > 0 ? Math.round((slot.usedPoints / slot.maxPoints) * 100) : 0;
+    return (
+      <Card
+        key={`${slot.startTime}-${slot.endTime}`}
+        className={`overflow-hidden border ${getOccupationBorderColor(slot.usedPoints, slot.maxPoints)}`}
+      >
+        <div className={`px-4 py-3 flex items-center justify-between border-b ${getOccupationBg(slot.usedPoints, slot.maxPoints)}`}>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-lg font-mono font-bold">
+                {slot.startTime} – {slot.endTime}
+              </span>
+            </div>
+            <Badge variant="outline" className="font-mono text-xs">
+              {slot.usedPoints}/{slot.maxPoints} pts
+            </Badge>
+            <span className={`text-sm font-semibold ${pct >= 80 ? "text-red-600 dark:text-red-400" : pct >= 50 ? "text-yellow-600 dark:text-yellow-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+              {pct}%
+            </span>
+            {showDocks && dockCount > 0 && (
+              <Badge variant="secondary" className="text-[10px]">
+                {dockCount} muelles
+              </Badge>
+            )}
+          </div>
+          {!readOnly && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={isFull}
+                    onClick={() => onSlotClick?.(dateStr, slot.startTime, slot.endTime)}
+                    className="shrink-0"
+                    data-testid={`button-add-appt-${slot.startTime}`}
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    Añadir
+                  </Button>
+                </TooltipTrigger>
+                {isFull && <TooltipContent>Franja completa</TooltipContent>}
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+        <div className="h-1.5 bg-muted">
+          <div
+            className={`h-full transition-all duration-500 ${getProgressGradient(slot.usedPoints, slot.maxPoints)}`}
+            style={{ width: `${Math.min(pct, 100)}%` }}
+          />
+        </div>
+        <div className={slot.appointments.length === 0 ? "px-4 py-2" : "p-4"}>
+          {slot.appointments.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-1 italic">
+              Franja libre — {slot.availablePoints} pts disponibles
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {slot.appointments.map((appt) => (
+                <FullCard
+                  key={appt.id}
+                  appt={appt}
+                  onClick={() => onAppointmentClick?.(appt)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </Card>
+    );
+  };
+
   return (
     <div className="space-y-3" data-testid="slot-calendar-day">
-      {dayData.slots.map((slot) => {
-        const isFull = slot.availablePoints <= 0;
-        const pct = slot.maxPoints > 0 ? Math.round((slot.usedPoints / slot.maxPoints) * 100) : 0;
+      {/* Day summary badge */}
+      {dockCount > 0 && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Badge variant="secondary" className="text-[10px]">{dockCount} muelles activos</Badge>
+          <span>{dayData.slots.length} franjas · {dayData.slots.reduce((s, sl) => s + sl.maxPoints, 0)} pts totales</span>
+        </div>
+      )}
 
-        return (
-          <Card
-            key={`${slot.startTime}-${slot.endTime}`}
-            className={`overflow-hidden border ${getOccupationBorderColor(slot.usedPoints, slot.maxPoints)}`}
+      {/* Slots with appointments — always shown */}
+      {slotsWithAppts.map((slot) => renderSlotCard(slot, false))}
+
+      {/* Empty slots — collapsed when 3+ */}
+      {emptySlots.length > 0 && emptySlots.length <= 2 && (
+        emptySlots.map((slot) => renderSlotCard(slot, false))
+      )}
+      {emptySlots.length >= 3 && !emptyExpanded && (
+        <Card
+          className="overflow-hidden border border-dashed border-muted-foreground/20 cursor-pointer hover:bg-muted/30 transition-colors"
+          onClick={() => setEmptyExpanded(true)}
+        >
+          <div className="px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Clock className="h-4 w-4 text-muted-foreground/50" />
+              <span className="text-sm font-medium text-muted-foreground">
+                {emptySlots[0].startTime} – {emptySlots[emptySlots.length - 1].endTime}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {emptySlots.length} franjas libres — {totalEmptyPts} pts disponibles
+              </span>
+            </div>
+            <Button variant="ghost" size="sm" className="text-xs shrink-0">
+              <ChevronDown className="h-3.5 w-3.5 mr-1" />
+              Expandir
+            </Button>
+          </div>
+        </Card>
+      )}
+      {emptySlots.length >= 3 && emptyExpanded && (
+        <>
+          <button
+            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+            onClick={() => setEmptyExpanded(false)}
           >
-            {/* Slot header */}
-            <div className={`px-4 py-3 flex items-center justify-between border-b ${getOccupationBg(slot.usedPoints, slot.maxPoints)}`}>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-lg font-mono font-bold">
-                    {slot.startTime} – {slot.endTime}
-                  </span>
-                </div>
-                <Badge variant="outline" className="font-mono text-xs">
-                  {slot.usedPoints}/{slot.maxPoints} pts
-                </Badge>
-                <span className={`text-sm font-semibold ${pct >= 80 ? "text-red-600 dark:text-red-400" : pct >= 50 ? "text-yellow-600 dark:text-yellow-400" : "text-emerald-600 dark:text-emerald-400"}`}>
-                  {pct}%
-                </span>
-                {slot.activeDocks !== undefined && slot.activeDocks > 0 && (
-                  <Badge variant="secondary" className="text-[10px]">
-                    {slot.activeDocks} muelles
-                  </Badge>
-                )}
-              </div>
-              {!readOnly && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={isFull}
-                        onClick={() => onSlotClick?.(dateStr, slot.startTime, slot.endTime)}
-                        className="shrink-0"
-                        data-testid={`button-add-appt-${slot.startTime}`}
-                      >
-                        <Plus className="h-3.5 w-3.5 mr-1" />
-                        Añadir
-                      </Button>
-                    </TooltipTrigger>
-                    {isFull && <TooltipContent>Franja completa</TooltipContent>}
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div>
-
-            {/* Progress bar */}
-            <div className="h-1.5 bg-muted">
-              <div
-                className={`h-full transition-all duration-500 ${getProgressGradient(slot.usedPoints, slot.maxPoints)}`}
-                style={{ width: `${Math.min(pct, 100)}%` }}
-              />
-            </div>
-
-            {/* Appointments */}
-            <div className={slot.appointments.length === 0 ? "px-4 py-2" : "p-4"}>
-              {slot.appointments.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-1 italic">
-                  Franja libre — {slot.availablePoints} pts disponibles
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {slot.appointments.map((appt) => (
-                    <FullCard
-                      key={appt.id}
-                      appt={appt}
-                      onClick={() => onAppointmentClick?.(appt)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </Card>
-        );
-      })}
+            <ChevronUp className="h-3.5 w-3.5" />
+            Colapsar {emptySlots.length} franjas vacías
+          </button>
+          {emptySlots.map((slot) => renderSlotCard(slot, false))}
+        </>
+      )}
     </div>
   );
 }
@@ -819,26 +884,26 @@ export function SlotCalendar({
 
   return (
     <div className="space-y-4">
-      {/* Navigation */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handlePrev} data-testid="button-calendar-prev">
+      {/* Navigation — compact: nav + toggles on one row */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+          <Button variant="outline" size="sm" onClick={handlePrev} data-testid="button-calendar-prev" className="shrink-0 h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={handleToday} data-testid="button-calendar-today">
+          <Button variant="outline" size="sm" onClick={handleToday} data-testid="button-calendar-today" className="shrink-0 h-8 sm:h-9">
             Hoy
           </Button>
-          <Button variant="outline" size="sm" onClick={handleNext} data-testid="button-calendar-next">
+          <Button variant="outline" size="sm" onClick={handleNext} data-testid="button-calendar-next" className="shrink-0 h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3">
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <h2 className="text-xl font-semibold ml-2">{titleText}</h2>
+          <h2 className="text-base sm:text-xl font-semibold ml-1 sm:ml-2 truncate">{titleText}</h2>
         </div>
 
-        <div className="flex gap-0.5 rounded-full bg-muted p-1">
+        <div className="flex gap-0.5 rounded-full bg-muted p-0.5 sm:p-1 shrink-0">
           <Button
             variant={currentView === "month" ? "default" : "ghost"}
             size="sm"
-            className="rounded-full"
+            className="rounded-full h-7 px-2 sm:h-9 sm:px-3 text-xs sm:text-sm"
             onClick={() => onViewChange("month")}
             data-testid="button-view-month"
           >
@@ -847,7 +912,7 @@ export function SlotCalendar({
           <Button
             variant={currentView === "week" ? "default" : "ghost"}
             size="sm"
-            className={`rounded-full ${isMobile ? "hidden" : ""}`}
+            className={`rounded-full h-7 px-2 sm:h-9 sm:px-3 text-xs sm:text-sm ${isMobile ? "hidden" : ""}`}
             onClick={() => onViewChange("week")}
             data-testid="button-view-week"
           >
@@ -856,7 +921,7 @@ export function SlotCalendar({
           <Button
             variant={currentView === "day" ? "default" : "ghost"}
             size="sm"
-            className="rounded-full"
+            className="rounded-full h-7 px-2 sm:h-9 sm:px-3 text-xs sm:text-sm"
             onClick={() => onViewChange("day")}
             data-testid="button-view-day"
           >

@@ -98,6 +98,17 @@ function App() {
   const [user, setUser] = useState<UserResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Auto-collapse sidebar on tablet (<1024px) to give calendar more space
+  // Must be declared before any conditional returns (React hooks rule)
+  const [sidebarDefaultOpen] = useState(() => {
+    if (typeof window !== "undefined") return window.innerWidth >= 1024;
+    return true;
+  });
+
+  const sidebarStyle = {
+    "--sidebar-width": "18rem",
+  };
+
   useEffect(() => {
     if (location === "/chat") {
       setIsLoading(false);
@@ -168,15 +179,11 @@ function App() {
     );
   }
 
-  const sidebarStyle = {
-    "--sidebar-width": "20rem",
-  };
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <ErrorBoundary>
-          <SidebarProvider style={sidebarStyle as React.CSSProperties}>
+          <SidebarProvider defaultOpen={sidebarDefaultOpen} style={sidebarStyle as React.CSSProperties}>
             <div className="flex h-screen w-full">
               <AppSidebar userRole={user.role} userEmail={user.email} onLogout={handleLogout} />
               <div className="flex flex-col flex-1 overflow-hidden">

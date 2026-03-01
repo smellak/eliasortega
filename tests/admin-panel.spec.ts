@@ -49,7 +49,7 @@ async function navigateTo(page: Page, path: string) {
     "/capacity": "Capacidad",
     "/docks": "Muelles",
     "/providers": "Proveedores",
-    "/warehouse": "Almacen",
+    "/warehouse": "Almacén",
     "/notifications": "Notificaciones",
     "/users": "Usuarios",
     "/audit": "Auditoría",

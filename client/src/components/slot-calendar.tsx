@@ -428,6 +428,132 @@ function WeekView({
   );
 }
 
+// ──────────── MOBILE WEEK VIEW — Vertical agenda cards ────────────
+
+function MobileWeekView({
+  weekData,
+  isLoading,
+  onDayClick,
+  onAppointmentClick,
+}: {
+  weekData: WeekDay[];
+  isLoading: boolean;
+  onDayClick: (date: Date) => void;
+  onAppointmentClick?: (appointment: WeekSlotAppointment) => void;
+}) {
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <Card key={i} className="p-4">
+            <div className="space-y-2">
+              <div className="h-5 rounded w-1/3 skeleton-shimmer" />
+              <div className="h-3 rounded w-full skeleton-shimmer" />
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {weekData.map((day) => {
+        const allAppts = day.slots.flatMap((s) => s.appointments);
+        const totalUsed = day.slots.reduce((s, sl) => s + sl.usedPoints, 0);
+        const totalMax = day.slots.reduce((s, sl) => s + sl.maxPoints, 0);
+        const pct = totalMax > 0 ? Math.round((totalUsed / totalMax) * 100) : 0;
+        const isSunday = day.dayOfWeek === 0;
+        const hasSlots = day.slots.length > 0;
+        const dayDate = new Date(day.date + "T12:00:00");
+        const dayLabel = format(dayDate, "EEEE dd/MM", { locale: es });
+        const isToday = day.date === toMadridDateStr(new Date());
+
+        return (
+          <Card
+            key={day.date}
+            className={`overflow-hidden transition-all ${isToday ? "ring-2 ring-primary/50" : ""} ${isSunday || !hasSlots ? "opacity-60" : ""}`}
+          >
+            {/* Day header — tappable to navigate to day view */}
+            <button
+              className="w-full text-left px-4 py-3 flex items-center justify-between gap-2 hover:bg-accent/50 transition-colors"
+              onClick={() => onDayClick(dayDate)}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className={`text-sm font-semibold capitalize ${isToday ? "text-primary" : ""}`}>
+                  {dayLabel}
+                </span>
+                {isToday && (
+                  <Badge variant="default" className="text-[10px] px-1.5 py-0">Hoy</Badge>
+                )}
+              </div>
+              {isSunday ? (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Moon className="h-3 w-3" /> Cerrado
+                </span>
+              ) : hasSlots ? (
+                <Badge variant="outline" className="text-xs shrink-0">
+                  {allAppts.length} {allAppts.length === 1 ? "cita" : "citas"}
+                </Badge>
+              ) : (
+                <span className="text-xs text-muted-foreground">Sin franjas</span>
+              )}
+            </button>
+
+            {/* Occupancy bar */}
+            {hasSlots && !isSunday && (
+              <div className="px-4 pb-1">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${pct >= 80 ? "bg-red-500" : pct >= 50 ? "bg-amber-500" : "bg-emerald-500"}`}
+                      style={{ width: `${Math.min(pct, 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-muted-foreground w-8 text-right">{pct}%</span>
+                </div>
+              </div>
+            )}
+
+            {/* Appointments list */}
+            {allAppts.length > 0 && (
+              <div className="px-4 pb-3 space-y-1.5">
+                {allAppts.map((appt) => {
+                  const catStyle = getCategoryStyle(appt.goodsType);
+                  const startTime = formatInTimeZone(new Date(appt.startUtc), MADRID_TZ, "HH:mm");
+                  return (
+                    <button
+                      key={appt.id}
+                      className={`w-full text-left flex items-center gap-2 p-2 rounded-md border-l-[3px] ${catStyle.border} ${catStyle.bg} hover:shadow-sm active:scale-[0.98] transition-all`}
+                      onClick={(e) => { e.stopPropagation(); onAppointmentClick?.(appt); }}
+                    >
+                      <span className="text-xs font-mono text-muted-foreground shrink-0 w-10">{startTime}</span>
+                      <span className="text-xs font-medium truncate">{appt.providerName}</span>
+                      {appt.goodsType && (
+                        <span className={`text-[10px] ${catStyle.text} truncate`}>{appt.goodsType}</span>
+                      )}
+                      {appt.units && (
+                        <span className="text-[10px] text-muted-foreground shrink-0 ml-auto">{appt.units}uds</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Empty day message */}
+            {hasSlots && !isSunday && allAppts.length === 0 && (
+              <div className="px-4 pb-3">
+                <p className="text-xs text-muted-foreground">Libre</p>
+              </div>
+            )}
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
 // ──────────── DAY VIEW — Enhanced (MEJORA 5) ────────────
 
 function DayView({
@@ -809,7 +935,7 @@ export function SlotCalendar({
   currentView,
   onViewChange,
 }: SlotCalendarProps) {
-  // P0-3: On mobile (<640px), auto-redirect week view to day view
+  // Mobile detection for responsive views
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 640);
@@ -817,12 +943,6 @@ export function SlotCalendar({
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
-
-  useEffect(() => {
-    if (isMobile && currentView === "week") {
-      onViewChange("day");
-    }
-  }, [isMobile, currentView, onViewChange]);
 
   const queryDate = useMemo(() => {
     return toMadridDateStr(currentDate);
@@ -903,7 +1023,7 @@ export function SlotCalendar({
         case "ArrowLeft":  e.preventDefault(); handlePrev(); break;
         case "ArrowRight": e.preventDefault(); handleNext(); break;
         case "t": handleToday(); break;
-        case "w": if (!isMobile) onViewChange("week"); break;
+        case "w": onViewChange("week"); break;
         case "d": onViewChange("day"); break;
         case "m": onViewChange("month"); break;
       }
@@ -960,7 +1080,7 @@ export function SlotCalendar({
           <Button
             variant={currentView === "week" ? "default" : "ghost"}
             size="sm"
-            className={`rounded-full h-7 px-2 sm:h-9 sm:px-3 text-xs sm:text-sm ${isMobile ? "hidden" : ""}`}
+            className="rounded-full h-7 px-2 sm:h-9 sm:px-3 text-xs sm:text-sm"
             onClick={() => onViewChange("week")}
             data-testid="button-view-week"
           >
@@ -999,13 +1119,22 @@ export function SlotCalendar({
       {/* View Content — with fade-in transition (P3-1) */}
       {currentView === "week" && (
         <div key="week" className="animate-fadeIn">
-        <WeekView
-          weekData={weekData}
-          isLoading={isLoading}
-          onSlotClick={onSlotClick}
-          onAppointmentClick={onAppointmentClick}
-          readOnly={readOnly}
-        />
+        {isMobile ? (
+          <MobileWeekView
+            weekData={weekData}
+            isLoading={isLoading}
+            onDayClick={(date: Date) => { onDateChange(date); onViewChange("day"); }}
+            onAppointmentClick={onAppointmentClick}
+          />
+        ) : (
+          <WeekView
+            weekData={weekData}
+            isLoading={isLoading}
+            onSlotClick={onSlotClick}
+            onAppointmentClick={onAppointmentClick}
+            readOnly={readOnly}
+          />
+        )}
         </div>
       )}
       {currentView === "day" && (

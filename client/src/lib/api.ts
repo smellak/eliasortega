@@ -4,6 +4,7 @@ import type {
   Provider,
   CreateProviderInput,
   UpdateProviderInput,
+  ProviderContact,
   CapacityShift,
   CreateCapacityShiftInput,
   UpdateCapacityShiftInput,
@@ -196,6 +197,13 @@ export const providersApi = {
     return handleResponse<Provider[]>(response);
   },
 
+  get: async (id: string): Promise<Provider> => {
+    const response = await fetch(`${API_BASE}/providers/${id}`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<Provider>(response);
+  },
+
   create: async (input: CreateProviderInput): Promise<Provider> => {
     const response = await fetch(`${API_BASE}/providers`, {
       method: "POST",
@@ -216,6 +224,32 @@ export const providersApi = {
 
   delete: async (id: string): Promise<void> => {
     const response = await fetch(`${API_BASE}/providers/${id}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+    return handleResponse<void>(response);
+  },
+
+  createContact: async (providerId: string, input: { name: string; email?: string | null; phone?: string | null; role?: string | null }): Promise<ProviderContact> => {
+    const response = await fetch(`${API_BASE}/providers/${providerId}/contacts`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify(input),
+    });
+    return handleResponse<ProviderContact>(response);
+  },
+
+  updateContact: async (providerId: string, contactId: string, input: { name?: string; email?: string | null; phone?: string | null; role?: string | null }): Promise<ProviderContact> => {
+    const response = await fetch(`${API_BASE}/providers/${providerId}/contacts/${contactId}`, {
+      method: "PUT",
+      headers: getHeaders(),
+      body: JSON.stringify(input),
+    });
+    return handleResponse<ProviderContact>(response);
+  },
+
+  deleteContact: async (providerId: string, contactId: string): Promise<void> => {
+    const response = await fetch(`${API_BASE}/providers/${providerId}/contacts/${contactId}`, {
       method: "DELETE",
       headers: getHeaders(),
     });

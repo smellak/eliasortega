@@ -30,7 +30,16 @@ export interface AuthResponse {
 // Provider types
 export const createProviderSchema = z.object({
   name: z.string().min(1),
-  notes: z.string().optional(),
+  officialName: z.string().nullish(),
+  type: z.string().optional(),
+  category: z.string().nullish(),
+  subcategory: z.string().nullish(),
+  transportType: z.string().nullish(),
+  typicalVolume: z.string().nullish(),
+  avgLeadDays: z.number().nullish(),
+  automated: z.boolean().optional(),
+  specialNotes: z.string().nullish(),
+  notes: z.string().nullish(),
 });
 export type CreateProviderInput = z.infer<typeof createProviderSchema>;
 

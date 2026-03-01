@@ -9,7 +9,7 @@ import type { Provider } from "@shared/types";
 interface ProvidersTableProps {
   providers: Provider[];
   onAdd: (provider: { name: string; notes?: string }) => void;
-  onEdit: (id: string, provider: { name?: string; notes?: string }) => void;
+  onEditClick: (provider: Provider) => void;
   onDelete: (id: string) => void;
   readOnly?: boolean;
 }
@@ -49,11 +49,10 @@ function getTransportBadge(transport: string | undefined | null) {
 export function ProvidersTable({
   providers,
   onAdd,
-  onEdit,
+  onEditClick,
   onDelete,
   readOnly = false,
 }: ProvidersTableProps) {
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState<{ name: string; notes: string }>({
@@ -73,32 +72,14 @@ export function ProvidersTable({
     );
   }, [providers, searchQuery]);
 
-  const handleSave = () => {
-    if (editingId) {
-      onEdit(editingId, formData);
-      setEditingId(null);
-    } else {
-      onAdd(formData);
-      setIsAdding(false);
-    }
-    resetForm();
-  };
-
-  const handleEdit = (provider: Provider) => {
-    setEditingId(provider.id);
-    setFormData({
-      name: provider.name,
-      notes: provider.notes || "",
-    });
-  };
-
-  const handleCancel = () => {
-    setEditingId(null);
+  const handleSaveNew = () => {
+    onAdd(formData);
     setIsAdding(false);
-    resetForm();
+    setFormData({ name: "", notes: "" });
   };
 
-  const resetForm = () => {
+  const handleCancelNew = () => {
+    setIsAdding(false);
     setFormData({ name: "", notes: "" });
   };
 
@@ -162,10 +143,10 @@ export function ProvidersTable({
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button size="icon" variant="ghost" onClick={handleSave} data-testid="button-save-new-provider">
+                    <Button size="icon" variant="ghost" onClick={handleSaveNew} data-testid="button-save-new-provider">
                       <Save className="h-4 w-4" />
                     </Button>
-                    <Button size="icon" variant="ghost" onClick={handleCancel} data-testid="button-cancel-new-provider">
+                    <Button size="icon" variant="ghost" onClick={handleCancelNew} data-testid="button-cancel-new-provider">
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
@@ -174,84 +155,60 @@ export function ProvidersTable({
             )}
 
             {filteredProviders.map((provider) => (
-              <TableRow key={provider.id} className="hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-colors">
-                {editingId === provider.id ? (
-                  <>
-                    <TableCell>
-                      <Input
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      />
-                    </TableCell>
-                    <TableCell colSpan={4}>
-                      <Input
-                        value={formData.notes}
-                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button size="icon" variant="ghost" onClick={handleSave}>
-                          <Save className="h-4 w-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" onClick={handleCancel}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </>
-                ) : (
-                  <>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{provider.name}</div>
-                        {provider.officialName && provider.officialName !== provider.name && (
-                          <div className="text-xs text-muted-foreground truncate max-w-[200px]">{provider.officialName}</div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{getTypeBadge(provider.type)}</TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <span className="text-sm">{provider.category || "—"}</span>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <div className="flex items-center gap-1.5">
-                        <Truck className="h-3.5 w-3.5 text-muted-foreground" />
-                        {getTransportBadge(provider.transportType)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-sm">{provider._count?.contacts ?? 0}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden xl:table-cell">
-                      <span className="text-sm text-muted-foreground truncate max-w-[200px] block">{provider.notes || "—"}</span>
-                    </TableCell>
-                    {!readOnly && (
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleEdit(provider)}
-                            data-testid={`button-edit-provider-${provider.id}`}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => onDelete(provider.id)}
-                            data-testid={`button-delete-provider-${provider.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              <TableRow
+                key={provider.id}
+                className="hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-colors cursor-pointer"
+                onClick={() => onEditClick(provider)}
+                data-testid={`row-provider-${provider.id}`}
+              >
+                <TableCell>
+                  <div>
+                    <div className="font-medium">{provider.name}</div>
+                    {provider.officialName && provider.officialName !== provider.name && (
+                      <div className="text-xs text-muted-foreground truncate max-w-[200px]">{provider.officialName}</div>
                     )}
-                  </>
+                  </div>
+                </TableCell>
+                <TableCell>{getTypeBadge(provider.type)}</TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <span className="text-sm">{provider.category || "—"}</span>
+                </TableCell>
+                <TableCell className="hidden lg:table-cell">
+                  <div className="flex items-center gap-1.5">
+                    <Truck className="h-3.5 w-3.5 text-muted-foreground" />
+                    {getTransportBadge(provider.transportType)}
+                  </div>
+                </TableCell>
+                <TableCell className="hidden lg:table-cell text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-sm">{provider._count?.contacts ?? 0}</span>
+                  </div>
+                </TableCell>
+                <TableCell className="hidden xl:table-cell">
+                  <span className="text-sm text-muted-foreground truncate max-w-[200px] block">{provider.notes || "—"}</span>
+                </TableCell>
+                {!readOnly && (
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={(e) => { e.stopPropagation(); onEditClick(provider); }}
+                        data-testid={`button-edit-provider-${provider.id}`}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={(e) => { e.stopPropagation(); onDelete(provider.id); }}
+                        data-testid={`button-delete-provider-${provider.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 )}
               </TableRow>
             ))}

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Send, Loader2, User, Volume2, VolumeX, Clock, Truck, MessageCircle,
   RotateCcw, ArrowDown, Copy, Check, ThumbsUp, ThumbsDown,
-  Square, MapPin, Phone, Mail, ExternalLink, WifiOff, CheckCheck, Sparkles,
+  Square, MapPin, Mail, ExternalLink, WifiOff, CheckCheck, Sparkles,
   Moon, Sun,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -522,11 +522,8 @@ export default function ChatPublic() {
             <div className="px-6 py-4 mt-auto">
               <div className="h-px bg-white/15 mb-4" />
               <div className="space-y-2.5">
-                <a href="tel:+34953250000" className="flex items-center gap-2.5 text-sm text-white/70 hover:text-white transition-colors">
-                  <Phone className="h-4 w-4" /><span>953 25 00 00</span>
-                </a>
-                <a href="mailto:almacen@centrohogarsanchez.es" className="flex items-center gap-2.5 text-sm text-white/70 hover:text-white transition-colors">
-                  <Mail className="h-4 w-4" /><span>almacen@centrohogarsanchez.es</span>
+                <a href="mailto:recepcion@centrohogarsanchez.es" className="flex items-center gap-2.5 text-sm text-white/70 hover:text-white transition-colors">
+                  <Mail className="h-4 w-4" /><span>recepcion@centrohogarsanchez.es</span>
                 </a>
                 <a href="https://maps.google.com/?q=Centro+Hogar+Sanchez+Jaen" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-sm text-white/70 hover:text-white transition-colors">
                   <MapPin className="h-4 w-4" /><span>Ver ubicación</span>

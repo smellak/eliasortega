@@ -79,7 +79,7 @@ export function CapacityIndicators({
                 {utilizationPercentage.toFixed(1)}%
               </p>
               <Progress
-                value={Math.min(utilizationPercentage, 100)}
+                value={Math.max(Math.min(utilizationPercentage, 100), utilizationPercentage > 0 ? 3 : 0)}
                 className={`mt-1 ${getProgressClassName(utilizationPercentage)}`}
               />
             </div>
@@ -132,7 +132,7 @@ export function CapacityIndicators({
                 {freePoints}
               </p>
               <p className="text-[10px] text-muted-foreground">
-                de {totalMaxPoints} pts
+                de {totalMaxPoints} pts · {freePercentage.toFixed(0)}% libre
               </p>
             </div>
           </div>
@@ -152,29 +152,44 @@ export function CapacityIndicators({
         </Button>
 
         {showDetails && (
-          <div className="mt-4 space-y-3" data-testid="container-capacity-details">
-            {slots.map((slot, idx) => {
-              const pct = slot.maxPoints > 0 ? (slot.pointsUsed / slot.maxPoints) * 100 : 0;
-              return (
-                <div key={`${slot.date}-${slot.startTime}-${idx}`}>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm font-medium flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${
-                        pct >= 80 ? "bg-red-500" : pct >= 50 ? "bg-yellow-500" : "bg-blue-500"
-                      }`} />
-                      {slot.date} {slot.startTime}-{slot.endTime}
-                    </span>
-                    <span className={`text-sm font-mono ${getPercentageColor(pct)}`}>
-                      {slot.pointsUsed}/{slot.maxPoints} pts
-                    </span>
+          <div className="mt-4 space-y-4" data-testid="container-capacity-details">
+            {(() => {
+              const grouped = new Map<string, typeof slots>();
+              slots.forEach((slot) => {
+                const existing = grouped.get(slot.date) || [];
+                existing.push(slot);
+                grouped.set(slot.date, existing);
+              });
+              return Array.from(grouped.entries()).map(([date, daySlots]) => (
+                <div key={date}>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{date}</p>
+                  <div className="space-y-2 pl-2 border-l-2 border-muted">
+                    {daySlots.map((slot, idx) => {
+                      const pct = slot.maxPoints > 0 ? (slot.pointsUsed / slot.maxPoints) * 100 : 0;
+                      return (
+                        <div key={`${slot.startTime}-${idx}`}>
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-sm font-medium flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${
+                                pct >= 80 ? "bg-red-500" : pct >= 50 ? "bg-yellow-500" : "bg-blue-500"
+                              }`} />
+                              {slot.startTime}-{slot.endTime}
+                            </span>
+                            <span className={`text-sm font-mono ${getPercentageColor(pct)}`}>
+                              {slot.pointsUsed}/{slot.maxPoints} pts
+                            </span>
+                          </div>
+                          <Progress
+                            value={Math.min(pct, 100)}
+                            className={getProgressClassName(pct)}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
-                  <Progress
-                    value={Math.min(pct, 100)}
-                    className={getProgressClassName(pct)}
-                  />
                 </div>
-              );
-            })}
+              ));
+            })()}
           </div>
         )}
       </Card>

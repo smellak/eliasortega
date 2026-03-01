@@ -31,14 +31,14 @@ interface SlotCalendarProps {
 // ──────────── MEJORA 6 — CATEGORY COLOR PALETTE ────────────
 
 const CATEGORY_COLORS: Record<string, { bg: string; border: string; text: string; dot: string }> = {
-  "Asientos":    { bg: "bg-violet-50 dark:bg-violet-950/30",   border: "border-l-violet-500",  text: "text-violet-700 dark:text-violet-300",  dot: "bg-violet-500" },
-  "Baño":        { bg: "bg-cyan-50 dark:bg-cyan-950/30",       border: "border-l-cyan-500",    text: "text-cyan-700 dark:text-cyan-300",      dot: "bg-cyan-500" },
-  "Cocina":      { bg: "bg-amber-50 dark:bg-amber-950/30",     border: "border-l-amber-500",   text: "text-amber-700 dark:text-amber-300",    dot: "bg-amber-500" },
-  "Colchonería": { bg: "bg-indigo-50 dark:bg-indigo-950/30",   border: "border-l-indigo-500",  text: "text-indigo-700 dark:text-indigo-300",  dot: "bg-indigo-500" },
-  "Electro":     { bg: "bg-yellow-50 dark:bg-yellow-950/30",   border: "border-l-yellow-500",  text: "text-yellow-700 dark:text-yellow-300",  dot: "bg-yellow-500" },
-  "Mobiliario":  { bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-l-emerald-500", text: "text-emerald-700 dark:text-emerald-300", dot: "bg-emerald-500" },
-  "PAE":         { bg: "bg-orange-50 dark:bg-orange-950/30",   border: "border-l-orange-500",  text: "text-orange-700 dark:text-orange-300",  dot: "bg-orange-500" },
-  "Tapicería":   { bg: "bg-rose-50 dark:bg-rose-950/30",       border: "border-l-rose-500",    text: "text-rose-700 dark:text-rose-300",      dot: "bg-rose-500" },
+  "Asientos":    { bg: "bg-violet-50 dark:bg-violet-950/30",   border: "border-l-violet-500 dark:border-l-violet-400",  text: "text-violet-700 dark:text-violet-300",  dot: "bg-violet-500" },
+  "Baño":        { bg: "bg-cyan-50 dark:bg-cyan-950/30",       border: "border-l-cyan-500 dark:border-l-cyan-400",    text: "text-cyan-700 dark:text-cyan-300",      dot: "bg-cyan-500" },
+  "Cocina":      { bg: "bg-amber-50 dark:bg-amber-950/30",     border: "border-l-amber-500 dark:border-l-amber-400",   text: "text-amber-700 dark:text-amber-300",    dot: "bg-amber-500" },
+  "Colchonería": { bg: "bg-indigo-50 dark:bg-indigo-950/30",   border: "border-l-indigo-500 dark:border-l-indigo-400",  text: "text-indigo-700 dark:text-indigo-300",  dot: "bg-indigo-500" },
+  "Electro":     { bg: "bg-yellow-50 dark:bg-yellow-950/30",   border: "border-l-yellow-500 dark:border-l-yellow-400",  text: "text-yellow-700 dark:text-yellow-300",  dot: "bg-yellow-500" },
+  "Mobiliario":  { bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-l-emerald-500 dark:border-l-emerald-400", text: "text-emerald-700 dark:text-emerald-300", dot: "bg-emerald-500" },
+  "PAE":         { bg: "bg-orange-50 dark:bg-orange-950/30",   border: "border-l-orange-500 dark:border-l-orange-400",  text: "text-orange-700 dark:text-orange-300",  dot: "bg-orange-500" },
+  "Tapicería":   { bg: "bg-rose-50 dark:bg-rose-950/30",       border: "border-l-rose-500 dark:border-l-rose-400",    text: "text-rose-700 dark:text-rose-300",      dot: "bg-rose-500" },
 };
 
 const DEFAULT_CAT_STYLE = {
@@ -303,7 +303,7 @@ function WeekView({
                     {day.dayName}
                   </div>
                   <div className={`text-base font-bold ${isToday ? "text-primary" : ""}`}>
-                    {format(new Date(day.date + "T12:00:00"), "dd", { locale: es })}
+                    {format(new Date(day.date + "T12:00:00"), "dd/MM", { locale: es })}
                   </div>
                   <PointsBar used={dUsed} max={dMax} className="mt-1" />
                 </div>
@@ -361,7 +361,7 @@ function WeekView({
                     return (
                       <div
                         key={`${slot.startTime}-${slot.endTime}`}
-                        className={`absolute left-1 right-1 rounded-lg border overflow-hidden transition-all duration-200 ${getOccupationBg(slot.usedPoints, slot.maxPoints)} ${canClick ? "cursor-pointer hover:shadow-md" : ""}`}
+                        className={`absolute left-1 right-1 rounded-lg border overflow-hidden transition-all duration-200 ${getOccupationBg(slot.usedPoints, slot.maxPoints)} ${canClick ? "cursor-pointer hover:shadow-md hover:ring-2 hover:ring-primary/20" : ""}`}
                         style={{ top: top + 1, height: height - 2 }}
                         onClick={() => canClick && onSlotClick?.(day.date, slot.startTime, slot.endTime)}
                       >
@@ -370,7 +370,7 @@ function WeekView({
                             <span className="text-[9px] font-mono font-medium text-muted-foreground">
                               {slot.startTime}–{slot.endTime}
                             </span>
-                            <PointsBar used={slot.usedPoints} max={slot.maxPoints} className="max-w-[80px]" />
+                            <PointsBar used={slot.usedPoints} max={slot.maxPoints} className="max-w-[95px]" />
                           </div>
                           <div className="flex-1 overflow-hidden relative">
                             <div className="space-y-1 h-full overflow-y-auto">
@@ -687,8 +687,8 @@ function MonthView({
                     )}
                   </div>
                 )}
-                {info && isCurrentMonth && info.maxPoints === 0 && (
-                  <div className="mt-1 text-[10px] text-muted-foreground italic">Cerrado</div>
+                {isCurrentMonth && ((info && info.maxPoints === 0) || (!info && day.getDay() === 0)) && (
+                  <div className="mt-1 text-[10px] text-muted-foreground italic hidden sm:block">Cerrado</div>
                 )}
               </button>
             );

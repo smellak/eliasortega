@@ -114,6 +114,38 @@ function buildReminderEmailHtml(appt: any, confirmUrl: string, isConfirmed: bool
   `);
 }
 
+// --- Exported for preview ---
+
+export function getConfirmationPreviewHtml(extraText: string, contactPhone: string): string {
+  const sampleAppt = {
+    providerName: "Tapicería Jaén S.L.",
+    startUtc: new Date("2026-03-05T07:00:00Z"),
+    endUtc: new Date("2026-03-05T08:30:00Z"),
+    goodsType: "Tapicería",
+    units: 15,
+    size: "M" as const,
+    workMinutesNeeded: 90,
+    dock: { name: "Muelle 1", code: "M1" },
+  };
+  return buildConfirmationEmailHtml(sampleAppt, "#", extraText, contactPhone);
+}
+
+export function getReminderPreviewHtml(extraText: string, contactPhone: string, confirmed: boolean): string {
+  const sampleAppt = {
+    providerName: "Tapicería Jaén S.L.",
+    startUtc: new Date("2026-03-05T07:00:00Z"),
+    endUtc: new Date("2026-03-05T08:30:00Z"),
+    goodsType: "Tapicería",
+    units: 15,
+    size: "M" as const,
+    workMinutesNeeded: 90,
+    dock: { name: "Muelle 1", code: "M1" },
+  };
+  return buildReminderEmailHtml(sampleAppt, "#", confirmed, extraText, contactPhone);
+}
+
+export { buildConfirmationEmailHtml, buildReminderEmailHtml };
+
 // --- Service Functions ---
 
 async function getProviderEmailConfig(): Promise<{ extraText: string; contactPhone: string; confirmationEnabled: boolean; reminderEnabled: boolean }> {

@@ -706,6 +706,22 @@ export const emailApi = {
     });
     return handleResponse(response);
   },
+
+  sendTestConfirmation: async (to: string, type?: string): Promise<{ success: boolean; message: string }> => {
+    const response = await fetch(`${API_BASE}/email/test-confirmation`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ to, type: type || "confirmation" }),
+    });
+    return handleResponse(response);
+  },
+
+  getPreviewUrl: (type: string, extraText?: string, contactPhone?: string): string => {
+    const params = new URLSearchParams({ type });
+    if (extraText) params.append("extraText", extraText);
+    if (contactPhone) params.append("contactPhone", contactPhone);
+    return `${API_BASE}/email/preview?${params}`;
+  },
 };
 
 export const auditApi = {

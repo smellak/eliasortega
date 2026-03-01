@@ -8,7 +8,7 @@ Backend: Express.js + TypeScript, Prisma ORM, PostgreSQL. Frontend: React + Vite
 - Admin: http://cogk4c4s8kgsk4k4s00wskss.5.9.187.169.sslip.io/capacity
 - Login admin: admin@admin.com / admin123
 ## Contenedor producción
-- App: `cogk4c4s8kgsk4k4s00wskss-165754960082`
+- App: `cogk4c4s8kgsk4k4s00wskss-144450312557`
 - BD: `lsggkkg0wkw04s0ook44cccw` (PostgreSQL 16)
 - Alpine Linux: NO usar `<<<`, usar `echo "..." | comando`
 ## MCPs disponibles
@@ -28,4 +28,4 @@ Backend: Express.js + TypeScript, Prisma ORM, PostgreSQL. Frontend: React + Vite
 ## Estado BD
 - 3 muelles activos: M1, M2, M3 (96 disponibilidades)
 - dock_buffer_minutes = 15
-- SMTP no configurado: emails fallan silenciosamente
+- SMTP configurado: Gmail (s.mellak.shiito@gmail.com) via Coolify env vars

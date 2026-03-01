@@ -8,7 +8,8 @@ import {
   requireRole,
   AuthRequest,
 } from "../middleware/auth";
-import { sendTestEmail, sendDailySummary } from "../services/email-service";
+import { sendTestEmail, sendDailySummary, sendEmail } from "../services/email-service";
+import { getConfirmationPreviewHtml, getReminderPreviewHtml } from "../services/provider-email-service";
 import { prisma } from "../db/client";
 
 const router = Router();
@@ -147,6 +148,73 @@ router.post("/api/email/send-summary", authenticateToken, requireRole("ADMIN"), 
     res.json({ success: true, recipientsSent: sent });
   } catch (error: any) {
     console.error("Send summary error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Email preview (returns raw HTML for iframe rendering)
+// Accepts JWT via query param _token for iframe embedding
+router.get("/api/email/preview", (req, res, next) => {
+  if (req.query._token && !req.headers.authorization) {
+    req.headers.authorization = `Bearer ${req.query._token}`;
+  }
+  next();
+}, authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
+  try {
+    const { type, extraText, contactPhone } = req.query;
+    const extra = (extraText as string) || "";
+    const phone = (contactPhone as string) || "";
+
+    let html: string;
+    if (type === "reminder") {
+      html = getReminderPreviewHtml(extra, phone, false);
+    } else if (type === "reminder-confirmed") {
+      html = getReminderPreviewHtml(extra, phone, true);
+    } else {
+      html = getConfirmationPreviewHtml(extra, phone);
+    }
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(html);
+  } catch (error) {
+    console.error("Email preview error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Send test confirmation email (ADMIN only)
+router.post("/api/email/test-confirmation", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res) => {
+  try {
+    const { to, type } = req.body;
+    if (!to) {
+      return res.status(400).json({ error: "Recipient email (to) is required" });
+    }
+
+    const configs = await prisma.appConfig.findMany({
+      where: { key: { in: ["provider_email_extra_text", "provider_email_contact_phone"] } },
+    });
+    const map = Object.fromEntries(configs.map(c => [c.key, c.value]));
+    const extraText = map["provider_email_extra_text"] || "";
+    const contactPhone = map["provider_email_contact_phone"] || "";
+
+    let html: string;
+    let subject: string;
+    if (type === "reminder") {
+      html = getReminderPreviewHtml(extraText, contactPhone, false);
+      subject = "Recordatorio: tu descarga es pasado mañana — Centro Hogar Sánchez (PRUEBA)";
+    } else {
+      html = getConfirmationPreviewHtml(extraText, contactPhone);
+      subject = "Confirmación de cita de descarga — Centro Hogar Sánchez (PRUEBA)";
+    }
+
+    const success = await sendEmail(to, subject, html, "ALERT");
+    if (success) {
+      res.json({ success: true, message: `Email de prueba (${type || "confirmación"}) enviado a ${to}` });
+    } else {
+      res.status(500).json({ success: false, message: "Error al enviar. Revisa la configuración SMTP." });
+    }
+  } catch (error: any) {
+    console.error("Send test confirmation error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

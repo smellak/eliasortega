@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../db/client";
 import { confirmAppointmentSchema } from "../../shared/types";
-import { publicRateLimiter } from "../middleware/rate-limiting";
+import { publicRateLimiter, chatRateLimiter } from "../middleware/rate-limiting";
 import { buildConfirmationPage } from "../helpers/appointment-helpers";
 import { processAppointmentCancellation } from "../services/provider-email-service";
 
@@ -86,7 +86,7 @@ router.post("/api/appointments/confirm", publicRateLimiter, async (req, res) => 
   }
 });
 
-router.post("/api/chat/message", publicRateLimiter, async (req, res) => {
+router.post("/api/chat/message", chatRateLimiter, async (req, res) => {
   const { sessionId, message } = req.body;
 
   if (!sessionId || !message) {

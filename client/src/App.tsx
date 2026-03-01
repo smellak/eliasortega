@@ -21,6 +21,7 @@ import ChatAdmin from "@/pages/chat-admin";
 import WarehousePage from "@/pages/warehouse-page";
 import AnalyticsPage from "@/pages/analytics-page";
 import RulesPage from "@/pages/rules-page";
+import GuidePage from "@/pages/guide-page";
 import NotFound from "@/pages/not-found";
 import { authApi, getAuthToken, clearAuth } from "@/lib/api";
 import { useNewAppointmentToast } from "@/hooks/use-new-appointment-toast";
@@ -90,6 +91,7 @@ function Router({ user }: { user: UserResponse }) {
       {(user.role === "ADMIN" || user.role === "PLANNER") && <Route path="/admin-chat" component={ChatAdmin} />}
       <Route path="/warehouse" component={() => <WarehousePage userRole={user.role} />} />
       {(user.role === "ADMIN" || user.role === "PLANNER") && <Route path="/analytics" component={() => <AnalyticsPage userRole={user.role} />} />}
+      <Route path="/guide" component={GuidePage} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -109,6 +109,24 @@ async function seed() {
     { key: "provider_email_contact_phone", value: "", description: "Teléfono de contacto del almacén en emails" },
     { key: "dock_buffer_minutes", value: "15", description: "Minutos de buffer entre descargas en el mismo muelle" },
     { key: "dock_assignment_enabled", value: "true", description: "Activar asignación automática de muelles" },
+    // --- Scheduling rules ---
+    { key: "rule_avoid_concurrency", value: "true", description: "Evitar citas simultáneas: distribuir en el tiempo antes de apilar" },
+    { key: "rule_avoid_concurrency_mode", value: "suggest", description: "Modo: suggest (sugiere horario óptimo) | enforce (bloquea si hay alternativa)" },
+    { key: "rule_max_simultaneous", value: "true", description: "Limitar número de descargas activas al mismo tiempo" },
+    { key: "rule_max_simultaneous_count", value: "2", description: "Máximo de descargas simultáneas permitidas" },
+    { key: "rule_dock_buffer", value: "true", description: "Tiempo de descanso entre descargas en el mismo muelle" },
+    { key: "rule_size_priority", value: "true", description: "Priorizar franjas según tamaño: tráileres a primera hora, pequeños al final" },
+    { key: "rule_size_priority_large_preferred_slots", value: "08:00,10:00", description: "Franjas preferidas para entregas L" },
+    { key: "rule_size_priority_small_preferred_slots", value: "14:00,16:00,18:00", description: "Franjas preferidas para entregas S" },
+    { key: "rule_daily_concentration_warning", value: "true", description: "Avisar cuando un día tiene muchas citas y sugerir días alternativos" },
+    { key: "rule_daily_concentration_threshold", value: "4", description: "Número de citas a partir del cual se avisa de concentración" },
+    { key: "rule_dock_distribution", value: "true", description: "Distribuir citas entre muelles equitativamente" },
+    { key: "rule_dock_large_preferred", value: "M1", description: "Muelle preferido para entregas grandes" },
+    { key: "rule_dock_small_preferred", value: "M3", description: "Muelle preferido para entregas pequeñas" },
+    { key: "rule_category_preferred_time", value: "true", description: "Sugerir horarios según categoría de mercancía" },
+    { key: "rule_category_preferred_map", value: '{"Tapicería":"08:00","Mobiliario":"08:00","Electro":"10:00","Colchonería":"10:00","PAE":"14:00","Baño":"14:00","Cocina":"12:00","Asientos":"08:00","Climatización":"12:00"}', description: "Hora preferida por categoría (JSON)" },
+    { key: "rule_min_lead_time", value: "false", description: "Requerir antelación mínima para reservas" },
+    { key: "rule_min_lead_time_hours", value: "24", description: "Horas mínimas de antelación para nueva reserva" },
   ];
 
   var configCreated = 0;

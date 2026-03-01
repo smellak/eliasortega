@@ -23,6 +23,7 @@ import AnalyticsPage from "@/pages/analytics-page";
 import NotFound from "@/pages/not-found";
 import { authApi, getAuthToken, clearAuth } from "@/lib/api";
 import { useNewAppointmentToast } from "@/hooks/use-new-appointment-toast";
+import { FloatingAssistant } from "@/components/floating-assistant";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import type { UserResponse } from "@shared/types";
@@ -199,6 +200,7 @@ function App() {
                   </div>
                 </main>
                 <AppointmentPolling />
+                {location !== "/admin-chat" && <FloatingAssistant />}
               </div>
             </div>
           </SidebarProvider>

@@ -47,7 +47,7 @@ export function CapacityIndicators({
   return (
     <div className="space-y-4">
       {/* ── 4 KPI Cards (MEJORA 7) ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* 1. Citas de Descarga */}
         <Card className="p-4" data-testid="card-appointment-count">
           <div className="flex items-center gap-3">

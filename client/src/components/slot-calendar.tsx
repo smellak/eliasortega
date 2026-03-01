@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { slotsApi, type WeekDay, type WeekSlot, type WeekSlotAppointment } from "@/lib/api";
 import { Card } from "@/components/ui/card";
@@ -686,6 +686,21 @@ export function SlotCalendar({
   currentView,
   onViewChange,
 }: SlotCalendarProps) {
+  // P0-3: On mobile (<640px), auto-redirect week view to day view
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  useEffect(() => {
+    if (isMobile && currentView === "week") {
+      onViewChange("day");
+    }
+  }, [isMobile, currentView, onViewChange]);
+
   const queryDate = useMemo(() => {
     return toMadridDateStr(currentDate);
   }, [currentDate]);
@@ -799,7 +814,7 @@ export function SlotCalendar({
           <Button
             variant={currentView === "week" ? "default" : "ghost"}
             size="sm"
-            className="rounded-full"
+            className={`rounded-full ${isMobile ? "hidden" : ""}`}
             onClick={() => onViewChange("week")}
             data-testid="button-view-week"
           >

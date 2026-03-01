@@ -221,8 +221,8 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
               onClick={handleNewAppointmentButton}
               data-testid="button-new-appointment"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Nueva Cita
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Nueva Cita</span>
             </Button>
           )}
         </div>

@@ -7,7 +7,8 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { UserResponse } from "@shared/types";
 import { Card } from "@/components/ui/card";
-import { Users, AlertCircle } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Users, AlertCircle, ChevronDown, Shield, Eye, Settings } from "lucide-react";
 
 export default function UsersPage() {
   const { toast } = useToast();
@@ -167,6 +168,8 @@ export default function UsersPage() {
         </div>
       </div>
 
+      <RolesLegend />
+
       <UsersTable
         users={users}
         onAdd={handleAdd}
@@ -183,5 +186,105 @@ export default function UsersPage() {
         onConfirm={confirmDelete}
       />
     </div>
+  );
+}
+
+// ─── Roles Legend ─────────────────────────────────────────────
+
+const ROLES = [
+  {
+    key: "ADMIN",
+    label: "Administrador",
+    icon: Shield,
+    color: "border-red-300 dark:border-red-700",
+    iconBg: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    can: [
+      "Crear, editar y eliminar citas",
+      "Gestionar proveedores y contactos",
+      "Configurar capacidad, muelles y reglas de programacion",
+      "Gestionar usuarios y roles",
+      "Configurar emails y notificaciones",
+      "Ver auditoria y precision IA",
+      "Check-in y check-out de descargas",
+      "Hablar con Elias (asistente IA)",
+    ],
+    cannot: [] as string[],
+  },
+  {
+    key: "PLANNER",
+    label: "Planificador",
+    icon: Settings,
+    color: "border-yellow-300 dark:border-yellow-700",
+    iconBg: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+    can: [
+      "Crear, editar y eliminar citas",
+      "Gestionar proveedores y contactos",
+      "Configurar capacidad y muelles",
+      "Ver auditoria y precision IA",
+      "Check-in y check-out de descargas",
+      "Hablar con Elias (asistente IA)",
+    ],
+    cannot: ["Gestionar usuarios", "Configurar emails"],
+  },
+  {
+    key: "BASIC_READONLY",
+    label: "Solo lectura",
+    icon: Eye,
+    color: "border-green-300 dark:border-green-700",
+    iconBg: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+    can: [
+      "Ver calendario, citas y proveedores",
+      "Ver estado del almacen",
+    ],
+    cannot: ["Crear o editar citas", "Gestionar configuracion", "Ver auditoria"],
+  },
+];
+
+function RolesLegend() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <button className="w-full flex items-center justify-between gap-2 rounded-lg border bg-card px-4 py-3 text-left hover:bg-accent/50 transition-colors">
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Roles y permisos</span>
+          </div>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="grid gap-3 pt-3 sm:grid-cols-3">
+          {ROLES.map((role) => (
+            <Card key={role.key} className={`border-l-4 ${role.color} p-4`}>
+              <div className="flex items-center gap-2 mb-3">
+                <div className={`p-1.5 rounded-md ${role.iconBg}`}>
+                  <role.icon className="h-4 w-4" />
+                </div>
+                <h3 className="text-sm font-semibold">{role.label}</h3>
+              </div>
+              <ul className="space-y-1 text-xs text-muted-foreground">
+                {role.can.map((item) => (
+                  <li key={item} className="flex items-start gap-1.5">
+                    <span className="text-green-600 dark:text-green-400 mt-px shrink-0">✓</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+                {role.cannot.map((item) => (
+                  <li key={item} className="flex items-start gap-1.5">
+                    <span className="text-red-500 dark:text-red-400 mt-px shrink-0">✗</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground mt-3 px-1">
+          Cada usuario accede al panel con su email y contrasena. Los proveedores no necesitan cuenta — usan el chat publico.
+        </p>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

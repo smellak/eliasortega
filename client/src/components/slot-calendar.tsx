@@ -372,18 +372,31 @@ function WeekView({
                             </span>
                             <PointsBar used={slot.usedPoints} max={slot.maxPoints} className="max-w-[80px]" />
                           </div>
-                          <div className="flex-1 overflow-y-auto space-y-1">
-                            {slot.appointments.map((appt) => (
-                              <CompactCard
-                                key={appt.id}
-                                appt={appt}
-                                onClick={() => onAppointmentClick?.(appt)}
-                              />
-                            ))}
+                          <div className="flex-1 overflow-hidden relative">
+                            <div className="space-y-1 h-full overflow-y-auto">
+                              {slot.appointments.slice(0, 3).map((appt) => (
+                                <CompactCard
+                                  key={appt.id}
+                                  appt={appt}
+                                  onClick={() => onAppointmentClick?.(appt)}
+                                />
+                              ))}
+                            </div>
+                            {slot.appointments.length > 3 && (
+                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/90 to-transparent pt-4 pb-0.5 text-center">
+                                <span className="text-[9px] font-semibold text-primary">+{slot.appointments.length - 3} más</span>
+                              </div>
+                            )}
+                            {slot.appointments.length > 0 && slot.appointments.length <= 3 && (
+                              <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-background/50 to-transparent pointer-events-none" />
+                            )}
                           </div>
                           {slot.appointments.length === 0 && canClick && (
-                            <div className="flex items-center justify-center flex-1 opacity-30 hover:opacity-60 transition-opacity">
-                              <Plus className="h-4 w-4 text-muted-foreground" />
+                            <div className="flex items-center justify-center flex-1 opacity-15 hover:opacity-50 transition-opacity">
+                              <div className="flex flex-col items-center gap-0.5">
+                                <Plus className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-[8px] text-muted-foreground font-medium">Libre</span>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -435,7 +448,12 @@ function DayView({
   if (!dayData || dayData.slots.length === 0) {
     return (
       <Card className="p-8 text-center text-muted-foreground">
-        No hay franjas configuradas para {format(currentDate, "EEEE dd/MM/yyyy", { locale: es })}.
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center">
+            <Clock className="h-6 w-6 text-muted-foreground/50" />
+          </div>
+          <p>No hay franjas configuradas para {format(currentDate, "EEEE dd/MM/yyyy", { locale: es })}.</p>
+        </div>
       </Card>
     );
   }
@@ -503,10 +521,10 @@ function DayView({
             </div>
 
             {/* Appointments */}
-            <div className="p-4">
+            <div className={slot.appointments.length === 0 ? "px-4 py-2" : "p-4"}>
               {slot.appointments.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">
-                  Sin citas en esta franja
+                <p className="text-xs text-muted-foreground text-center py-1 italic">
+                  Franja libre — {slot.availablePoints} pts disponibles
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -620,18 +638,24 @@ function MonthView({
             return (
               <button
                 key={dateStr}
-                className={`p-2 border-b border-r text-left min-h-[90px] transition-all duration-150 hover:bg-muted/40 ${
+                className={`p-1.5 sm:p-2 border-b border-r text-left min-h-[60px] sm:min-h-[90px] transition-all duration-150 hover:bg-muted/40 ${
                   isCurrentMonth ? "" : "opacity-30"
                 } ${isToday ? "ring-2 ring-inset ring-primary/40" : ""} ${cellBg}`}
                 onClick={() => onDayClick(day)}
               >
-                <div className={`text-sm font-semibold ${isToday ? "text-primary" : ""}`}>
+                <div className={`text-xs sm:text-sm font-semibold ${isToday ? "text-primary" : ""}`}>
                   {day.getDate()}
                 </div>
-                {info && isCurrentMonth && info.maxPoints > 0 && (
+                {/* Mobile: dot indicator for days with appointments */}
+                {info && isCurrentMonth && info.appointments > 0 && (
+                  <div className="flex gap-0.5 mt-0.5 sm:hidden">
+                    <span className={`w-1.5 h-1.5 rounded-full ${getProgressColor(info.usedPoints, info.maxPoints)}`} />
+                  </div>
+                )}
+                {info && isCurrentMonth && info.maxPoints > 0 && info.appointments > 0 && (
                   <div className="mt-1 space-y-0.5">
                     {/* Occupation bar + percentage */}
-                    <div className="flex items-center gap-1">
+                    <div className="hidden sm:flex items-center gap-1">
                       <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full ${getProgressColor(info.usedPoints, info.maxPoints)}`}
@@ -646,9 +670,9 @@ function MonthView({
                     <div className="text-[10px] text-muted-foreground">
                       {info.appointments} cita{info.appointments !== 1 ? "s" : ""}
                     </div>
-                    {/* Provider names (up to 2) */}
+                    {/* Provider names (up to 2) — hidden on mobile */}
                     {info.providerNames.length > 0 && (
-                      <div className="space-y-0">
+                      <div className="space-y-0 hidden sm:block">
                         {info.providerNames.slice(0, 2).map((name) => (
                           <div key={name} className="text-[9px] text-foreground/70 truncate leading-tight">
                             {name}
@@ -770,18 +794,19 @@ export function SlotCalendar({
   };
 
   const titleText = useMemo(() => {
+    let text: string;
     if (currentView === "day") {
-      return format(currentDate, "EEEE dd 'de' MMMM yyyy", { locale: es });
-    }
-    if (currentView === "month") {
-      return format(currentDate, "MMMM yyyy", { locale: es });
-    }
-    if (weekData.length >= 2) {
+      text = format(currentDate, "EEEE dd 'de' MMMM yyyy", { locale: es });
+    } else if (currentView === "month") {
+      text = format(currentDate, "MMMM yyyy", { locale: es });
+    } else if (weekData.length >= 2) {
       const first = weekData[0].date;
       const last = weekData[weekData.length - 1].date;
-      return `${format(new Date(first + "T12:00:00"), "dd MMM", { locale: es })} — ${format(new Date(last + "T12:00:00"), "dd MMM yyyy", { locale: es })}`;
+      text = `${format(new Date(first + "T12:00:00"), "dd MMM", { locale: es })} — ${format(new Date(last + "T12:00:00"), "dd MMM yyyy", { locale: es })}`;
+    } else {
+      text = format(currentDate, "MMMM yyyy", { locale: es });
     }
-    return format(currentDate, "MMMM yyyy", { locale: es });
+    return text.charAt(0).toUpperCase() + text.slice(1);
   }, [currentView, currentDate, weekData]);
 
   return (
@@ -798,7 +823,7 @@ export function SlotCalendar({
           <Button variant="outline" size="sm" onClick={handleNext} data-testid="button-calendar-next">
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <h2 className="text-xl font-semibold ml-2 capitalize">{titleText}</h2>
+          <h2 className="text-xl font-semibold ml-2">{titleText}</h2>
         </div>
 
         <div className="flex gap-0.5 rounded-full bg-muted p-1">

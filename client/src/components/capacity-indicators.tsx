@@ -94,7 +94,7 @@ export function CapacityIndicators({
             </div>
             <div className="min-w-0">
               <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Slot Pico</p>
-              {peakSlot ? (
+              {peakSlot && peakSlot.percentage > 0 ? (
                 <>
                   <p className={`text-2xl font-bold leading-tight ${getPercentageColor(peakSlot.percentage)}`}>
                     {peakSlot.percentage.toFixed(0)}%

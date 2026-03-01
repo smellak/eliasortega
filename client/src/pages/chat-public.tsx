@@ -455,10 +455,10 @@ export default function ChatPublic() {
       </header>
 
       {/* ═══════════════════════════════════════════════════
-          MOBILE VIDEO — always visible (<lg)
+          MOBILE VIDEO — always visible, flush with header (<lg)
          ═══════════════════════════════════════════════════ */}
-      <div className="lg:hidden shrink-0 bg-gray-900">
-        <video controls preload="metadata" className="w-full max-h-[180px] object-contain" data-testid="video-tutorial-mobile">
+      <div className="lg:hidden shrink-0">
+        <video controls preload="metadata" className="w-full max-h-[180px] object-cover bg-gray-900" data-testid="video-tutorial-mobile">
           <source src="/tutorial-video.mp4" type="video/mp4" />
           <track src="/tutorial-captions.vtt" kind="captions" srcLang="es" label="Español" default />
         </video>
@@ -492,9 +492,9 @@ export default function ChatPublic() {
               </span>
             </div>
 
-            {/* Video */}
-            <div className="px-6 pb-4">
-              <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/20 ring-1 ring-white/20">
+            {/* Video — edge-to-edge, no border */}
+            <div className="pb-4">
+              <div className="overflow-hidden shadow-xl shadow-black/15">
                 <video controls preload="metadata" className="w-full aspect-video" data-testid="video-tutorial">
                   <source src="/tutorial-video.mp4" type="video/mp4" />
                   <track src="/tutorial-captions.vtt" kind="captions" srcLang="es" label="Español" default />

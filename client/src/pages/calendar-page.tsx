@@ -236,6 +236,7 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
           totalPointsUsed={capacityUtilization.totalPointsUsed}
           utilizationPercentage={capacityUtilization.utilizationPercentage}
           peakSlot={capacityUtilization.peakSlot}
+          viewType={currentView}
         />
       )}
 

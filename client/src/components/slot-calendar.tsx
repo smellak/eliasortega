@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { slotsApi, type WeekDay, type WeekSlot, type WeekSlotAppointment } from "@/lib/api";
 import { Card } from "@/components/ui/card";
@@ -6,13 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChevronLeft, ChevronRight, Plus, Clock, Check, X } from "lucide-react";
-import { format, addDays, addWeeks, subWeeks, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, getDay } from "date-fns";
+import { format, addDays, addWeeks, subWeeks, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { es } from "date-fns/locale";
 
 const MADRID_TZ = "Europe/Madrid";
 
-/** Format a Date to YYYY-MM-DD in Madrid timezone (matches backend getMadridDateStr) */
 function toMadridDateStr(date: Date): string {
   return formatInTimeZone(date, MADRID_TZ, "yyyy-MM-dd");
 }
@@ -29,39 +28,80 @@ interface SlotCalendarProps {
   onViewChange: (view: CalendarViewType) => void;
 }
 
-function getOccupationColor(used: number, max: number): string {
-  if (max === 0) return "bg-muted";
+// ──────────── MEJORA 6 — CATEGORY COLOR PALETTE ────────────
+
+const CATEGORY_COLORS: Record<string, { bg: string; border: string; text: string; dot: string }> = {
+  "Asientos":    { bg: "bg-violet-50 dark:bg-violet-950/30",   border: "border-l-violet-500",  text: "text-violet-700 dark:text-violet-300",  dot: "bg-violet-500" },
+  "Baño":        { bg: "bg-cyan-50 dark:bg-cyan-950/30",       border: "border-l-cyan-500",    text: "text-cyan-700 dark:text-cyan-300",      dot: "bg-cyan-500" },
+  "Cocina":      { bg: "bg-amber-50 dark:bg-amber-950/30",     border: "border-l-amber-500",   text: "text-amber-700 dark:text-amber-300",    dot: "bg-amber-500" },
+  "Colchonería": { bg: "bg-indigo-50 dark:bg-indigo-950/30",   border: "border-l-indigo-500",  text: "text-indigo-700 dark:text-indigo-300",  dot: "bg-indigo-500" },
+  "Electro":     { bg: "bg-yellow-50 dark:bg-yellow-950/30",   border: "border-l-yellow-500",  text: "text-yellow-700 dark:text-yellow-300",  dot: "bg-yellow-500" },
+  "Mobiliario":  { bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-l-emerald-500", text: "text-emerald-700 dark:text-emerald-300", dot: "bg-emerald-500" },
+  "PAE":         { bg: "bg-orange-50 dark:bg-orange-950/30",   border: "border-l-orange-500",  text: "text-orange-700 dark:text-orange-300",  dot: "bg-orange-500" },
+  "Tapicería":   { bg: "bg-rose-50 dark:bg-rose-950/30",       border: "border-l-rose-500",    text: "text-rose-700 dark:text-rose-300",      dot: "bg-rose-500" },
+};
+
+const DEFAULT_CAT_STYLE = {
+  bg: "bg-slate-50 dark:bg-slate-900/30",
+  border: "border-l-slate-400",
+  text: "text-slate-600 dark:text-slate-400",
+  dot: "bg-slate-400",
+};
+
+export function getCategoryStyle(goodsType: string | null) {
+  if (!goodsType) return DEFAULT_CAT_STYLE;
+  if (CATEGORY_COLORS[goodsType]) return CATEGORY_COLORS[goodsType];
+  const lower = goodsType.toLowerCase();
+  for (const [key, style] of Object.entries(CATEGORY_COLORS)) {
+    if (lower.includes(key.toLowerCase()) || key.toLowerCase().includes(lower)) return style;
+  }
+  return DEFAULT_CAT_STYLE;
+}
+
+// ──────────── UTILITY FUNCTIONS ────────────
+
+function getOccupationBg(used: number, max: number): string {
+  if (max === 0) return "bg-muted/20";
   const pct = (used / max) * 100;
-  if (pct >= 100) return "bg-red-200 dark:bg-red-900/70";
-  if (pct >= 80) return "bg-red-100 dark:bg-red-900/40";
-  if (pct >= 50) return "bg-yellow-50 dark:bg-yellow-950/40";
-  return "bg-green-50 dark:bg-green-950/30";
+  if (pct >= 100) return "bg-red-50/80 dark:bg-red-950/30";
+  if (pct >= 80) return "bg-orange-50/60 dark:bg-orange-950/20";
+  if (pct >= 50) return "bg-yellow-50/50 dark:bg-yellow-950/20";
+  return "bg-emerald-50/40 dark:bg-emerald-950/15";
 }
 
 function getOccupationBorderColor(used: number, max: number): string {
   if (max === 0) return "border-muted";
   const pct = (used / max) * 100;
-  if (pct >= 100) return "border-red-400 dark:border-red-600";
-  if (pct >= 80) return "border-red-300 dark:border-red-700";
+  if (pct >= 100) return "border-red-300 dark:border-red-700";
+  if (pct >= 80) return "border-orange-300 dark:border-orange-700";
   if (pct >= 50) return "border-yellow-300 dark:border-yellow-700";
-  return "border-green-300 dark:border-green-700";
+  return "border-emerald-300 dark:border-emerald-700";
+}
+
+function getProgressGradient(used: number, max: number): string {
+  if (max === 0) return "bg-muted";
+  const pct = (used / max) * 100;
+  if (pct >= 100) return "bg-gradient-to-r from-red-400 to-red-600";
+  if (pct >= 80) return "bg-gradient-to-r from-orange-400 to-red-500";
+  if (pct >= 50) return "bg-gradient-to-r from-yellow-400 to-yellow-500";
+  return "bg-gradient-to-r from-emerald-400 to-emerald-500";
 }
 
 function getProgressColor(used: number, max: number): string {
   if (max === 0) return "bg-muted";
   const pct = (used / max) * 100;
-  if (pct >= 100) return "bg-red-600";
-  if (pct >= 80) return "bg-red-500";
+  if (pct >= 100) return "bg-red-500";
+  if (pct >= 80) return "bg-orange-500";
   if (pct >= 50) return "bg-yellow-500";
-  return "bg-green-500";
+  return "bg-emerald-500";
 }
 
 function getSizeBadgeColor(size: string | null): string {
   switch (size) {
-    case "S": return "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300";
-    case "M": return "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300";
-    case "L": return "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300";
-    default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
+    case "S": return "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300";
+    case "M": return "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300";
+    case "L": return "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300";
+    default: return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
   }
 }
 
@@ -74,96 +114,96 @@ function getSizePoints(size: string | null): number {
   }
 }
 
-function PointsBar({ used, max }: { used: number; max: number }) {
+function parseTimeToHours(time: string): number {
+  const [h, m] = time.split(":").map(Number);
+  return h + (m || 0) / 60;
+}
+
+// ──────────── SHARED COMPONENTS ────────────
+
+function PointsBar({ used, max, className = "" }: { used: number; max: number; className?: string }) {
   const pct = max > 0 ? Math.min((used / max) * 100, 100) : 0;
   return (
-    <div className="flex items-center gap-1.5">
-      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden min-w-[40px]">
+    <div className={`flex items-center gap-1.5 ${className}`}>
+      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden min-w-[30px]">
         <div
-          className={`h-full rounded-full transition-all ${getProgressColor(used, max)}`}
+          className={`h-full rounded-full transition-all duration-500 ${getProgressGradient(used, max)}`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="text-[10px] font-mono whitespace-nowrap">{used}/{max}</span>
+      <span className="text-[10px] font-mono text-muted-foreground whitespace-nowrap">{used}/{max}</span>
     </div>
   );
 }
 
-function AppointmentCard({
-  appt,
-  compact = false,
-  onClick,
-}: {
-  appt: WeekSlotAppointment;
-  compact?: boolean;
-  onClick?: () => void;
-}) {
-  const pts = getSizePoints(appt.size);
-
+// Compact appointment card for week view cells
+function CompactCard({ appt, onClick }: { appt: WeekSlotAppointment; onClick?: () => void }) {
+  const catStyle = getCategoryStyle(appt.goodsType);
   const isCancelled = appt.confirmationStatus === "cancelled";
   const isConfirmed = appt.confirmationStatus === "confirmed";
+  const pts = getSizePoints(appt.size);
 
-  if (compact) {
-    return (
-      <button
-        onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-        className={`w-full text-left p-1.5 rounded-md text-[10px] leading-tight bg-white/70 dark:bg-gray-800/70 shadow-sm border border-gray-200/50 dark:border-gray-700/50 hover:bg-white dark:hover:bg-gray-800 transition-colors ${isCancelled ? "opacity-50 line-through" : ""}`}
-      >
-        <div className="font-semibold truncate flex items-center gap-0.5">
-          {isConfirmed && <Check className="h-2.5 w-2.5 text-green-600 shrink-0" />}
-          {isCancelled && <X className="h-2.5 w-2.5 text-red-500 shrink-0" />}
-          {appt.providerName}
-        </div>
-        <div className="flex items-center gap-1 text-muted-foreground flex-wrap">
-          {appt.goodsType && <span className="truncate max-w-[60px]">{appt.goodsType}</span>}
-          {appt.units != null && <span>{appt.units} uds</span>}
-          {appt.lines != null && <span>· {appt.lines} lín</span>}
-          {appt.deliveryNotesCount != null && appt.deliveryNotesCount > 0 && (
-            <span>· {appt.deliveryNotesCount} alb</span>
-          )}
-        </div>
-        <div className="flex items-center gap-1 mt-0.5">
-          {appt.size && (
-            <span className={`inline-flex items-center px-1 rounded text-[9px] font-medium ${getSizeBadgeColor(appt.size)}`}>
-              {appt.size} · {pts}pts
-            </span>
-          )}
-          {appt.dockCode && (
-            <span className="text-[9px] px-1 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-mono">
-              {appt.dockCode}
-            </span>
-          )}
-          <span className="text-muted-foreground">~{appt.workMinutesNeeded} min</span>
-        </div>
-      </button>
-    );
-  }
-
-  // Full card for daily view
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-      className={`w-full text-left p-3 rounded-lg border bg-card hover:shadow-md transition-all ${isCancelled ? "opacity-60" : ""}`}
+      className={`w-full text-left p-1.5 rounded-md text-[10px] leading-tight border-l-[3px] ${catStyle.border} ${catStyle.bg} shadow-sm hover:shadow-md transition-all duration-150 ${isCancelled ? "opacity-50" : ""}`}
+    >
+      <div className="flex items-center gap-0.5">
+        {isConfirmed && <Check className="h-2.5 w-2.5 text-emerald-600 shrink-0" />}
+        {isCancelled && <X className="h-2.5 w-2.5 text-red-500 shrink-0" />}
+        <span className={`font-semibold truncate ${isCancelled ? "line-through" : ""}`}>{appt.providerName}</span>
+      </div>
+      <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+        {appt.goodsType && (
+          <span className={`font-medium ${catStyle.text} truncate max-w-[70px]`}>{appt.goodsType}</span>
+        )}
+        {appt.size && (
+          <span className={`inline-flex px-1 rounded text-[9px] font-bold ${getSizeBadgeColor(appt.size)}`}>{appt.size}·{pts}pt</span>
+        )}
+        {appt.dockCode && (
+          <span className="px-1 rounded text-[9px] font-mono bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">{appt.dockCode}</span>
+        )}
+      </div>
+    </button>
+  );
+}
+
+// Full appointment card for day view
+function FullCard({ appt, onClick }: { appt: WeekSlotAppointment; onClick?: () => void }) {
+  const catStyle = getCategoryStyle(appt.goodsType);
+  const isCancelled = appt.confirmationStatus === "cancelled";
+  const isConfirmed = appt.confirmationStatus === "confirmed";
+  const pts = getSizePoints(appt.size);
+
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+      className={`w-full text-left p-3 rounded-lg border-l-4 ${catStyle.border} bg-card border border-border/50 hover:shadow-lg transition-all duration-200 ${isCancelled ? "opacity-60" : ""}`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="font-semibold text-sm flex items-center gap-1.5">
-          {isConfirmed && <Check className="h-3.5 w-3.5 text-green-600 shrink-0" />}
+          {isConfirmed && <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
           {isCancelled && <X className="h-3.5 w-3.5 text-red-500 shrink-0" />}
           <span className={isCancelled ? "line-through" : ""}>{appt.providerName}</span>
         </div>
-        {appt.size && (
-          <Badge variant="outline" className={`text-[10px] ${getSizeBadgeColor(appt.size)}`}>
-            {appt.size} · {pts} pts
-          </Badge>
-        )}
-        {appt.dockCode && (
-          <span className="text-[9px] px-1 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-mono">
-            {appt.dockCode}
-          </span>
-        )}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {appt.size && (
+            <Badge variant="outline" className={`text-[10px] font-bold ${getSizeBadgeColor(appt.size)}`}>
+              {appt.size} · {pts}pts
+            </Badge>
+          )}
+          {appt.dockCode && (
+            <Badge variant="outline" className="text-[10px] font-mono bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border-indigo-200">
+              {appt.dockCode}
+            </Badge>
+          )}
+        </div>
       </div>
       {appt.goodsType && (
-        <div className="text-xs text-muted-foreground mt-1">{appt.goodsType}</div>
+        <div className={`text-xs font-medium mt-1.5 flex items-center gap-1.5 ${catStyle.text}`}>
+          <span className={`w-2 h-2 rounded-full shrink-0 ${catStyle.dot}`} />
+          {appt.goodsType}
+        </div>
       )}
       <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
         {appt.units != null && <span>{appt.units} uds</span>}
@@ -183,7 +223,9 @@ function AppointmentCard({
   );
 }
 
-// ──────────── WEEK VIEW ────────────
+// ──────────── WEEK VIEW — Time-Grid Layout (FIX 2 + MEJORA 3) ────────────
+
+const HOUR_PX = 70;
 
 function WeekView({
   weekData,
@@ -198,16 +240,23 @@ function WeekView({
   onAppointmentClick?: (appointment: WeekSlotAppointment) => void;
   readOnly?: boolean;
 }) {
-  // Gather unique time slots across all days
-  const allTimeSlots = useMemo(() => {
-    const keys = new Set<string>();
+  const timeRange = useMemo(() => {
+    let minH = 24, maxH = 0;
     for (const day of weekData) {
       for (const slot of day.slots) {
-        keys.add(`${slot.startTime}-${slot.endTime}`);
+        const sh = parseTimeToHours(slot.startTime);
+        const eh = parseTimeToHours(slot.endTime);
+        if (sh < minH) minH = sh;
+        if (eh > maxH) maxH = eh;
       }
     }
-    return Array.from(keys).sort();
+    if (minH >= maxH) return { start: 8, end: 20 };
+    return { start: Math.floor(minH), end: Math.ceil(maxH) };
   }, [weekData]);
+
+  const totalHours = timeRange.end - timeRange.start;
+  const gridHeight = totalHours * HOUR_PX;
+  const today = toMadridDateStr(new Date());
 
   if (isLoading) {
     return (
@@ -221,7 +270,7 @@ function WeekView({
     );
   }
 
-  if (weekData.length === 0 || allTimeSlots.length === 0) {
+  if (weekData.length === 0) {
     return (
       <Card className="p-8 text-center text-muted-foreground">
         No hay franjas configuradas para esta semana.
@@ -229,101 +278,129 @@ function WeekView({
     );
   }
 
-  const today = toMadridDateStr(new Date());
+  const cols = weekData.length;
 
   return (
-    <Card className="overflow-x-auto">
-      <table className="w-full border-collapse" data-testid="slot-calendar-week">
-        <thead>
-          <tr>
-            <th className="p-2 text-left text-xs font-semibold text-muted-foreground border-b min-w-[80px]">
-              Franja
-            </th>
-            {weekData.map((day) => (
-              <th
-                key={day.date}
-                className={`p-2 text-center text-xs font-semibold border-b min-w-[140px] ${
-                  day.date === today ? "bg-primary/5" : ""
-                }`}
-              >
-                <div className={day.date === today ? "text-primary" : "text-muted-foreground"}>
-                  {day.dayName}
+    <Card className="overflow-hidden" data-testid="slot-calendar-week">
+      <div className="overflow-x-auto">
+        <div style={{ minWidth: Math.max(840, cols * 150 + 56) }}>
+          {/* ── Day Headers ── */}
+          <div
+            className="grid border-b"
+            style={{ gridTemplateColumns: `56px repeat(${cols}, 1fr)` }}
+          >
+            <div className="p-2 border-r bg-muted/30" />
+            {weekData.map((day) => {
+              const dUsed = day.slots.reduce((s, sl) => s + sl.usedPoints, 0);
+              const dMax = day.slots.reduce((s, sl) => s + sl.maxPoints, 0);
+              const isToday = day.date === today;
+              return (
+                <div
+                  key={day.date}
+                  className={`px-2 py-2.5 text-center border-r last:border-r-0 ${isToday ? "bg-primary/5" : "bg-muted/30"}`}
+                >
+                  <div className={`text-[11px] font-semibold uppercase tracking-wide ${isToday ? "text-primary" : "text-muted-foreground"}`}>
+                    {day.dayName}
+                  </div>
+                  <div className={`text-base font-bold ${isToday ? "text-primary" : ""}`}>
+                    {format(new Date(day.date + "T12:00:00"), "dd", { locale: es })}
+                  </div>
+                  <PointsBar used={dUsed} max={dMax} className="mt-1" />
                 </div>
-                <div className={`text-sm ${day.date === today ? "text-primary font-bold" : ""}`}>
-                  {format(new Date(day.date + "T12:00:00"), "dd/MM", { locale: es })}
-                </div>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {allTimeSlots.map((timeKey) => {
-            const [startTime, endTime] = timeKey.split("-");
-            return (
-              <tr key={timeKey}>
-                <td className="p-2 text-xs font-mono font-medium whitespace-nowrap border-r align-top">
-                  {startTime}
-                  <br />
-                  <span className="text-muted-foreground">{endTime}</span>
-                </td>
-                {weekData.map((day) => {
-                  const slot = day.slots.find(
-                    (s) => s.startTime === startTime && s.endTime === endTime
-                  );
-                  if (!slot) {
-                    return <td key={day.date} className="p-1 border-r" />;
-                  }
-                  const isFull = slot.availablePoints <= 0;
-                  const canClick = !readOnly && !isFull;
+              );
+            })}
+          </div>
 
-                  return (
-                    <td
-                      key={day.date}
-                      className={`p-1 border-r align-top cursor-pointer transition-colors ${getOccupationColor(slot.usedPoints, slot.maxPoints)} ${
-                        day.date === today ? "ring-1 ring-inset ring-primary/20" : ""
-                      }`}
-                      onClick={() => canClick && onSlotClick?.(day.date, slot.startTime, slot.endTime)}
-                    >
-                      <div className="min-h-[60px]">
-                        <div className="flex items-center gap-1">
-                          <div className="flex-1">
-                            <PointsBar used={slot.usedPoints} max={slot.maxPoints} />
-                          </div>
-                          {slot.activeDocks !== undefined && slot.activeDocks > 0 && (
-                            <span className="text-[10px] text-muted-foreground ml-1">
-                              {slot.activeDocks}M
+          {/* ── Time Grid + Day Columns ── */}
+          <div
+            className="grid"
+            style={{ gridTemplateColumns: `56px repeat(${cols}, 1fr)` }}
+          >
+            {/* Time gutter */}
+            <div className="border-r bg-muted/10 relative" style={{ height: gridHeight }}>
+              {Array.from({ length: totalHours + 1 }, (_, i) => (
+                <div
+                  key={i}
+                  className="absolute left-0 right-0 flex items-start justify-end pr-1.5"
+                  style={{ top: i * HOUR_PX - 6 }}
+                >
+                  <span className="text-[10px] font-mono text-muted-foreground leading-none">
+                    {String(timeRange.start + i).padStart(2, "0")}:00
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Day columns */}
+            {weekData.map((day) => {
+              const isToday = day.date === today;
+              return (
+                <div
+                  key={day.date}
+                  className={`border-r last:border-r-0 relative ${isToday ? "bg-primary/[0.02]" : ""}`}
+                  style={{ height: gridHeight }}
+                >
+                  {/* Hour grid lines */}
+                  {Array.from({ length: totalHours }, (_, i) => (
+                    <div
+                      key={i}
+                      className="absolute left-0 right-0 border-b border-dashed border-border/40"
+                      style={{ top: (i + 1) * HOUR_PX }}
+                    />
+                  ))}
+
+                  {/* Slot blocks — positioned by actual time (FIX 2: no ghost rows) */}
+                  {day.slots.map((slot) => {
+                    const sH = parseTimeToHours(slot.startTime);
+                    const eH = parseTimeToHours(slot.endTime);
+                    const top = (sH - timeRange.start) * HOUR_PX;
+                    const height = (eH - sH) * HOUR_PX;
+                    const isFull = slot.availablePoints <= 0;
+                    const canClick = !readOnly && !isFull;
+
+                    return (
+                      <div
+                        key={`${slot.startTime}-${slot.endTime}`}
+                        className={`absolute left-1 right-1 rounded-lg border overflow-hidden transition-all duration-200 ${getOccupationBg(slot.usedPoints, slot.maxPoints)} ${canClick ? "cursor-pointer hover:shadow-md" : ""}`}
+                        style={{ top: top + 1, height: height - 2 }}
+                        onClick={() => canClick && onSlotClick?.(day.date, slot.startTime, slot.endTime)}
+                      >
+                        <div className="p-1.5 h-full flex flex-col">
+                          <div className="flex items-center justify-between mb-1 shrink-0">
+                            <span className="text-[9px] font-mono font-medium text-muted-foreground">
+                              {slot.startTime}–{slot.endTime}
                             </span>
+                            <PointsBar used={slot.usedPoints} max={slot.maxPoints} className="max-w-[80px]" />
+                          </div>
+                          <div className="flex-1 overflow-y-auto space-y-1">
+                            {slot.appointments.map((appt) => (
+                              <CompactCard
+                                key={appt.id}
+                                appt={appt}
+                                onClick={() => onAppointmentClick?.(appt)}
+                              />
+                            ))}
+                          </div>
+                          {slot.appointments.length === 0 && canClick && (
+                            <div className="flex items-center justify-center flex-1 opacity-30 hover:opacity-60 transition-opacity">
+                              <Plus className="h-4 w-4 text-muted-foreground" />
+                            </div>
                           )}
                         </div>
-                        <div className="mt-1 space-y-0.5">
-                          {slot.appointments.map((appt) => (
-                            <AppointmentCard
-                              key={appt.id}
-                              appt={appt}
-                              compact
-                              onClick={() => onAppointmentClick?.(appt)}
-                            />
-                          ))}
-                        </div>
-                        {slot.appointments.length === 0 && (
-                          <div className="text-[10px] text-muted-foreground text-center mt-2">
-                            {canClick ? "Clic para añadir" : ""}
-                          </div>
-                        )}
                       </div>
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </Card>
   );
 }
 
-// ──────────── DAY VIEW ────────────
+// ──────────── DAY VIEW — Enhanced (MEJORA 5) ────────────
 
 function DayView({
   weekData,
@@ -364,27 +441,35 @@ function DayView({
   }
 
   return (
-    <div className="space-y-4" data-testid="slot-calendar-day">
+    <div className="space-y-3" data-testid="slot-calendar-day">
       {dayData.slots.map((slot) => {
         const isFull = slot.availablePoints <= 0;
+        const pct = slot.maxPoints > 0 ? Math.round((slot.usedPoints / slot.maxPoints) * 100) : 0;
 
         return (
           <Card
             key={`${slot.startTime}-${slot.endTime}`}
-            className={`p-4 border ${getOccupationBorderColor(slot.usedPoints, slot.maxPoints)}`}
+            className={`overflow-hidden border ${getOccupationBorderColor(slot.usedPoints, slot.maxPoints)}`}
           >
-            <div className="flex items-center justify-between mb-3">
+            {/* Slot header */}
+            <div className={`px-4 py-3 flex items-center justify-between border-b ${getOccupationBg(slot.usedPoints, slot.maxPoints)}`}>
               <div className="flex items-center gap-3">
-                <span className="text-lg font-mono font-semibold">
-                  {slot.startTime} - {slot.endTime}
-                </span>
-                <Badge variant="outline" className="text-xs">
-                  {slot.usedPoints}/{slot.maxPoints} puntos
-                </Badge>
-                {slot.activeDocks !== undefined && slot.activeDocks > 0 && (
-                  <span className="text-[10px] text-muted-foreground ml-1">
-                    {slot.activeDocks}M
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-lg font-mono font-bold">
+                    {slot.startTime} – {slot.endTime}
                   </span>
+                </div>
+                <Badge variant="outline" className="font-mono text-xs">
+                  {slot.usedPoints}/{slot.maxPoints} pts
+                </Badge>
+                <span className={`text-sm font-semibold ${pct >= 80 ? "text-red-600 dark:text-red-400" : pct >= 50 ? "text-yellow-600 dark:text-yellow-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                  {pct}%
+                </span>
+                {slot.activeDocks !== undefined && slot.activeDocks > 0 && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {slot.activeDocks} muelles
+                  </Badge>
                 )}
               </div>
               {!readOnly && (
@@ -396,44 +481,45 @@ function DayView({
                         variant="outline"
                         disabled={isFull}
                         onClick={() => onSlotClick?.(dateStr, slot.startTime, slot.endTime)}
+                        className="shrink-0"
                         data-testid={`button-add-appt-${slot.startTime}`}
                       >
                         <Plus className="h-3.5 w-3.5 mr-1" />
                         Añadir
                       </Button>
                     </TooltipTrigger>
-                    {isFull && (
-                      <TooltipContent>Franja completa</TooltipContent>
-                    )}
+                    {isFull && <TooltipContent>Franja completa</TooltipContent>}
                   </Tooltip>
                 </TooltipProvider>
               )}
             </div>
 
-            <div className="mb-3">
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${getProgressColor(slot.usedPoints, slot.maxPoints)}`}
-                  style={{ width: `${slot.maxPoints > 0 ? Math.min((slot.usedPoints / slot.maxPoints) * 100, 100) : 0}%` }}
-                />
-              </div>
+            {/* Progress bar */}
+            <div className="h-1.5 bg-muted">
+              <div
+                className={`h-full transition-all duration-500 ${getProgressGradient(slot.usedPoints, slot.maxPoints)}`}
+                style={{ width: `${Math.min(pct, 100)}%` }}
+              />
             </div>
 
-            {slot.appointments.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Sin citas en esta franja
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {slot.appointments.map((appt) => (
-                  <AppointmentCard
-                    key={appt.id}
-                    appt={appt}
-                    onClick={() => onAppointmentClick?.(appt)}
-                  />
-                ))}
-              </div>
-            )}
+            {/* Appointments */}
+            <div className="p-4">
+              {slot.appointments.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">
+                  Sin citas en esta franja
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {slot.appointments.map((appt) => (
+                    <FullCard
+                      key={appt.id}
+                      appt={appt}
+                      onClick={() => onAppointmentClick?.(appt)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </Card>
         );
       })}
@@ -441,7 +527,7 @@ function DayView({
   );
 }
 
-// ──────────── MONTH VIEW ────────────
+// ──────────── MONTH VIEW — Enriched (MEJORA 4) ────────────
 
 function MonthView({
   weekData,
@@ -457,30 +543,42 @@ function MonthView({
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
 
-  // Build a lookup from weekData
   const dayLookup = useMemo(() => {
-    const map = new Map<string, { appointments: number; usedPoints: number; maxPoints: number }>();
+    const map = new Map<string, {
+      appointments: number;
+      usedPoints: number;
+      maxPoints: number;
+      providerNames: string[];
+    }>();
     for (const day of weekData) {
       let totalUsed = 0;
       let totalMax = 0;
       let totalAppts = 0;
+      const providers: string[] = [];
       for (const slot of day.slots) {
         totalUsed += slot.usedPoints;
         totalMax += slot.maxPoints;
         totalAppts += slot.appointments.length;
+        for (const appt of slot.appointments) {
+          if (appt.providerName && !providers.includes(appt.providerName)) {
+            providers.push(appt.providerName);
+          }
+        }
       }
-      map.set(day.date, { appointments: totalAppts, usedPoints: totalUsed, maxPoints: totalMax });
+      map.set(day.date, {
+        appointments: totalAppts,
+        usedPoints: totalUsed,
+        maxPoints: totalMax,
+        providerNames: providers,
+      });
     }
     return map;
   }, [weekData]);
 
-  // Build calendar grid
   const calendarWeeks = useMemo(() => {
     const weeks: Date[][] = [];
-    // Start from Monday of the week containing monthStart
     const weekStart = startOfWeek(monthStart, { weekStartsOn: 1 });
     let current = new Date(weekStart);
-
     while (current <= monthEnd || weeks.length < 5) {
       const week: Date[] = [];
       for (let i = 0; i < 7; i++) {
@@ -500,41 +598,73 @@ function MonthView({
     <Card className="overflow-hidden" data-testid="slot-calendar-month">
       <div className="grid grid-cols-7">
         {dayHeaders.map((dh) => (
-          <div key={dh} className="p-2 text-center text-xs font-semibold text-muted-foreground border-b bg-muted/30">
+          <div key={dh} className="p-2 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground border-b bg-muted/30">
             {dh}
           </div>
         ))}
-        {calendarWeeks.map((week, wi) =>
-          week.map((day, di) => {
+        {calendarWeeks.map((week) =>
+          week.map((day) => {
             const dateStr = toMadridDateStr(day);
             const isCurrentMonth = day.getMonth() === currentDate.getMonth();
             const isToday = dateStr === today;
             const info = dayLookup.get(dateStr);
-            const pct = info && info.maxPoints > 0 ? (info.usedPoints / info.maxPoints) * 100 : 0;
+            const pct = info && info.maxPoints > 0 ? Math.round((info.usedPoints / info.maxPoints) * 100) : 0;
 
-            let bgColor = "";
+            let cellBg = "";
             if (info && info.maxPoints > 0) {
-              if (pct >= 80) bgColor = "bg-red-50 dark:bg-red-950/30";
-              else if (pct >= 50) bgColor = "bg-yellow-50 dark:bg-yellow-950/20";
-              else if (pct > 0) bgColor = "bg-green-50 dark:bg-green-950/20";
+              if (pct >= 80) cellBg = "bg-red-50/60 dark:bg-red-950/20";
+              else if (pct >= 50) cellBg = "bg-yellow-50/60 dark:bg-yellow-950/15";
+              else if (pct > 0) cellBg = "bg-emerald-50/40 dark:bg-emerald-950/10";
             }
 
             return (
               <button
                 key={dateStr}
-                className={`p-2 border-b border-r text-left min-h-[70px] transition-colors hover:bg-muted/50 ${
-                  isCurrentMonth ? "" : "opacity-40"
-                } ${isToday ? "ring-2 ring-inset ring-primary/30" : ""} ${bgColor}`}
+                className={`p-2 border-b border-r text-left min-h-[90px] transition-all duration-150 hover:bg-muted/40 ${
+                  isCurrentMonth ? "" : "opacity-30"
+                } ${isToday ? "ring-2 ring-inset ring-primary/40" : ""} ${cellBg}`}
                 onClick={() => onDayClick(day)}
               >
-                <div className={`text-sm font-medium ${isToday ? "text-primary font-bold" : ""}`}>
+                <div className={`text-sm font-semibold ${isToday ? "text-primary" : ""}`}>
                   {day.getDate()}
                 </div>
-                {info && isCurrentMonth && (
-                  <div className="mt-1 text-[10px] text-muted-foreground leading-tight">
-                    <div>{info.appointments} citas</div>
-                    <div>{info.usedPoints}/{info.maxPoints} pts</div>
+                {info && isCurrentMonth && info.maxPoints > 0 && (
+                  <div className="mt-1 space-y-0.5">
+                    {/* Occupation bar + percentage */}
+                    <div className="flex items-center gap-1">
+                      <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${getProgressColor(info.usedPoints, info.maxPoints)}`}
+                          style={{ width: `${Math.min(pct, 100)}%` }}
+                        />
+                      </div>
+                      <span className={`text-[9px] font-bold ${
+                        pct >= 80 ? "text-red-600 dark:text-red-400" : pct >= 50 ? "text-yellow-600 dark:text-yellow-400" : "text-emerald-600 dark:text-emerald-400"
+                      }`}>{pct}%</span>
+                    </div>
+                    {/* Count */}
+                    <div className="text-[10px] text-muted-foreground">
+                      {info.appointments} cita{info.appointments !== 1 ? "s" : ""}
+                    </div>
+                    {/* Provider names (up to 2) */}
+                    {info.providerNames.length > 0 && (
+                      <div className="space-y-0">
+                        {info.providerNames.slice(0, 2).map((name) => (
+                          <div key={name} className="text-[9px] text-foreground/70 truncate leading-tight">
+                            {name}
+                          </div>
+                        ))}
+                        {info.providerNames.length > 2 && (
+                          <div className="text-[9px] text-muted-foreground font-medium">
+                            +{info.providerNames.length - 2} más
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
+                )}
+                {info && isCurrentMonth && info.maxPoints === 0 && (
+                  <div className="mt-1 text-[10px] text-muted-foreground italic">Cerrado</div>
                 )}
               </button>
             );
@@ -556,12 +686,10 @@ export function SlotCalendar({
   currentView,
   onViewChange,
 }: SlotCalendarProps) {
-  // Determine the date to query for the week endpoint (Madrid timezone)
   const queryDate = useMemo(() => {
     return toMadridDateStr(currentDate);
   }, [currentDate]);
 
-  // For month view, we fetch usage data instead
   const { data: weekData = [], isLoading: weekLoading } = useQuery<WeekDay[]>({
     queryKey: ["/api/slots/week", queryDate],
     queryFn: () => slotsApi.getWeek(queryDate),
@@ -574,7 +702,6 @@ export function SlotCalendar({
     const mStart = startOfMonth(currentDate);
     const mEnd = endOfMonth(currentDate);
     const dates: string[] = [];
-    // Get Monday of each week in the month
     const startDay = startOfWeek(mStart, { weekStartsOn: 1 });
     let cursor = new Date(startDay);
     while (cursor <= mEnd) {
@@ -634,7 +761,6 @@ export function SlotCalendar({
     if (currentView === "month") {
       return format(currentDate, "MMMM yyyy", { locale: es });
     }
-    // Week: show range
     if (weekData.length >= 2) {
       const first = weekData[0].date;
       const last = weekData[weekData.length - 1].date;

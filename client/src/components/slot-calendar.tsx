@@ -32,8 +32,8 @@ interface SlotCalendarProps {
 function getOccupationColor(used: number, max: number): string {
   if (max === 0) return "bg-muted";
   const pct = (used / max) * 100;
-  if (pct >= 100) return "bg-gray-700 dark:bg-gray-600";
-  if (pct >= 80) return "bg-red-100 dark:bg-red-950/60";
+  if (pct >= 100) return "bg-red-200 dark:bg-red-900/70";
+  if (pct >= 80) return "bg-red-100 dark:bg-red-900/40";
   if (pct >= 50) return "bg-yellow-50 dark:bg-yellow-950/40";
   return "bg-green-50 dark:bg-green-950/30";
 }
@@ -41,7 +41,7 @@ function getOccupationColor(used: number, max: number): string {
 function getOccupationBorderColor(used: number, max: number): string {
   if (max === 0) return "border-muted";
   const pct = (used / max) * 100;
-  if (pct >= 100) return "border-gray-500";
+  if (pct >= 100) return "border-red-400 dark:border-red-600";
   if (pct >= 80) return "border-red-300 dark:border-red-700";
   if (pct >= 50) return "border-yellow-300 dark:border-yellow-700";
   return "border-green-300 dark:border-green-700";
@@ -50,7 +50,7 @@ function getOccupationBorderColor(used: number, max: number): string {
 function getProgressColor(used: number, max: number): string {
   if (max === 0) return "bg-muted";
   const pct = (used / max) * 100;
-  if (pct >= 100) return "bg-gray-500";
+  if (pct >= 100) return "bg-red-600";
   if (pct >= 80) return "bg-red-500";
   if (pct >= 50) return "bg-yellow-500";
   return "bg-green-500";
@@ -107,7 +107,7 @@ function AppointmentCard({
     return (
       <button
         onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-        className={`w-full text-left p-1 rounded text-[10px] leading-tight hover:bg-black/5 dark:hover:bg-white/5 transition-colors ${isCancelled ? "opacity-50 line-through" : ""}`}
+        className={`w-full text-left p-1.5 rounded-md text-[10px] leading-tight bg-white/70 dark:bg-gray-800/70 shadow-sm border border-gray-200/50 dark:border-gray-700/50 hover:bg-white dark:hover:bg-gray-800 transition-colors ${isCancelled ? "opacity-50 line-through" : ""}`}
       >
         <div className="font-semibold truncate flex items-center gap-0.5">
           {isConfirmed && <Check className="h-2.5 w-2.5 text-green-600 shrink-0" />}

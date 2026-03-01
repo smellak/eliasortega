@@ -16,6 +16,7 @@ const router = Router();
 router.get("/api/providers", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const providers = await prisma.provider.findMany({
+      include: { _count: { select: { contacts: true } } },
       orderBy: { name: "asc" },
     });
     res.json(providers);

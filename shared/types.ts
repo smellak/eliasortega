@@ -40,10 +40,30 @@ export type UpdateProviderInput = z.infer<typeof updateProviderSchema>;
 export interface Provider {
   id: string;
   name: string;
+  officialName: string | null;
+  type: string;
+  category: string | null;
+  subcategory: string | null;
+  transportType: string | null;
+  typicalVolume: string | null;
+  avgLeadDays: number | null;
+  automated: boolean;
+  specialNotes: string | null;
   notes: string | null;
+  contacts?: ProviderContact[];
+  _count?: { contacts: number };
   createdAt: string;
   updatedAt: string;
 }
+
+export interface ProviderContact {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  role: string | null;
+}
+
 
 // Capacity Shift types
 const capacityShiftBaseSchema = z.object({

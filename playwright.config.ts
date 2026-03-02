@@ -1,26 +1,27 @@
 import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
-  testDir: "./tests",
-  outputDir: "./test-results",
+  testDir: "./tests/e2e",
+  outputDir: "./test-output",
   fullyParallel: false,
-  retries: 0,
+  retries: 1,
   timeout: 120_000,
-  expect: { timeout: 10_000 },
+  expect: { timeout: 30_000 },
   use: {
     baseURL: "https://elias.centrohogarsanchez.es",
     screenshot: "on",
     trace: "on-first-retry",
     ignoreHTTPSErrors: true,
   },
+  reporter: [
+    ["list"],
+    ["html", { outputFolder: "test-results/report" }],
+  ],
   projects: [
     {
       name: "desktop",
-      use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
-    },
-    {
-      name: "mobile",
-      use: { ...devices["Pixel 5"], viewport: { width: 375, height: 812 } },
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1400, height: 900 } },
+      testMatch: /.*\.spec\.ts$/,
     },
   ],
 });

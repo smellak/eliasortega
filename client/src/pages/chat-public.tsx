@@ -133,7 +133,7 @@ function EliasAvatar({ size = "sm" }: { size?: "sm" | "lg" | "xl" }) {
   return (
     <Avatar className={`${cls} shrink-0 ${ring} shadow-md`}>
       <AvatarImage src="/elias-avatar.png" alt="Elías Ortega" />
-      <AvatarFallback className="bg-gradient-to-br from-blue-600 to-cyan-500 text-white font-bold text-sm">EO</AvatarFallback>
+      <AvatarFallback className="bg-gradient-to-br from-[#0D47A1] to-[#1565C0] text-white font-bold text-sm">EO</AvatarFallback>
     </Avatar>
   );
 }
@@ -176,8 +176,8 @@ function ProgressStepper({ currentStep }: { currentStep: number }) {
           <div key={step.key} className="flex items-center flex-1 last:flex-none">
             <div className="flex flex-col items-center gap-1">
               <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                i < currentStep ? "bg-gradient-to-br from-blue-600 to-cyan-500 text-white shadow-md shadow-blue-500/25" :
-                i === currentStep ? "bg-gradient-to-br from-blue-600 to-cyan-500 text-white ring-[3px] ring-blue-400/30 shadow-md shadow-blue-500/25" :
+                i < currentStep ? "bg-gradient-to-br from-[#0D47A1] to-[#1565C0] text-white shadow-md shadow-[#1565C0]/25" :
+                i === currentStep ? "bg-gradient-to-br from-[#0D47A1] to-[#1565C0] text-white ring-[3px] ring-[#1565C0]/30 shadow-md shadow-[#1565C0]/25" :
                 "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500"
               }`}>
                 {i < currentStep ? "✓" : i + 1}
@@ -188,7 +188,7 @@ function ProgressStepper({ currentStep }: { currentStep: number }) {
             </div>
             {i < STEPS.length - 1 && (
               <div className={`flex-1 h-[2px] mx-2 rounded-full transition-colors duration-300 ${
-                i < currentStep ? "bg-gradient-to-r from-blue-600 to-cyan-500" : "bg-gray-100 dark:bg-gray-800"
+                i < currentStep ? "bg-gradient-to-r from-[#0D47A1] to-[#1565C0]" : "bg-gray-100 dark:bg-gray-800"
               }`} />
             )}
           </div>
@@ -202,13 +202,13 @@ function WelcomeCard({ onSuggestion }: { onSuggestion: (text: string) => void })
   return (
     <div className="flex flex-col items-center justify-center py-8 sm:py-12 animate-fadeIn px-4">
       <div className="relative">
-        <div className="absolute -inset-3 bg-gradient-to-br from-blue-600/20 to-cyan-400/20 rounded-full blur-xl" />
+        <div className="absolute -inset-3 bg-gradient-to-br from-[#0D47A1]/20 to-[#1565C0]/20 rounded-full blur-xl" />
         <EliasAvatar size="xl" />
       </div>
-      <h2 className="mt-5 text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Elías Ortega</h2>
+      <h2 className="mt-5 text-2xl font-bold text-gray-900 dark:text-white tracking-tight font-heading">Elías Ortega</h2>
       <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Asistente de Almacén</p>
 
-      <div className="mt-6 max-w-lg bg-gradient-to-br from-blue-50 to-cyan-50/50 dark:from-blue-950/40 dark:to-cyan-950/20 rounded-2xl px-6 py-5 ring-1 ring-blue-100 dark:ring-blue-800/30 text-center">
+      <div className="mt-6 max-w-lg bg-gradient-to-br from-blue-50/80 to-slate-50 dark:from-blue-950/40 dark:to-slate-950/20 rounded-2xl px-6 py-5 ring-1 ring-blue-100 dark:ring-blue-800/30 text-center">
         <p className="text-[15px] text-gray-700 dark:text-gray-300 leading-relaxed">{WELCOME_TEXT}</p>
       </div>
 
@@ -217,7 +217,7 @@ function WelcomeCard({ onSuggestion }: { onSuggestion: (text: string) => void })
           <button
             key={s.label}
             onClick={() => onSuggestion(s.label)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white dark:bg-gray-800 ring-1 ring-blue-200/60 dark:ring-blue-700/40 text-gray-700 dark:text-gray-300 text-sm font-medium shadow-sm hover:shadow-md hover:ring-blue-400 dark:hover:ring-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white dark:bg-gray-800 ring-1 ring-blue-200/60 dark:ring-blue-700/40 text-gray-700 dark:text-gray-300 text-sm font-medium shadow-sm hover:shadow-md hover:ring-[#1565C0] dark:hover:ring-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
             data-testid={`button-suggestion-${s.label.slice(0, 10).toLowerCase().replace(/\s/g, "-")}`}
           >
             <s.icon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -432,10 +432,10 @@ export default function ChatPublic() {
       {/* ═══════════════════════════════════════════════════
           MOBILE HEADER (<lg) — Blue gradient brand
          ═══════════════════════════════════════════════════ */}
-      <header className="lg:hidden flex items-center gap-3 px-4 h-14 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 shrink-0 shadow-lg shadow-blue-500/20" data-testid="header-mobile">
+      <header className="lg:hidden flex items-center gap-3 px-4 h-14 shrink-0 shadow-lg shadow-[#1565C0]/20" style={{ background: 'linear-gradient(135deg, #0D47A1 0%, #1565C0 50%, #1976D2 100%)' }} data-testid="header-mobile">
         <img src="/logo-sanchez.png" alt="Centro Hogar Sánchez" className="h-7 w-auto brightness-0 invert" data-testid="img-logo" />
         <div className="min-w-0 flex-1">
-          <h1 className="text-sm font-semibold text-white truncate">Elías Ortega</h1>
+          <h1 className="text-sm font-semibold text-white truncate font-heading">Elías Ortega</h1>
         </div>
         <span className="flex items-center gap-1.5 text-[10px] font-medium text-white/90 bg-white/15 backdrop-blur-sm px-2.5 py-1 rounded-full">
           <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
@@ -470,9 +470,12 @@ export default function ChatPublic() {
       <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
 
         {/* ── LEFT PANEL (lg+) — Blue gradient brand panel ── */}
-        <div className="hidden lg:flex lg:w-[380px] xl:w-[420px] flex-col shrink-0 bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-400 dark:from-blue-900 dark:via-blue-800 dark:to-cyan-900 overflow-hidden relative">
+        <div className="hidden lg:flex lg:w-[380px] xl:w-[420px] flex-col shrink-0 overflow-hidden relative" style={{ background: 'linear-gradient(135deg, #0D47A1 0%, #1565C0 50%, #1976D2 100%)' }}>
+          {/* Dark mode overlay */}
+          <div className="absolute inset-0 hidden dark:block" style={{ background: 'radial-gradient(ellipse at top right, #0D47A1 0%, transparent 60%), radial-gradient(ellipse at bottom left, #1565C0 0%, transparent 60%), #0a1628' }} />
           {/* Decorative elements */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.1),transparent_60%)]" />
+          <div className="absolute inset-0 dot-pattern opacity-10" />
           <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/10 to-transparent" />
 
           <div className="flex flex-col h-full overflow-y-auto relative z-10">
@@ -482,7 +485,7 @@ export default function ChatPublic() {
               <div className="flex items-center gap-3.5">
                 <img src="/logo-sanchez.png" alt="Centro Hogar Sánchez" className="h-9 w-auto brightness-0 invert drop-shadow-lg" data-testid="img-logo-desktop" />
                 <div>
-                  <h1 className="text-lg font-bold text-white tracking-tight drop-shadow-sm">Elías Ortega</h1>
+                  <h1 className="text-lg font-bold text-white tracking-tight drop-shadow-sm font-heading">Elías Ortega</h1>
                   <p className="text-xs text-white/70">Asistente de Almacén</p>
                 </div>
               </div>
@@ -548,7 +551,7 @@ export default function ChatPublic() {
           <div className="hidden lg:flex items-center gap-3 px-5 h-14 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shrink-0">
             <EliasAvatar size="lg" />
             <div className="flex-1 min-w-0">
-              <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Elías Ortega</h2>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white font-heading">Elías Ortega</h2>
               <p className="text-xs text-gray-500 dark:text-gray-400">Asistente de Almacén</p>
             </div>
             <span className="flex items-center gap-1.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 rounded-full ring-1 ring-emerald-200 dark:ring-emerald-800/40">
@@ -591,7 +594,7 @@ export default function ChatPublic() {
                       <div className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"} max-w-[80%] sm:max-w-[70%]`}>
                         <div className={`rounded-2xl px-4 py-3 ${
                           msg.role === "user"
-                            ? "bg-gradient-to-br from-blue-600 to-blue-700 dark:from-blue-600 dark:to-blue-700 text-white shadow-md shadow-blue-500/20 rounded-br-md"
+                            ? "bg-gradient-to-br from-[#0D47A1] to-[#1565C0] dark:from-[#0D47A1] dark:to-[#1565C0] text-white shadow-md shadow-[#1565C0]/20 rounded-br-md"
                             : isError
                               ? "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 ring-1 ring-red-200 dark:ring-red-800 rounded-bl-md"
                               : "bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 ring-1 ring-gray-100 dark:ring-gray-700 rounded-bl-md"
@@ -632,7 +635,7 @@ export default function ChatPublic() {
                       </div>
                       {msg.role === "user" && (
                         <Avatar className="h-8 w-8 shrink-0 shadow-md ring-2 ring-blue-100 dark:ring-blue-900">
-                          <AvatarFallback className="bg-gradient-to-br from-blue-600 to-blue-700 text-white"><User className="h-4 w-4" /></AvatarFallback>
+                          <AvatarFallback className="bg-gradient-to-br from-[#0D47A1] to-[#1565C0] text-white"><User className="h-4 w-4" /></AvatarFallback>
                         </Avatar>
                       )}
                     </div>
@@ -694,7 +697,8 @@ export default function ChatPublic() {
                 onClick={() => sendMessage()}
                 disabled={!input.trim() || isStreaming || !isOnline}
                 size="icon"
-                className="shrink-0 h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/25 active:scale-95 transition-all disabled:shadow-none"
+                className="shrink-0 h-12 w-12 rounded-2xl text-white shadow-lg shadow-[#1565C0]/25 active:scale-95 transition-all disabled:shadow-none hover:brightness-110"
+                style={{ background: 'linear-gradient(135deg, #1565C0, #0D47A1)' }}
                 aria-label="Enviar"
                 data-testid="button-send"
               >

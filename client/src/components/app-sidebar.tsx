@@ -77,78 +77,96 @@ export function AppSidebar({ userRole, userEmail, onLogout }: AppSidebarProps) {
 
   return (
     <Sidebar>
-      <SidebarHeader className="p-4 border-b border-sidebar-border">
+      <SidebarHeader className="p-4 border-b-0">
         <div className="flex items-center gap-3">
-          <img src="/logo-sanchez.png" alt="Centro Hogar Sanchez" className="h-10 w-auto" />
+          <img src="/logo-sanchez.png" alt="Centro Hogar Sanchez" className="h-10 w-auto drop-shadow-sm" />
           <div>
-            <h2 className="text-sm font-semibold">Centro Hogar</h2>
+            <h2 className="text-sm font-semibold font-heading text-[#0D47A1] dark:text-blue-300">Centro Hogar</h2>
             <p className="text-xs text-muted-foreground">Gestión de Almacén</p>
           </div>
         </div>
+        {/* Gradient separator */}
+        <div className="mt-2 h-[1px] bg-gradient-to-r from-transparent via-[#1565C0] to-transparent opacity-40" />
       </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Principal</SidebarGroupLabel>
+          <SidebarGroupLabel className="uppercase text-[10px] tracking-widest font-semibold text-muted-foreground/80">Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location === item.url}
-                    className="transition-all duration-200"
-                  >
-                    <a href={item.url} data-testid={`link-sidebar-${item.title.toLowerCase()}`}>
-                      <item.icon className="h-4 w-4" />
-                      <span className="flex-1">{item.title}</span>
-                      {item.badge !== null && item.badge > 0 && (
-                        <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white px-1.5">
-                          {item.badge}
-                        </span>
-                      )}
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {filteredManagementItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Gestión</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {filteredManagementItems.map((item) => (
+              {mainItems.map((item) => {
+                const isActive = location === item.url;
+                return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
-                      isActive={location === item.url}
-                      className="transition-all duration-200"
+                      isActive={isActive}
+                      className={`transition-all duration-200 ${
+                        isActive
+                          ? "border-l-[3px] border-l-[#1565C0] bg-blue-50/70 dark:bg-blue-950/30 text-[#0D47A1] dark:text-blue-200 rounded-l-none"
+                          : "hover:bg-blue-50/40 dark:hover:bg-blue-950/20"
+                      }`}
                     >
                       <a href={item.url} data-testid={`link-sidebar-${item.title.toLowerCase()}`}>
-                        <item.icon className="h-4 w-4" />
+                        <item.icon className={`h-4 w-4 ${isActive ? "text-[#1565C0] dark:text-blue-300" : ""}`} />
                         <span className="flex-1">{item.title}</span>
                         {item.badge !== null && item.badge > 0 && (
-                          <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-500 text-[10px] font-bold text-white px-1.5">
+                          <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white px-1.5">
                             {item.badge}
                           </span>
                         )}
                       </a>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                ))}
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {filteredManagementItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="uppercase text-[10px] tracking-widest font-semibold text-muted-foreground/80">Gestión</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {filteredManagementItems.map((item) => {
+                  const isActive = location === item.url;
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        className={`transition-all duration-200 ${
+                          isActive
+                            ? "border-l-[3px] border-l-[#1565C0] bg-blue-50/70 dark:bg-blue-950/30 text-[#0D47A1] dark:text-blue-200 rounded-l-none"
+                            : "hover:bg-blue-50/40 dark:hover:bg-blue-950/20"
+                        }`}
+                      >
+                        <a href={item.url} data-testid={`link-sidebar-${item.title.toLowerCase()}`}>
+                          <item.icon className={`h-4 w-4 ${isActive ? "text-[#1565C0] dark:text-blue-300" : ""}`} />
+                          <span className="flex-1">{item.title}</span>
+                          {item.badge !== null && item.badge > 0 && (
+                            <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-500 text-[10px] font-bold text-white px-1.5">
+                              {item.badge}
+                            </span>
+                          )}
+                        </a>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t border-sidebar-border">
+      <SidebarFooter className="p-4 border-t-0">
+        {/* Gradient top separator */}
+        <div className="mb-3 h-[1px] bg-gradient-to-r from-transparent via-[#1565C0] to-transparent opacity-30" />
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm shrink-0">
+            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#1565C0] to-[#1976D2] flex items-center justify-center text-white font-semibold text-sm shrink-0 shadow-sm">
               {userEmail[0].toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -157,7 +175,7 @@ export function AppSidebar({ userRole, userEmail, onLogout }: AppSidebarProps) {
           </div>
           <RoleBadge role={userRole} />
         </div>
-        <SidebarMenuButton onClick={onLogout} data-testid="button-logout" className="transition-all duration-200">
+        <SidebarMenuButton onClick={onLogout} data-testid="button-logout" className="transition-all duration-200 hover:bg-red-50/60 dark:hover:bg-red-950/20 hover:text-red-600 dark:hover:text-red-400">
           <LogOut className="h-4 w-4" />
           <span>Cerrar sesión</span>
         </SidebarMenuButton>

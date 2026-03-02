@@ -218,7 +218,7 @@ export function FloatingAssistant() {
 
       {/* Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 w-[380px] h-[520px] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-200" data-testid="floating-assistant-panel">
+        <div className="fixed bottom-6 right-6 z-50 w-[380px] h-[520px] rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-200" data-testid="floating-assistant-panel">
           {/* Header */}
           <div className="p-3 shrink-0 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #0D47A1, #1565C0, #1976D2)' }}>
             <div className="flex items-center gap-2">
@@ -247,7 +247,7 @@ export function FloatingAssistant() {
           </div>
 
           {/* Messages */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-0">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 bg-gradient-to-b from-gray-50/50 to-white dark:from-gray-900 dark:to-gray-800 min-h-0">
             <div className="space-y-3">
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
@@ -255,7 +255,7 @@ export function FloatingAssistant() {
                   <div className={`max-w-[80%] rounded-xl px-3 py-2 shadow-sm ${
                     msg.role === "user"
                       ? "bg-gradient-to-r from-[#0D47A1] to-[#1565C0] text-white rounded-tr-sm"
-                      : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-slate-200 dark:border-slate-700 rounded-tl-sm"
+                      : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-800 rounded-tl-sm"
                   }`}>
                     {msg.role === "assistant" ? (
                       <MiniMarkdown content={msg.content} />
@@ -269,7 +269,7 @@ export function FloatingAssistant() {
               {activeTool && (
                 <div className="flex gap-2 justify-start">
                   <AIAvatar />
-                  <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-slate-700 rounded-xl rounded-tl-sm px-3 py-2 shadow-sm">
+                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl rounded-tl-sm px-3 py-2 shadow-sm">
                     <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
                       <Loader2 className="h-3 w-3 animate-spin" />
                       <span>{TOOL_LABELS[activeTool] || `Ejecutando ${activeTool}...`}</span>
@@ -281,7 +281,7 @@ export function FloatingAssistant() {
               {isStreaming && !activeTool && messages[messages.length - 1]?.content === "" && (
                 <div className="flex gap-2 justify-start">
                   <AIAvatar />
-                  <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-slate-700 rounded-xl rounded-tl-sm px-3 py-2 shadow-sm">
+                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl rounded-tl-sm px-3 py-2 shadow-sm">
                     <div className="flex gap-1.5">
                       <span className="w-1.5 h-1.5 bg-blue-400 rounded-full dot-bounce" style={{ animationDelay: "0ms" }} />
                       <span className="w-1.5 h-1.5 bg-blue-400 rounded-full dot-bounce" style={{ animationDelay: "0.2s" }} />
@@ -294,7 +294,7 @@ export function FloatingAssistant() {
           </div>
 
           {/* Input */}
-          <div className="p-2.5 border-t bg-slate-50/80 dark:bg-gray-900/80 shrink-0">
+          <div className="p-2.5 border-t bg-gray-50/80 dark:bg-gray-900/80 shrink-0">
             <div className="flex gap-2 items-end">
               <Textarea
                 ref={inputRef}
@@ -302,7 +302,7 @@ export function FloatingAssistant() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Escribe tu pregunta..."
-                className="resize-none min-h-[40px] max-h-[80px] rounded-xl border-slate-300 focus-visible:ring-blue-500 text-sm"
+                className="resize-none min-h-[40px] max-h-[80px] rounded-xl border-gray-200 focus-visible:ring-blue-500 text-sm"
                 disabled={isStreaming}
                 data-testid="floating-chat-input"
               />

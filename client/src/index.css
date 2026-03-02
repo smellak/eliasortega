@@ -411,15 +411,42 @@
 }
 
 .glass-card {
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.dark .glass-card {
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.dark .glass-card {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+.card-premium {
+  background: white;
+  border: 1px solid hsl(210 4% 92%);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+.card-premium:hover {
+  border-color: hsl(210 79% 85%);
+  box-shadow: 0 4px 16px rgba(21, 101, 192, 0.08);
+}
+.dark .card-premium {
+  background: hsl(210 11% 17%);
+  border-color: hsl(210 8% 24%);
+}
+.dark .card-premium:hover {
+  border-color: hsl(210 50% 35%);
+  box-shadow: 0 4px 16px rgba(21, 101, 192, 0.15);
+}
+
+.sidebar-brand-separator {
+  height: 2px;
+  background: linear-gradient(90deg, #1565C0, #1976D2, transparent);
+  opacity: 0.3;
 }
 
 .glass-header {

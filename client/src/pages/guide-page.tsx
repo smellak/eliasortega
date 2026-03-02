@@ -50,7 +50,7 @@ export default function GuidePage() {
         title="Guía de Uso"
         subtitle="Todo lo que necesitas saber para usar Elias y gestionar el almacen"
         actions={
-          <Button variant="outline" size="sm" onClick={toggleAll}>
+          <Button variant="outline" size="sm" onClick={toggleAll} className="hero-btn-ghost border-0">
             {allOpen ? <ChevronUp className="h-4 w-4 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
             {allOpen ? "Colapsar todo" : "Expandir todo"}
           </Button>

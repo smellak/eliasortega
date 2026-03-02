@@ -188,7 +188,7 @@ export default function DocksPage({ userRole }: DocksPageProps) {
         subtitle="Gestión de muelles, disponibilidad y excepciones"
         actions={
           !isReadOnly ? (
-            <Button onClick={openCreate} className="gradient-btn text-white border-0">
+            <Button onClick={openCreate} className="hero-btn border-0">
               <Plus className="h-4 w-4 mr-2" />
               Nuevo muelle
             </Button>

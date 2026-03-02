@@ -165,7 +165,7 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
         actions={
           <>
             {!isReadOnly && (
-              <Button className="gradient-btn text-white border-0 no-default-hover-elevate no-default-active-elevate" onClick={() => {
+              <Button className="hero-btn border-0 no-default-hover-elevate no-default-active-elevate" onClick={() => {
                 setSelectedAppointment(null);
                 setAppointmentDialogOpen(true);
               }} data-testid="button-new-appointment">

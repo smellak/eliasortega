@@ -116,7 +116,7 @@ export function QuickCapacityAdjust({ date }: QuickCapacityAdjustProps) {
           <Button
             variant="outline"
             size="sm"
-            className={`gap-2 ${config.buttonClass}`}
+            className={`gap-2 hero-btn-ghost border-0 ${config.buttonClass}`}
             data-testid="button-quick-adjust"
           >
             <Zap className="h-3.5 w-3.5" />

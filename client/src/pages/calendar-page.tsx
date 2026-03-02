@@ -211,7 +211,7 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
             )}
             {!isReadOnly && (
               <Button
-                className="gradient-btn text-white border-0 no-default-hover-elevate no-default-active-elevate"
+                className="hero-btn border-0 no-default-hover-elevate no-default-active-elevate"
                 onClick={handleNewAppointmentButton}
                 data-testid="button-new-appointment"
               >

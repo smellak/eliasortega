@@ -546,6 +546,50 @@
   box-shadow: 0 2px 8px rgba(21, 101, 192, 0.25);
 }
 
+/* Hero action buttons — white on navy background */
+.hero-btn {
+  background: white;
+  color: #0D47A1;
+  font-weight: 600;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+.hero-btn:hover {
+  background: #f0f4ff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+
+.hero-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.hero-btn-ghost {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+
+.hero-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.dark .hero-btn {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .hero-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 /* Chat bubble animations */
 @keyframes bubbleIn {
   from { opacity: 0; transform: translateY(12px); }

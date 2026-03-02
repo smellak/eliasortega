@@ -97,7 +97,7 @@ export function ExportPDFButton({ appointments, currentDate, viewType }: ExportP
       variant="outline"
       size="sm"
       onClick={handleExport}
-      className="gap-1.5 text-xs"
+      className="gap-1.5 text-xs hero-btn-ghost border-0"
       data-testid="button-export-pdf"
     >
       <FileDown className="h-3.5 w-3.5" />

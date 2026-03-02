@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { PageHero } from '@/components/page-hero';
 import {
   BookOpen, ChevronDown, ChevronUp, MessageSquare, Calendar, ClipboardCheck,
   Gauge, Warehouse, Package, Bell, Shield, BarChart3, Settings2, Users,
@@ -43,24 +44,18 @@ export default function GuidePage() {
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn pb-8">
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <div className="page-icon">
-            <BookOpen />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Guia del Sistema</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Todo lo que necesitas saber para usar Elias y gestionar el almacen
-            </p>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" onClick={toggleAll}>
-          {allOpen ? <ChevronUp className="h-4 w-4 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
-          {allOpen ? "Colapsar todo" : "Expandir todo"}
-        </Button>
-      </div>
+    <div className="space-y-6 pb-8">
+      <PageHero
+        icon={BookOpen}
+        title="Guía de Uso"
+        subtitle="Todo lo que necesitas saber para usar Elias y gestionar el almacen"
+        actions={
+          <Button variant="outline" size="sm" onClick={toggleAll}>
+            {allOpen ? <ChevronUp className="h-4 w-4 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
+            {allOpen ? "Colapsar todo" : "Expandir todo"}
+          </Button>
+        }
+      />
 
       {/* Section 1: What is this? */}
       <GuideSection id="what" title={sections[0].title} icon={sections[0].icon} open={openSections.has("what")} onToggle={toggleSection}>

@@ -7,6 +7,7 @@ import { AppointmentDialog } from "@/components/appointment-dialog";
 import { ConflictErrorDialog } from "@/components/conflict-error-dialog";
 import { Button } from "@/components/ui/button";
 import { Plus, Calendar } from "lucide-react";
+import { PageHero } from '@/components/page-hero';
 import { DashboardCharts } from "@/components/dashboard-charts";
 import { ExportPDFButton } from "@/components/export-pdf";
 import { appointmentsApi, providersApi, capacityApi, ApiError } from "@/lib/api";
@@ -197,36 +198,30 @@ export default function CalendarPage({ userRole }: CalendarPageProps) {
     : undefined;
 
   return (
-    <div className="space-y-6 animate-fadeIn pb-20">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-3">
-          <div className="page-icon">
-            <Calendar />
-          </div>
-          <div>
-            <h1 className="text-3xl font-semibold">Calendario</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Gestiona las citas y la capacidad del almacén
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <ExportPDFButton appointments={allAppointments} currentDate={currentDate} viewType={currentView} />
-          {!isReadOnly && (
-            <QuickCapacityAdjust date={currentDate} />
-          )}
-          {!isReadOnly && (
-            <Button
-              className="gradient-btn text-white border-0 no-default-hover-elevate no-default-active-elevate"
-              onClick={handleNewAppointmentButton}
-              data-testid="button-new-appointment"
-            >
-              <Plus className="h-4 w-4 lg:mr-2" />
-              <span className="hidden lg:inline">Nueva Cita</span>
-            </Button>
-          )}
-        </div>
-      </div>
+    <div className="space-y-6 pb-20">
+      <PageHero
+        icon={Calendar}
+        title="Calendario"
+        subtitle="Gestiona las citas y la capacidad del almacén"
+        actions={
+          <>
+            <ExportPDFButton appointments={allAppointments} currentDate={currentDate} viewType={currentView} />
+            {!isReadOnly && (
+              <QuickCapacityAdjust date={currentDate} />
+            )}
+            {!isReadOnly && (
+              <Button
+                className="gradient-btn text-white border-0 no-default-hover-elevate no-default-active-elevate"
+                onClick={handleNewAppointmentButton}
+                data-testid="button-new-appointment"
+              >
+                <Plus className="h-4 w-4 lg:mr-2" />
+                <span className="hidden lg:inline">Nueva Cita</span>
+              </Button>
+            )}
+          </>
+        }
+      />
 
       {capacityUtilization && (
         <CapacityIndicators

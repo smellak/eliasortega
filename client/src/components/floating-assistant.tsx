@@ -22,8 +22,8 @@ interface StreamChunk {
 
 function AIAvatar() {
   return (
-    <Avatar className="h-7 w-7 shrink-0 border-2 border-violet-300">
-      <AvatarFallback className="bg-gradient-to-br from-slate-700 to-violet-600 text-white font-bold text-xs">
+    <Avatar className="h-7 w-7 shrink-0 border-2 border-blue-300">
+      <AvatarFallback className="bg-gradient-to-br from-[#0D47A1] to-[#1565C0] text-white font-bold text-xs">
         <Bot className="h-3.5 w-3.5" />
       </AvatarFallback>
     </Avatar>
@@ -45,7 +45,7 @@ function MiniMarkdown({ content }: { content: string }) {
           }
           return <code className="px-1 py-0.5 rounded text-xs font-mono bg-muted">{children}</code>;
         },
-        a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="underline text-violet-600 dark:text-violet-400">{children}</a>,
+        a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="underline text-blue-600 dark:text-blue-400">{children}</a>,
       }}
     >
       {content}
@@ -202,7 +202,8 @@ export function FloatingAssistant() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-gradient-to-r from-slate-700 to-violet-600 text-white shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40 hover:scale-105 transition-all duration-200 flex items-center justify-center group"
+          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center group"
+          style={{ background: 'linear-gradient(135deg, #1565C0, #0D47A1)', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 24px rgba(21,101,192,0.35)' }}
           data-testid="fab-assistant"
           aria-label="Abrir asistente IA"
         >
@@ -219,10 +220,10 @@ export function FloatingAssistant() {
       {isOpen && (
         <div className="fixed bottom-6 right-6 z-50 w-[380px] h-[520px] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-200" data-testid="floating-assistant-panel">
           {/* Header */}
-          <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-violet-800 p-3 shrink-0 flex items-center justify-between">
+          <div className="p-3 shrink-0 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #0D47A1, #1565C0, #1976D2)' }}>
             <div className="flex items-center gap-2">
-              <Avatar className="h-8 w-8 border-2 border-violet-300">
-                <AvatarFallback className="bg-gradient-to-br from-slate-700 to-violet-600 text-white font-bold text-xs">
+              <Avatar className="h-8 w-8 border-2 border-blue-300">
+                <AvatarFallback className="bg-gradient-to-br from-[#0D47A1] to-[#1565C0] text-white font-bold text-xs">
                   <Bot className="h-4 w-4" />
                 </AvatarFallback>
               </Avatar>
@@ -232,7 +233,7 @@ export function FloatingAssistant() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="bg-violet-500 text-white border-0 text-[10px] px-2 py-0.5">
+              <Badge variant="secondary" className="bg-blue-500 text-white border-0 text-[10px] px-2 py-0.5">
                 En línea
               </Badge>
               <button
@@ -253,7 +254,7 @@ export function FloatingAssistant() {
                   {msg.role === "assistant" && <AIAvatar />}
                   <div className={`max-w-[80%] rounded-xl px-3 py-2 shadow-sm ${
                     msg.role === "user"
-                      ? "bg-gradient-to-r from-slate-700 to-slate-600 text-white rounded-tr-sm"
+                      ? "bg-gradient-to-r from-[#0D47A1] to-[#1565C0] text-white rounded-tr-sm"
                       : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-slate-200 dark:border-slate-700 rounded-tl-sm"
                   }`}>
                     {msg.role === "assistant" ? (
@@ -269,7 +270,7 @@ export function FloatingAssistant() {
                 <div className="flex gap-2 justify-start">
                   <AIAvatar />
                   <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-slate-700 rounded-xl rounded-tl-sm px-3 py-2 shadow-sm">
-                    <div className="flex items-center gap-2 text-xs text-violet-600 dark:text-violet-400">
+                    <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
                       <Loader2 className="h-3 w-3 animate-spin" />
                       <span>{TOOL_LABELS[activeTool] || `Ejecutando ${activeTool}...`}</span>
                     </div>
@@ -282,9 +283,9 @@ export function FloatingAssistant() {
                   <AIAvatar />
                   <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-slate-700 rounded-xl rounded-tl-sm px-3 py-2 shadow-sm">
                     <div className="flex gap-1.5">
-                      <span className="w-1.5 h-1.5 bg-violet-400 rounded-full dot-bounce" style={{ animationDelay: "0ms" }} />
-                      <span className="w-1.5 h-1.5 bg-violet-400 rounded-full dot-bounce" style={{ animationDelay: "0.2s" }} />
-                      <span className="w-1.5 h-1.5 bg-violet-400 rounded-full dot-bounce" style={{ animationDelay: "0.4s" }} />
+                      <span className="w-1.5 h-1.5 bg-blue-400 rounded-full dot-bounce" style={{ animationDelay: "0ms" }} />
+                      <span className="w-1.5 h-1.5 bg-blue-400 rounded-full dot-bounce" style={{ animationDelay: "0.2s" }} />
+                      <span className="w-1.5 h-1.5 bg-blue-400 rounded-full dot-bounce" style={{ animationDelay: "0.4s" }} />
                     </div>
                   </div>
                 </div>
@@ -301,7 +302,7 @@ export function FloatingAssistant() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Escribe tu pregunta..."
-                className="resize-none min-h-[40px] max-h-[80px] rounded-xl border-slate-300 focus-visible:ring-violet-500 text-sm"
+                className="resize-none min-h-[40px] max-h-[80px] rounded-xl border-slate-300 focus-visible:ring-blue-500 text-sm"
                 disabled={isStreaming}
                 data-testid="floating-chat-input"
               />
@@ -309,7 +310,8 @@ export function FloatingAssistant() {
                 onClick={sendMessage}
                 disabled={!input.trim() || isStreaming}
                 size="icon"
-                className="shrink-0 h-10 w-10 rounded-xl bg-gradient-to-r from-slate-700 to-violet-600 hover:from-slate-800 hover:to-violet-700 text-white shadow-md"
+                className="shrink-0 h-10 w-10 rounded-xl text-white shadow-md"
+                style={{ background: 'linear-gradient(135deg, #1565C0, #0D47A1)' }}
                 data-testid="floating-chat-send"
               >
                 {isStreaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}

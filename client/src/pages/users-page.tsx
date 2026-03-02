@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { PageHero } from '@/components/page-hero';
 import { UsersTable } from "@/components/users-table";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { usersApi } from "@/lib/api";
@@ -99,18 +100,12 @@ export default function UsersPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 animate-fadeIn">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="page-icon">
-            <Users />
-          </div>
-          <div>
-            <h1 className="text-3xl font-semibold">Usuarios</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Gestiona las cuentas y permisos de usuarios
-            </p>
-          </div>
-        </div>
+      <div className="space-y-6">
+        <PageHero
+          icon={Users}
+          title="Usuarios"
+          subtitle="Gestiona las cuentas y permisos de usuarios"
+        />
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <Card key={i} className="p-4">
@@ -127,18 +122,12 @@ export default function UsersPage() {
 
   if (error) {
     return (
-      <div className="space-y-6 animate-fadeIn">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="page-icon">
-            <Users />
-          </div>
-          <div>
-            <h1 className="text-3xl font-semibold">Usuarios</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Gestiona las cuentas y permisos de usuarios
-            </p>
-          </div>
-        </div>
+      <div className="space-y-6">
+        <PageHero
+          icon={Users}
+          title="Usuarios"
+          subtitle="Gestiona las cuentas y permisos de usuarios"
+        />
         <Card className="p-8 border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20">
           <div className="flex flex-col items-center gap-3 text-center">
             <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
@@ -155,18 +144,12 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="page-icon">
-          <Users />
-        </div>
-        <div>
-          <h1 className="text-3xl font-semibold">Usuarios</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gestiona las cuentas y permisos de usuarios
-          </p>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHero
+        icon={Users}
+        title="Usuarios"
+        subtitle="Gestiona las cuentas y permisos de usuarios"
+      />
 
       <RolesLegend />
 

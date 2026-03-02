@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PageHero } from '@/components/page-hero';
 import { PredictionScatter } from "@/components/analytics/prediction-scatter";
 import { CategoryTable } from "@/components/analytics/category-table";
 import { ProviderTable } from "@/components/analytics/provider-table";
@@ -39,10 +40,11 @@ export default function AnalyticsPage({ userRole }: { userRole: UserRole }) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Precisión IA</h1>
-        <p className="text-muted-foreground">Análisis de la calidad de las estimaciones de tiempo</p>
-      </div>
+      <PageHero
+        icon={BarChart3}
+        title="Precisión IA"
+        subtitle="Análisis de la calidad de las estimaciones de tiempo"
+      />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

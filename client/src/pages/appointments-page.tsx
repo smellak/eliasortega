@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { AppointmentDialog } from "@/components/appointment-dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Search, Pencil, Trash2, Plus, List, CalendarDays, Check, X, HelpCircle } from "lucide-react";
+import { PageHero } from '@/components/page-hero';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatInTimeZone } from "date-fns-tz";
 import { appointmentsApi, providersApi } from "@/lib/api";
@@ -156,29 +157,25 @@ export default function AppointmentsPage({ userRole }: AppointmentsPageProps) {
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-3">
-          <div className="page-icon">
-            <List />
-          </div>
-          <div>
-            <h1 className="text-3xl font-semibold">Citas</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Visualiza y gestiona todas las citas del almacén
-            </p>
-          </div>
-        </div>
-        {!isReadOnly && (
-          <Button className="gradient-btn text-white border-0 no-default-hover-elevate no-default-active-elevate" onClick={() => {
-            setSelectedAppointment(null);
-            setAppointmentDialogOpen(true);
-          }} data-testid="button-new-appointment">
-            <Plus className="h-4 w-4 mr-2" />
-            Nueva Cita
-          </Button>
-        )}
-      </div>
+    <div className="space-y-6">
+      <PageHero
+        icon={List}
+        title="Citas"
+        subtitle="Visualiza y gestiona todas las citas del almacén"
+        actions={
+          <>
+            {!isReadOnly && (
+              <Button className="gradient-btn text-white border-0 no-default-hover-elevate no-default-active-elevate" onClick={() => {
+                setSelectedAppointment(null);
+                setAppointmentDialogOpen(true);
+              }} data-testid="button-new-appointment">
+                <Plus className="h-4 w-4 mr-2" />
+                Nueva Cita
+              </Button>
+            )}
+          </>
+        }
+      />
 
       <div className="relative group rounded-xl shadow-sm border-2 border-transparent focus-within:border-blue-300 dark:focus-within:border-blue-700 transition-all duration-200">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-blue-500 transition-colors" />

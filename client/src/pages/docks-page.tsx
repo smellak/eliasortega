@@ -29,6 +29,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Warehouse, Plus, Trash2, Pencil, Check, X, Clock, HelpCircle } from "lucide-react";
+import { PageHero } from "@/components/page-hero";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TableSkeleton } from "@/components/skeleton-loaders";
 import { EmptyState } from "@/components/empty-state";
@@ -181,23 +182,19 @@ export default function DocksPage({ userRole }: DocksPageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
-            <Warehouse className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">Muelles de descarga</h1>
-            <p className="text-sm text-muted-foreground">Gestión de muelles, disponibilidad y excepciones</p>
-          </div>
-        </div>
-        {!isReadOnly && (
-          <Button onClick={openCreate} className="gradient-btn text-white border-0">
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo muelle
-          </Button>
-        )}
-      </div>
+      <PageHero
+        icon={Warehouse}
+        title="Muelles"
+        subtitle="Gestión de muelles, disponibilidad y excepciones"
+        actions={
+          !isReadOnly ? (
+            <Button onClick={openCreate} className="gradient-btn text-white border-0">
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo muelle
+            </Button>
+          ) : undefined
+        }
+      />
 
       <DockMap />
 

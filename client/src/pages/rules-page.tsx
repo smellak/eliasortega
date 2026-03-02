@@ -6,9 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { PageHero } from '@/components/page-hero';
 import { useToast } from "@/hooks/use-toast";
 import { rulesApi, type SchedulingRules } from "@/lib/api";
-import { Loader2, Save, RotateCcw, Ban, Users, Timer, Truck, BarChart3, Warehouse, Clock, Hourglass } from "lucide-react";
+import { Loader2, Save, RotateCcw, Ban, Users, Timer, Truck, BarChart3, Warehouse, Clock, Hourglass, Settings2 } from "lucide-react";
 
 interface RulesPageProps {
   userRole: string;
@@ -100,13 +101,12 @@ export default function RulesPage({ userRole }: RulesPageProps) {
   if (!rules) return null;
 
   return (
-    <div className="space-y-6 animate-fadeIn pb-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Reglas de Programacion</h1>
-        <p className="text-muted-foreground mt-1">
-          Configura como Elias y el sistema gestionan las citas de descarga
-        </p>
-      </div>
+    <div className="space-y-6 pb-8">
+      <PageHero
+        icon={Settings2}
+        title="Reglas de Programación"
+        subtitle="Configura como Elias y el sistema gestionan las citas de descarga"
+      />
 
       <div className="grid gap-4">
         {/* Rule 1: Avoid Concurrency */}

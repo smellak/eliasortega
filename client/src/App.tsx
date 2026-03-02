@@ -26,6 +26,7 @@ import NotFound from "@/pages/not-found";
 import { authApi, getAuthToken, clearAuth } from "@/lib/api";
 import { useNewAppointmentToast } from "@/hooks/use-new-appointment-toast";
 import { FloatingAssistant } from "@/components/floating-assistant";
+import { PageTransition } from "@/components/page-transition";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import type { UserResponse } from "@shared/types";
@@ -163,7 +164,7 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-background to-blue-50/30 dark:to-blue-950/10">
+      <div className="flex items-center justify-center h-screen bg-background">
         <div className="flex flex-col items-center gap-4 animate-fadeIn">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-sm text-muted-foreground">Cargando...</p>
@@ -191,23 +192,25 @@ function App() {
             <div className="flex h-screen w-full">
               <AppSidebar userRole={user.role} userEmail={user.email} onLogout={handleLogout} />
               <div className="flex flex-col flex-1 overflow-hidden">
-                <header className="glass-header flex items-center justify-between p-4 sticky top-0 z-50">
-                  <SidebarTrigger data-testid="button-sidebar-toggle" />
+                <header className="glass-header flex items-center justify-between p-4 h-14 sticky top-0" style={{ zIndex: 999 }}>
+                  <SidebarTrigger data-testid="button-sidebar-toggle" className="text-white hover:bg-white/10" />
                   <div className="flex items-center gap-4">
-                    <div className="text-sm font-mono text-muted-foreground hidden sm:block">
-                      {new Date().toLocaleDateString("es-ES", { 
+                    <div className="text-sm font-mono text-white/70 hidden sm:block">
+                      {new Date().toLocaleDateString("es-ES", {
                         timeZone: "Europe/Madrid",
                         year: "numeric",
                         month: "long",
                         day: "numeric"
                       })}
                     </div>
-                    <ThemeToggle />
+                    <ThemeToggle className="text-white hover:bg-white/10 hover:text-white" />
                   </div>
                 </header>
                 <main className="flex-1 overflow-auto p-6 lg:p-8">
                   <div className="max-w-7xl mx-auto">
-                    <Router user={user} />
+                    <PageTransition>
+                      <Router user={user} />
+                    </PageTransition>
                   </div>
                 </main>
                 <AppointmentPolling />

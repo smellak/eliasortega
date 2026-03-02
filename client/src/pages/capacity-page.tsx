@@ -37,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { Gauge, Plus, Trash2, Info, ChevronDown, Check, X, Warehouse, HelpCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TableSkeleton } from "@/components/skeleton-loaders";
+import { PageHero } from '@/components/page-hero';
 import {
   Collapsible,
   CollapsibleContent,
@@ -58,21 +59,6 @@ const SATURDAY_DAYS = [{ name: "Sáb", idx: 6 }];
 const SUNDAY_DAYS = [{ name: "Dom", idx: 0 }];
 const ALL_DAY_INDICES = [1, 2, 3, 4, 5, 6, 0];
 
-function PageHeader() {
-  return (
-    <div className="flex items-center gap-3 flex-wrap">
-      <div className="page-icon">
-        <Gauge />
-      </div>
-      <div>
-        <h1 className="text-3xl font-semibold">Gestión de Franjas</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Define plantillas semanales de franjas y excepciones por fecha
-        </p>
-      </div>
-    </div>
-  );
-}
 
 function PointsLegend() {
   const [open, setOpen] = useState(false);
@@ -1159,8 +1145,8 @@ export default function CapacityPage({ userRole }: CapacityPageProps) {
   const isReadOnly = userRole === "BASIC_READONLY";
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <PageHeader />
+    <div className="space-y-6">
+      <PageHero icon={Gauge} title="Gestión de Franjas" subtitle="Define plantillas semanales de franjas y excepciones por fecha" />
 
       <Tabs defaultValue="templates" data-testid="tabs-capacity">
         <TabsList data-testid="tabs-list-capacity">

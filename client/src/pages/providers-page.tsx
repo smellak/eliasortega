@@ -10,6 +10,7 @@ import type { Provider, CreateProviderInput, UpdateProviderInput } from "@shared
 import { Card } from "@/components/ui/card";
 import { Package, AlertCircle } from "lucide-react";
 import { TableSkeleton } from "@/components/skeleton-loaders";
+import { PageHero } from '@/components/page-hero';
 
 interface ProvidersPageProps {
   userRole: "ADMIN" | "PLANNER" | "BASIC_READONLY";
@@ -116,14 +117,8 @@ export default function ProvidersPage({ userRole }: ProvidersPageProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 animate-fadeIn">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="page-icon"><Package /></div>
-          <div>
-            <h1 className="text-3xl font-semibold">Proveedores</h1>
-            <p className="text-sm text-muted-foreground mt-1">Gestiona los proveedores de entrega del almacén</p>
-          </div>
-        </div>
+      <div className="space-y-6">
+        <PageHero icon={Package} title="Proveedores" subtitle="Gestiona los proveedores de entrega del almacén" />
         <TableSkeleton rows={4} cols={3} />
       </div>
     );
@@ -131,14 +126,8 @@ export default function ProvidersPage({ userRole }: ProvidersPageProps) {
 
   if (error) {
     return (
-      <div className="space-y-6 animate-fadeIn">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="page-icon"><Package /></div>
-          <div>
-            <h1 className="text-3xl font-semibold">Proveedores</h1>
-            <p className="text-sm text-muted-foreground mt-1">Gestiona los proveedores de entrega del almacén</p>
-          </div>
-        </div>
+      <div className="space-y-6">
+        <PageHero icon={Package} title="Proveedores" subtitle="Gestiona los proveedores de entrega del almacén" />
         <Card className="p-8 border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20">
           <div className="flex flex-col items-center gap-3 text-center">
             <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
@@ -153,14 +142,8 @@ export default function ProvidersPage({ userRole }: ProvidersPageProps) {
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="page-icon"><Package /></div>
-        <div>
-          <h1 className="text-3xl font-semibold">Proveedores</h1>
-          <p className="text-sm text-muted-foreground mt-1">Gestiona los proveedores de entrega del almacén</p>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHero icon={Package} title="Proveedores" subtitle="Gestiona los proveedores de entrega del almacén" />
 
       <ProvidersTable
         providers={providers}

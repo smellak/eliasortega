@@ -37,6 +37,7 @@ import {
   ChevronRight,
   AlertCircle,
 } from "lucide-react";
+import { PageHero } from "@/components/page-hero";
 
 interface AuditPageProps {
   userRole: "ADMIN" | "PLANNER" | "BASIC_READONLY";
@@ -215,18 +216,8 @@ export default function AuditPage({ userRole }: AuditPageProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 animate-fadeIn">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="page-icon">
-            <Shield />
-          </div>
-          <div>
-            <h1 className="text-3xl font-semibold">Registro de Auditoría</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Historial de cambios del sistema
-            </p>
-          </div>
-        </div>
+      <div className="space-y-6">
+        <PageHero icon={Shield} title="Auditoría" subtitle="Historial de cambios del sistema" />
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <Card key={i} className="p-4">
@@ -244,18 +235,8 @@ export default function AuditPage({ userRole }: AuditPageProps) {
 
   if (error) {
     return (
-      <div className="space-y-6 animate-fadeIn">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="page-icon">
-            <Shield />
-          </div>
-          <div>
-            <h1 className="text-3xl font-semibold">Registro de Auditoría</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Historial de cambios del sistema
-            </p>
-          </div>
-        </div>
+      <div className="space-y-6">
+        <PageHero icon={Shield} title="Auditoría" subtitle="Historial de cambios del sistema" />
         <Card className="p-8 border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20">
           <div className="flex flex-col items-center gap-3 text-center">
             <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
@@ -272,20 +253,8 @@ export default function AuditPage({ userRole }: AuditPageProps) {
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="page-icon">
-          <Shield />
-        </div>
-        <div>
-          <h1 className="text-3xl font-semibold" data-testid="text-page-title">
-            Registro de Auditoría
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1" data-testid="text-page-subtitle">
-            Historial de cambios del sistema
-          </p>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHero icon={Shield} title="Auditoría" subtitle="Historial de cambios del sistema" />
 
       <Card className="p-4">
         <div className="flex flex-wrap items-end gap-3">

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { PageHero } from '@/components/page-hero';
 import { ResponsiveTable } from "@/components/responsive-table";
 import { emailRecipientsApi, emailApi, providerEmailConfigApi, teamEmailApi, getAuthToken } from "@/lib/api";
 import type { ProviderEmailConfig, TeamEmailToggles } from "@/lib/api";
@@ -1099,26 +1100,12 @@ export default function NotificationsPage({
   const isReadOnly = userRole === "BASIC_READONLY";
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="page-icon">
-          <Bell />
-        </div>
-        <div>
-          <h1
-            className="text-3xl font-semibold"
-            data-testid="text-page-title"
-          >
-            Notificaciones y Emails
-          </h1>
-          <p
-            className="text-sm text-muted-foreground mt-1"
-            data-testid="text-page-subtitle"
-          >
-            Gestiona los emails a proveedores y al equipo
-          </p>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHero
+        icon={Bell}
+        title="Notificaciones y Emails"
+        subtitle="Gestiona los emails a proveedores y al equipo"
+      />
 
       <Tabs defaultValue="providers">
         <TabsList data-testid="tabs-notifications">

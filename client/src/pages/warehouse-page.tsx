@@ -114,7 +114,7 @@ export default function WarehousePage({ userRole }: { userRole: UserRole }) {
           {!isToday && (
             <button
               onClick={() => setDateOffset(0)}
-              className="text-xs text-blue-600 dark:text-blue-400 underline"
+              className="text-xs text-[#1565C0] dark:text-blue-300 underline"
             >
               Ir a hoy
             </button>

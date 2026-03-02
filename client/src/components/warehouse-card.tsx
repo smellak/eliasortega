@@ -36,7 +36,7 @@ function formatTime(utc: string): string {
 
 const borderColors: Record<CardState, string> = {
   pending: "border-l-gray-400",
-  in_progress: "border-l-blue-500",
+  in_progress: "border-l-[#1565C0]",
   completed: "border-l-green-500",
   cancelled: "border-l-red-400",
 };
@@ -76,7 +76,7 @@ export function WarehouseCard({
   return (
     <>
       <Card
-        className={`border-l-4 ${borderColors[state]} ${state === "cancelled" ? "opacity-60" : ""} ${state === "in_progress" ? "ring-1 ring-blue-500/30" : ""}`}
+        className={`border-l-4 ${borderColors[state]} ${state === "cancelled" ? "opacity-60" : ""} ${state === "in_progress" ? "ring-1 ring-[#1565C0]/30" : ""}`}
       >
         <div className="p-4 space-y-3">
           {/* Header: provider name + state badge */}
@@ -102,9 +102,9 @@ export function WarehouseCard({
 
           {/* IN PROGRESS: timer */}
           {state === "in_progress" && (
-            <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 text-center">
+            <div className="bg-[#1565C0]/5 dark:bg-[#1565C0]/10 rounded-lg p-3 text-center">
               <p className="text-xs text-muted-foreground uppercase tracking-wide">Tiempo transcurrido</p>
-              <p className="text-2xl font-bold font-mono text-blue-600 dark:text-blue-400">
+              <p className="text-2xl font-bold font-mono text-[#1565C0] dark:text-blue-300">
                 {formatElapsed(elapsed)}
               </p>
             </div>
@@ -130,7 +130,8 @@ export function WarehouseCard({
             <Button
               onClick={() => onCheckin(appointment.id)}
               disabled={isLoading}
-              className="w-full min-h-[60px] text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full min-h-[60px] text-lg font-bold text-white"
+              style={{ background: 'linear-gradient(135deg, #1565C0, #0D47A1)' }}
             >
               Ha llegado
             </Button>

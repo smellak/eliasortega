@@ -25,8 +25,8 @@ interface StreamChunk {
 function AIAvatar({ size = "sm" }: { size?: "sm" | "lg" }) {
   const cls = size === "lg" ? "h-9 w-9 sm:h-10 sm:w-10" : "h-7 w-7 sm:h-8 sm:w-8";
   return (
-    <Avatar className={`${cls} shrink-0 border-2 border-violet-300`}>
-      <AvatarFallback className="bg-gradient-to-br from-slate-700 to-violet-600 text-white font-bold text-xs">
+    <Avatar className={`${cls} shrink-0 border-2 border-blue-300`}>
+      <AvatarFallback className="bg-gradient-to-br from-[#0D47A1] to-[#1565C0] text-white font-bold text-xs">
         <Bot className="h-4 w-4" />
       </AvatarFallback>
     </Avatar>
@@ -93,7 +93,7 @@ function ToolIndicator({ toolName }: { toolName: string }) {
     resumen_diario: "Generando resumen...",
   };
   return (
-    <div className="flex items-center gap-2 text-xs text-violet-600 dark:text-violet-400 py-1">
+    <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400 py-1">
       <Loader2 className="h-3 w-3 animate-spin" />
       <span>{labels[toolName] || `Ejecutando ${toolName}...`}</span>
     </div>
@@ -233,16 +233,16 @@ export default function ChatAdmin() {
 
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col">
-      <Card className="flex-1 flex flex-col overflow-hidden rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 min-h-0">
+      <Card className="flex-1 flex flex-col overflow-hidden rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 min-h-0">
         {/* Header */}
-        <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-violet-800 p-2.5 sm:p-3 shrink-0">
+        <div className="p-2.5 sm:p-3 shrink-0" style={{ background: 'linear-gradient(135deg, #0D47A1, #1565C0, #1976D2)' }}>
           <div className="flex items-center gap-2 sm:gap-3">
             <AIAvatar size="lg" />
             <div className="flex-1 min-w-0">
               <h2 className="text-sm sm:text-base font-semibold text-white truncate">Asistente IA</h2>
               <p className="text-[10px] sm:text-xs text-slate-300">Panel de Administración</p>
             </div>
-            <Badge variant="secondary" className="bg-violet-500 text-white border-0 text-[10px] sm:text-xs px-2 py-0.5">
+            <Badge variant="secondary" className="bg-blue-500 text-white border-0 text-[10px] sm:text-xs px-2 py-0.5">
               En línea
             </Badge>
             <button
@@ -257,7 +257,7 @@ export default function ChatAdmin() {
         </div>
 
         {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 min-h-0 bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 min-h-0 bg-gradient-to-b from-gray-50/50 to-white dark:from-gray-900 dark:to-gray-800">
           <div className="space-y-3 sm:space-y-4 max-w-3xl mx-auto">
             {messages.map((msg) => (
               <div
@@ -268,8 +268,8 @@ export default function ChatAdmin() {
                 <div
                   className={`max-w-[85%] sm:max-w-[75%] md:max-w-[70%] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-md ${
                     msg.role === "user"
-                      ? "bg-gradient-to-r from-slate-700 to-slate-600 text-white rounded-tr-sm"
-                      : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-slate-200 dark:border-slate-700 rounded-tl-sm"
+                      ? "bg-gradient-to-r from-[#0D47A1] to-[#1565C0] text-white rounded-tr-sm"
+                      : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-tl-sm"
                   }`}
                 >
                   {msg.role === "assistant" ? (
@@ -288,7 +288,7 @@ export default function ChatAdmin() {
             {activeTool && (
               <div className="flex gap-2 sm:gap-3 justify-start">
                 <AIAvatar />
-                <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-tl-sm px-3 sm:px-4 py-2 sm:py-3 shadow-md">
+                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-sm px-3 sm:px-4 py-2 sm:py-3 shadow-md">
                   <ToolIndicator toolName={activeTool} />
                 </div>
               </div>
@@ -298,12 +298,12 @@ export default function ChatAdmin() {
             {isStreaming && !activeTool && messages[messages.length - 1]?.content === "" && (
               <div className="flex justify-start gap-2 sm:gap-3">
                 <AIAvatar />
-                <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-tl-sm px-3 sm:px-4 py-2 sm:py-3 shadow-md">
+                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-sm px-3 sm:px-4 py-2 sm:py-3 shadow-md">
                   <div className="flex items-center gap-2">
                     <div className="flex gap-1.5">
-                      <span className="w-2 h-2 bg-violet-400 rounded-full dot-bounce" style={{ animationDelay: "0ms" }} />
-                      <span className="w-2 h-2 bg-violet-400 rounded-full dot-bounce" style={{ animationDelay: "0.2s" }} />
-                      <span className="w-2 h-2 bg-violet-400 rounded-full dot-bounce" style={{ animationDelay: "0.4s" }} />
+                      <span className="w-2 h-2 bg-blue-400 rounded-full dot-bounce" style={{ animationDelay: "0ms" }} />
+                      <span className="w-2 h-2 bg-blue-400 rounded-full dot-bounce" style={{ animationDelay: "0.2s" }} />
+                      <span className="w-2 h-2 bg-blue-400 rounded-full dot-bounce" style={{ animationDelay: "0.4s" }} />
                     </div>
                     <span className="text-xs sm:text-sm text-muted-foreground">Analizando...</span>
                   </div>
@@ -314,14 +314,14 @@ export default function ChatAdmin() {
         </div>
 
         {/* Input */}
-        <div className="p-2.5 sm:p-4 border-t bg-slate-50/80 dark:bg-gray-900/80 backdrop-blur-sm shrink-0">
+        <div className="p-2.5 sm:p-4 border-t bg-gray-50/80 dark:bg-gray-900/80 backdrop-blur-sm shrink-0">
           <div className="flex gap-2 sm:gap-3 items-end max-w-3xl mx-auto">
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Pregúntame sobre citas, ocupación, proveedores..."
-              className="resize-none min-h-[44px] sm:min-h-[52px] max-h-[120px] rounded-xl border-slate-300 focus-visible:ring-violet-500 text-sm sm:text-base"
+              className="resize-none min-h-[44px] sm:min-h-[52px] max-h-[120px] rounded-xl border-gray-200 focus-visible:ring-blue-500 text-sm sm:text-base"
               disabled={isStreaming}
               data-testid="admin-chat-input"
             />
@@ -329,7 +329,8 @@ export default function ChatAdmin() {
               onClick={sendMessage}
               disabled={!input.trim() || isStreaming}
               size="icon"
-              className="shrink-0 h-[44px] w-[44px] sm:h-[52px] sm:w-[52px] rounded-xl bg-gradient-to-r from-slate-700 to-violet-600 hover:from-slate-800 hover:to-violet-700 text-white shadow-md"
+              className="shrink-0 h-[44px] w-[44px] sm:h-[52px] sm:w-[52px] rounded-xl text-white shadow-md"
+              style={{ background: 'linear-gradient(135deg, #1565C0, #0D47A1)' }}
               aria-label="Enviar mensaje"
               data-testid="admin-chat-send"
             >

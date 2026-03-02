@@ -37,7 +37,7 @@ export function CapacityIndicators({
   const getProgressClassName = (percentage: number) => {
     if (percentage >= 90) return "h-2 rounded-full [&>div]:bg-gradient-to-r [&>div]:from-red-400 [&>div]:to-red-600";
     if (percentage >= 75) return "h-2 rounded-full [&>div]:bg-gradient-to-r [&>div]:from-yellow-400 [&>div]:to-yellow-600";
-    return "h-2 rounded-full [&>div]:bg-gradient-to-r [&>div]:from-blue-400 [&>div]:to-blue-600";
+    return "h-2 rounded-full [&>div]:bg-gradient-to-r [&>div]:from-[#1976D2] [&>div]:to-[#0D47A1]";
   };
 
   const getPercentageColor = (percentage: number) => {
@@ -53,8 +53,8 @@ export function CapacityIndicators({
         {/* 1. Citas de Descarga */}
         <Card className="p-4 dark:border-border/60 dark:bg-card/90" data-testid="card-appointment-count">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 flex items-center justify-center shrink-0">
-              <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#1565C0]/10 to-[#0D47A1]/15 dark:from-[#1565C0]/20 dark:to-[#0D47A1]/30 flex items-center justify-center shrink-0">
+              <Package className="h-5 w-5 text-[#1565C0] dark:text-blue-300" />
             </div>
             <div className="min-w-0">
               <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Citas</p>
@@ -69,8 +69,8 @@ export function CapacityIndicators({
         {/* 2. Ocupación */}
         <Card className="p-4 dark:border-border/60 dark:bg-card/90" data-testid="card-capacity-percentage">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 flex items-center justify-center shrink-0">
-              <Gauge className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#1565C0]/10 to-[#0D47A1]/15 dark:from-[#1565C0]/20 dark:to-[#0D47A1]/30 flex items-center justify-center shrink-0">
+              <Gauge className="h-5 w-5 text-[#1565C0] dark:text-blue-300" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Ocupación</p>
@@ -175,7 +175,7 @@ export function CapacityIndicators({
                           <div className="flex justify-between items-center mb-1">
                             <span className="text-sm font-medium flex items-center gap-2">
                               <span className={`w-2 h-2 rounded-full ${
-                                pct >= 80 ? "bg-red-500" : pct >= 50 ? "bg-yellow-500" : "bg-blue-500"
+                                pct >= 80 ? "bg-red-500" : pct >= 50 ? "bg-yellow-500" : "bg-[#1565C0]"
                               }`} />
                               {slot.startTime}-{slot.endTime}
                             </span>
